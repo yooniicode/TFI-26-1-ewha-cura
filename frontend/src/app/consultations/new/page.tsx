@@ -1,417 +1,398 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import AppShell from '@/components/AppShell'
-import { consultationApi, patientApi, hospitalApi } from '@/lib/api'
-import type { ConsultationMethod, Hospital, IssueType, Patient, ProcessingType } from '@/lib/types'
-import {
-  CONSULTATION_METHODS,
-  ISSUE_TYPES,
-  PROCESSING_TYPES,
-  useEnumLabels,
-} from '@/lib/i18n/enumLabels'
-import { useTranslation } from '@/lib/i18n/I18nContext'
+import Spinner from '@/components/ui/Spinner'
+import { consultationApi, patientApi } from '@/lib/api'
+import type { Consultation, Patient } from '@/lib/types'
 
-export default function NewConsultationPage() {
+function calcAge(birthDate?: string | null): string {
+  if (!birthDate) return ''
+  const birth = new Date(birthDate)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return `${age}세`
+}
+
+const nationalityFlag: Record<string, string> = {
+  VIETNAM: '🇻🇳', CHINA: '🇨🇳', PHILIPPINES: '🇵🇭', CAMBODIA: '🇰🇭',
+  MYANMAR: '🇲🇲', THAILAND: '🇹🇭', INDONESIA: '🇮🇩', MONGOLIA: '🇲🇳',
+  NEPAL: '🇳🇵', UZBEKISTAN: '🇺🇿', OTHER: '🌏',
+}
+
+export default function ConsultationNewPage() {
+  return (
+    <Suspense fallback={<AppShell><Spinner /></AppShell>}>
+      <ReportWriteInner />
+    </Suspense>
+  )
+}
+
+function ReportWriteInner() {
   const router = useRouter()
-  const { t } = useTranslation()
-  const labels = useEnumLabels()
-  const [patients, setPatients] = useState<Patient[]>([])
-  const [hospitals, setHospitals] = useState<Hospital[]>([])
-  const [submitting, setSubmitting] = useState(false)
-  const [creatingHospital, setCreatingHospital] = useState(false)
-  const [showHospitalForm, setShowHospitalForm] = useState(false)
-  const [error, setError] = useState('')
-  const [newHospital, setNewHospital] = useState({
-    name: '',
-    address: '',
-    phone: '',
-  })
+  const searchParams = useSearchParams()
+  const patientId = searchParams.get('patientId') ?? ''
 
-  const today = new Date().toISOString().split('T')[0]
-  const [form, setForm] = useState({
-    consultationDate: today,
-    patientId: '',
-    hospitalId: '',
-    department: '',
-    doctorName: '',
-    issueType: 'MEDICAL' as IssueType,
-    method: '' as '' | ConsultationMethod,
-    processing: 'INTERPRETATION' as ProcessingType,
-    patientComment: '',
-    treatmentResult: '',
-    diagnosisContent: '',
-    diagnosisNameCode: '',
-    medicationInstruction: '',
-    nextAppointmentDate: '',
-    counselorName: '',
-    durationHours: '',
-    fee: '',
-    workDescription: '',
-    doctorConfirmationSignature: '',
-    memo: '',
-  })
+  const [patient, setPatient] = useState<Patient | null>(null)
+  const [recentHistory, setRecentHistory] = useState<Consultation[]>([])
+  const [step, setStep] = useState(1)
+  const [done, setDone] = useState(false)
+
+  // Step 1
+  const [workDescription, setWorkDescription] = useState('')
+  // Step 2
+  const [consultationDate, setConsultationDate] = useState(new Date().toISOString().split('T')[0])
+  const [hospitalName, setHospitalName] = useState('')
+  const [department, setDepartment] = useState('')
+  // Step 3
+  const [patientComment, setPatientComment] = useState('')
+  const [diagnosisContent, setDiagnosisContent] = useState('')
+  const [treatmentResult, setTreatmentResult] = useState('')
+  // Step 4
+  const [medicationInstruction, setMedicationInstruction] = useState('')
+  const [nextAppointmentDate, setNextAppointmentDate] = useState('')
+
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    Promise.all([patientApi.list(), hospitalApi.search()])
-      .then(([p, h]) => {
-        setPatients(p.payload ?? [])
-        setHospitals(h.payload ?? [])
-      })
-  }, [])
+    if (!patientId) return
+    patientApi.get(patientId).then(r => setPatient(r.payload ?? null)).catch(() => {})
+    patientApi.history(patientId).then(r => setRecentHistory(r.payload ?? [])).catch(() => {})
+  }, [patientId])
 
-  const selectedPatient = useMemo(
-    () => patients.find(p => p.id === form.patientId),
-    [patients, form.patientId],
-  )
-
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
-  const setHospitalField = (k: keyof typeof newHospital, v: string) =>
-    setNewHospital(f => ({ ...f, [k]: v }))
-
-  async function handleCreateHospital() {
-    if (!newHospital.name.trim()) {
-      setError(t.consultation.err_hospital_name)
-      return
-    }
-    setCreatingHospital(true)
-    setError('')
-    try {
-      const res = await hospitalApi.create({
-        name: newHospital.name.trim(),
-        address: newHospital.address.trim() || undefined,
-        phone: newHospital.phone.trim() || undefined,
-      })
-      const hospital = res.payload as Hospital
-      setHospitals(prev => [hospital, ...prev.filter(item => item.id !== hospital.id)])
-      set('hospitalId', hospital.id)
-      setNewHospital({ name: '', address: '', phone: '' })
-      setShowHospitalForm(false)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.consultation.err_hospital_create)
-    } finally {
-      setCreatingHospital(false)
-    }
+  function handleLoadRecentRm() {
+    const recent = recentHistory.find(c => c.workDescription?.trim())
+    if (recent?.workDescription) setWorkDescription(recent.workDescription)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.patientId) { setError(t.consultation.err_patient); return }
+  async function handleSave() {
+    if (!patientId) return
     setSubmitting(true)
     setError('')
     try {
       await consultationApi.create({
-        ...form,
-        hospitalId: form.hospitalId || null,
-        method: form.method || null,
-        durationHours: form.durationHours ? Number(form.durationHours) : null,
-        fee: form.fee ? Number(form.fee) : null,
-        nextAppointmentDate: form.nextAppointmentDate || null,
+        patientId,
+        consultationDate,
+        issueType: 'MEDICAL',
+        processing: 'INTERPRETATION',
+        workDescription: workDescription || undefined,
+        patientComment: patientComment || undefined,
+        diagnosisContent: diagnosisContent || undefined,
+        treatmentResult: treatmentResult || undefined,
+        medicationInstruction: medicationInstruction || undefined,
+        nextAppointmentDate: nextAppointmentDate || undefined,
+        department: department || undefined,
       })
-      router.push('/consultations')
+      setDone(true)
     } catch (e) {
-      setError(e instanceof Error ? e.message : t.consultation.err_save)
+      setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
       setSubmitting(false)
     }
   }
 
+  const ageStr = calcAge(patient?.birthDate)
+  const flag = patient?.nationality ? (nationalityFlag[patient.nationality] ?? '🌏') : ''
+  const patientName = patient?.name ?? ''
+
+  // 완료 화면
+  if (done) {
+    return (
+      <AppShell noPadding>
+        <div className="bg-white px-4 py-3 flex items-center gap-3 border-b border-[#F6F6F6]">
+          <div className="w-6" />
+          <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">보고서 작성</h1>
+          <div className="w-6" />
+        </div>
+        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+          <p className="text-[26px] font-semibold text-[#161616] leading-[1.4] text-center">
+            보고서를 작성했어요
+          </p>
+        </div>
+        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8">
+          <button
+            onClick={() => router.back()}
+            className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white"
+          >
+            확인
+          </button>
+        </div>
+      </AppShell>
+    )
+  }
+
+  const title = step === 1 ? '진료 내용을\n기록합니다' : '비어있는 부분을\n빠짐없이 작성합니다'
+  const TOTAL_STEPS = 4
+
   return (
-    <AppShell>
-      <div className="flex items-center gap-2 mb-4">
-        <button onClick={() => router.back()} className="text-gray-400">←</button>
-        <h1 className="text-lg font-bold">{t.consultation.new_title}</h1>
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 flex items-center gap-3 border-b border-[#F6F6F6]">
+        <button onClick={() => router.back()} className="text-gray-400 text-xl leading-none w-6">←</button>
+        <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">보고서 작성</h1>
+        <div className="w-6" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-600">{t.consultation.section_basic}</h2>
-          <div>
-            <label className="label">{t.consultation.visit_date}</label>
-            <input
-              type="date"
-              className="input"
-              value={form.consultationDate}
-              onChange={e => set('consultationDate', e.target.value)}
-              required
-            />
-          </div>
+      {/* 타이틀 */}
+      <div className="bg-white px-6 pt-8 pb-0">
+        <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
+          {title}
+        </h2>
+      </div>
 
-          <div>
-            <label className="label">{t.consultation.patient}</label>
-            <select
-              className="input"
-              value={form.patientId}
-              onChange={e => set('patientId', e.target.value)}
-              required
-            >
-              <option value="">{t.consultation.patient_placeholder}</option>
-              {patients.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {selectedPatient && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
-              <p className="font-medium text-gray-700 mb-1">{selectedPatient.name}</p>
-              <p>
-                {labels.nationality[selectedPatient.nationality]} · {labels.gender[selectedPatient.gender]} · {labels.visa[selectedPatient.visaType]}
-              </p>
-              <p>
-                {[selectedPatient.birthDate, selectedPatient.region, selectedPatient.phone]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </p>
+      {/* 환자 정보 바 */}
+      <div className="bg-white px-6 py-2.5 border-b border-[#EEEEEE] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="relative shrink-0">
+            <div className="w-8 h-8 rounded-full bg-[#DEE2FF] flex items-center justify-center text-sm font-semibold text-indigo-700">
+              {patientName.charAt(0)}
             </div>
-          )}
-
-          <div>
-            <div className="mb-1 flex items-center justify-between gap-3">
-              <label className="label mb-0">{t.consultation.hospital}</label>
-              <button
-                type="button"
-                className="text-xs font-medium text-primary-600 hover:underline"
-                onClick={() => setShowHospitalForm(prev => !prev)}
-              >
-                {showHospitalForm ? t.consultation.hospital_cancel_add : t.consultation.hospital_add}
-              </button>
-            </div>
-            <select
-              className="input"
-              value={form.hospitalId}
-              onChange={e => set('hospitalId', e.target.value)}
-            >
-              <option value="">{t.consultation.hospital_placeholder}</option>
-              {hospitals.map(h => (
-                <option key={h.id} value={h.id}>{h.name}</option>
-              ))}
-            </select>
-            {showHospitalForm && (
-              <div className="mt-3 space-y-2 rounded-lg border border-gray-100 bg-gray-50 p-3">
-                <div>
-                  <label className="label">{t.consultation.hospital_name}</label>
-                  <input
-                    className="input bg-white"
-                    value={newHospital.name}
-                    onChange={e => setHospitalField('name', e.target.value)}
-                    placeholder={t.consultation.hospital_name_placeholder}
-                  />
-                </div>
-                <div>
-                  <label className="label">{t.consultation.hospital_address}</label>
-                  <input
-                    className="input bg-white"
-                    value={newHospital.address}
-                    onChange={e => setHospitalField('address', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="label">{t.consultation.hospital_phone}</label>
-                  <input
-                    className="input bg-white"
-                    value={newHospital.phone}
-                    onChange={e => setHospitalField('phone', e.target.value)}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn-secondary w-full"
-                  disabled={creatingHospital}
-                  onClick={handleCreateHospital}
-                >
-                  {creatingHospital ? t.consultation.hospital_creating : t.consultation.hospital_create}
-                </button>
-              </div>
+            {flag && (
+              <span className="absolute -bottom-0.5 -right-0.5 text-[10px] leading-none">{flag}</span>
             )}
           </div>
+          <span className="text-lg font-medium text-[#161616]">{patientName}</span>
+          {ageStr && <span className="text-lg text-[#494949]">{ageStr}</span>}
+        </div>
+        <div className="w-6 h-6 flex items-center justify-center">
+          <div className="w-1.5 h-3 rounded-sm border-2 border-[#C7C7C7]" />
+        </div>
+      </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label">{t.consultation.department}</label>
-              <input
-                className="input"
-                value={form.department}
-                onChange={e => set('department', e.target.value)}
-                placeholder={t.consultation.department_placeholder}
-              />
-            </div>
-            <div>
-              <label className="label">{t.consultation.doctor}</label>
-              <input
-                className="input"
-                value={form.doctorName}
-                onChange={e => set('doctorName', e.target.value)}
-              />
-            </div>
-          </div>
-        </section>
+      {/* 스텝별 컨텐츠 */}
+      <div className="bg-white px-6 pt-5 pb-36">
+        {step === 1 && (
+          <Step1
+            workDescription={workDescription}
+            onChange={setWorkDescription}
+            canLoadRm={recentHistory.some(c => c.workDescription?.trim())}
+            onLoadRm={handleLoadRecentRm}
+          />
+        )}
+        {step === 2 && (
+          <Step2
+            consultationDate={consultationDate}
+            hospitalName={hospitalName}
+            department={department}
+            onDateChange={setConsultationDate}
+            onHospitalChange={setHospitalName}
+            onDepartmentChange={setDepartment}
+          />
+        )}
+        {step === 3 && (
+          <Step3
+            patientComment={patientComment}
+            diagnosisContent={diagnosisContent}
+            treatmentResult={treatmentResult}
+            onPatientCommentChange={setPatientComment}
+            onDiagnosisChange={setDiagnosisContent}
+            onTreatmentChange={setTreatmentResult}
+          />
+        )}
+        {step === 4 && (
+          <Step4
+            medicationInstruction={medicationInstruction}
+            nextAppointmentDate={nextAppointmentDate}
+            onMedicationChange={setMedicationInstruction}
+            onNextDateChange={setNextAppointmentDate}
+          />
+        )}
+        {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
+      </div>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-600">{t.consultation.section_patient_report}</h2>
-          <div>
-            <label className="label">{t.consultation.diagnosis_code}</label>
-            <input
-              className="input"
-              value={form.diagnosisNameCode}
-              onChange={e => set('diagnosisNameCode', e.target.value)}
-              placeholder={t.consultation.diagnosis_code_placeholder}
-            />
-          </div>
-          <FieldTextArea
-            label={t.consultation.diagnosis_content}
-            value={form.diagnosisContent}
-            onChange={v => set('diagnosisContent', v)}
-          />
-          <FieldTextArea
-            label={t.consultation.treatment_result}
-            value={form.treatmentResult}
-            onChange={v => set('treatmentResult', v)}
-          />
-          <FieldTextArea
-            label={t.consultation.medication}
-            value={form.medicationInstruction}
-            onChange={v => set('medicationInstruction', v)}
-            placeholder={t.consultation.medication_placeholder}
-          />
-          <div>
-            <label className="label">{t.consultation.next_appointment_date}</label>
-            <input
-              type="date"
-              className="input"
-              value={form.nextAppointmentDate}
-              onChange={e => set('nextAppointmentDate', e.target.value)}
-            />
-          </div>
-          <FieldTextArea
-            label={t.consultation.patient_comment}
-            value={form.patientComment}
-            onChange={v => set('patientComment', v)}
-          />
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-gray-600">{t.consultation.section_work_log}</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label">{t.consultation.issue_type}</label>
-              <select
-                className="input"
-                value={form.issueType}
-                onChange={e => set('issueType', e.target.value)}
-              >
-                {ISSUE_TYPES.map(value => (
-                  <option key={value} value={value}>{labels.issue[value]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">{t.consultation.interp_method}</label>
-              <select
-                className="input"
-                value={form.method}
-                onChange={e => set('method', e.target.value)}
-              >
-                <option value="">{t.consultation.select_placeholder}</option>
-                {CONSULTATION_METHODS.map(value => (
-                  <option key={value} value={value}>{labels.method[value]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label">{t.consultation.processing}</label>
-              <select
-                className="input"
-                value={form.processing}
-                onChange={e => set('processing', e.target.value)}
-              >
-                {PROCESSING_TYPES.map(value => (
-                  <option key={value} value={value}>{labels.processing[value]}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">{t.consultation.counselor}</label>
-              <input
-                className="input"
-                value={form.counselorName}
-                onChange={e => set('counselorName', e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label">{t.consultation.duration}</label>
-              <input
-                type="number"
-                step="0.5"
-                className="input"
-                value={form.durationHours}
-                onChange={e => set('durationHours', e.target.value)}
-                placeholder={t.consultation.duration_placeholder}
-              />
-            </div>
-            <div>
-              <label className="label">{t.consultation.fee}</label>
-              <input
-                type="number"
-                className="input"
-                value={form.fee}
-                onChange={e => set('fee', e.target.value)}
-                placeholder={t.consultation.fee_placeholder}
-              />
-            </div>
-          </div>
-          <FieldTextArea
-            label={t.consultation.work_description}
-            value={form.workDescription}
-            onChange={v => set('workDescription', v)}
-          />
-          <FieldTextArea
-            label={t.consultation.memo}
-            value={form.memo}
-            onChange={v => set('memo', v)}
-          />
-          <FieldTextArea
-            label={t.consultation.doctor_signature}
-            value={form.doctorConfirmationSignature}
-            onChange={v => set('doctorConfirmationSignature', v)}
-            placeholder={t.consultation.doctor_signature_placeholder}
-          />
-        </section>
-
-        {error && <p className="text-red-500 text-xs">{error}</p>}
-
-        <button type="submit" className="btn-primary w-full" disabled={submitting}>
-          {submitting ? t.consultation.saving : t.consultation.save_two}
+      {/* 하단 네비게이션 바 */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8 flex gap-2.5">
+        {step > 1 && (
+          <button
+            onClick={() => setStep(s => s - 1)}
+            className="w-[111px] h-[60px] bg-[#F0F1F5] rounded-lg text-lg font-medium text-[#494949]"
+          >
+            이전
+          </button>
+        )}
+        <button
+          onClick={step < TOTAL_STEPS ? () => setStep(s => s + 1) : handleSave}
+          disabled={submitting}
+          className="flex-1 h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-60"
+        >
+          {step < TOTAL_STEPS ? '다음으로' : submitting ? '저장 중...' : '다음으로'}
         </button>
-      </form>
+      </div>
     </AppShell>
   )
 }
 
-function FieldTextArea({
-  label,
-  value,
-  onChange,
-  placeholder,
+// ─── 공통 필드 컴포넌트 ────────────────────────────────────────────────────────
+
+function FieldInput({
+  label, value, onChange, placeholder, type = 'text',
 }: {
   label: string
   value: string
-  onChange: (value: string) => void
+  onChange: (v: string) => void
   placeholder?: string
+  type?: string
 }) {
+  const filled = value.trim().length > 0
   return (
-    <div>
-      <label className="label">{label}</label>
-      <textarea
-        className="input min-h-24 resize-none"
+    <div className="flex flex-col gap-2">
+      <label className="text-base font-medium text-[#161616]">{label}</label>
+      <input
+        type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
+        className={`w-full px-4 py-4 rounded-lg text-lg text-[#161616] outline-none border ${
+          filled ? 'border-[#A1A1A1]' : 'border-[#EEEEEE]'
+        } placeholder:text-[#808080]`}
       />
+    </div>
+  )
+}
+
+function FieldTextarea({
+  label, value, onChange, placeholder,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  placeholder?: string
+}) {
+  const filled = value.trim().length > 0
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-base font-medium text-[#161616]">{label}</label>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={3}
+        className={`w-full px-4 py-4 rounded-lg text-lg text-[#161616] leading-relaxed resize-none outline-none border ${
+          filled ? 'border-[#A1A1A1]' : 'border-[#EEEEEE]'
+        } placeholder:text-[#808080]`}
+      />
+    </div>
+  )
+}
+
+// ─── 스텝 컴포넌트 ────────────────────────────────────────────────────────────
+
+function Step1({
+  workDescription, onChange, canLoadRm, onLoadRm,
+}: {
+  workDescription: string
+  onChange: (v: string) => void
+  canLoadRm: boolean
+  onLoadRm: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <button
+        type="button"
+        onClick={onLoadRm}
+        disabled={!canLoadRm}
+        className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-[#F0F1F5] rounded-lg disabled:opacity-40"
+      >
+        <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="1" y="1" width="14" height="16" rx="2" />
+          <line x1="4" y1="6" x2="12" y2="6" />
+          <line x1="4" y1="9" x2="12" y2="9" />
+          <line x1="4" y1="12" x2="9" y2="12" />
+        </svg>
+        <span className="text-sm font-medium text-[#494949]">최근 RM 불러오기</span>
+      </button>
+
+      <div className="bg-white rounded-lg border border-[#EEEEEE] px-4 py-6 min-h-[320px] flex flex-col gap-3">
+        {workDescription.length === 0 && (
+          <span className="text-lg font-medium text-[#808080]">예시</span>
+        )}
+        <textarea
+          value={workDescription}
+          onChange={e => onChange(e.target.value)}
+          placeholder="얼굴에 1도 화상으로 내원함. 처방받은 연고를 하루 3회 도포하도록 안내함. 피부 자극을 줄이기 위해 뜨거운 물 세안은 피하도록 설명함."
+          className="flex-1 w-full min-h-[260px] text-lg text-[#161616] leading-relaxed resize-none outline-none placeholder:text-[#808080]"
+          autoFocus
+        />
+      </div>
+    </div>
+  )
+}
+
+function Step2({
+  consultationDate, hospitalName, department,
+  onDateChange, onHospitalChange, onDepartmentChange,
+}: {
+  consultationDate: string
+  hospitalName: string
+  department: string
+  onDateChange: (v: string) => void
+  onHospitalChange: (v: string) => void
+  onDepartmentChange: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <label className="text-base font-medium text-[#161616]">진료 날짜</label>
+        <input
+          type="date"
+          value={consultationDate}
+          onChange={e => onDateChange(e.target.value)}
+          className="w-full px-4 py-4 rounded-lg text-lg text-[#161616] border border-[#A1A1A1] outline-none"
+        />
+      </div>
+      <FieldInput label="방문 병원" value={hospitalName} onChange={onHospitalChange} placeholder="병원명을 입력하세요" />
+      <FieldInput label="방문 과" value={department} onChange={onDepartmentChange} placeholder="진료과를 입력하세요" />
+    </div>
+  )
+}
+
+function Step3({
+  patientComment, diagnosisContent, treatmentResult,
+  onPatientCommentChange, onDiagnosisChange, onTreatmentChange,
+}: {
+  patientComment: string
+  diagnosisContent: string
+  treatmentResult: string
+  onPatientCommentChange: (v: string) => void
+  onDiagnosisChange: (v: string) => void
+  onTreatmentChange: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <FieldTextarea label="증상 및 내원 계기" value={patientComment} onChange={onPatientCommentChange} placeholder="증상을 입력하세요" />
+      <FieldTextarea label="의사 진단" value={diagnosisContent} onChange={onDiagnosisChange} placeholder="진단 내용을 입력하세요" />
+      <FieldTextarea label="주의 사항" value={treatmentResult} onChange={onTreatmentChange} placeholder="주의 사항을 입력하세요" />
+    </div>
+  )
+}
+
+function Step4({
+  medicationInstruction, nextAppointmentDate,
+  onMedicationChange, onNextDateChange,
+}: {
+  medicationInstruction: string
+  nextAppointmentDate: string
+  onMedicationChange: (v: string) => void
+  onNextDateChange: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <FieldTextarea label="약 복용" value={medicationInstruction} onChange={onMedicationChange} placeholder="약 복용 방법을 입력하세요" />
+      <div className="flex flex-col gap-2">
+        <label className="text-base font-medium text-[#161616]">다음 일정</label>
+        <input
+          type="date"
+          value={nextAppointmentDate}
+          onChange={e => onNextDateChange(e.target.value)}
+          placeholder="다음 진료 일정을 선택해주세요"
+          className={`w-full px-4 py-4 rounded-lg text-lg text-[#161616] border outline-none ${
+            nextAppointmentDate ? 'border-[#A1A1A1]' : 'border-[#EEEEEE]'
+          } placeholder:text-[#808080]`}
+        />
+      </div>
     </div>
   )
 }

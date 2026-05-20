@@ -50,20 +50,15 @@ export default function ConsultationsPage() {
     }
   }
 
-  const needsAdminCenter = me?.role === 'admin' && !me.centerId && !me.centerName
-  const showStaffWork = me?.role === 'admin' && category === 'staffWork' && !needsAdminCenter
-  const showConsultationList = !!me && !needsAdminCenter && (me.role !== 'admin' || category !== 'staffWork')
+  const adminFeaturesEnabled = false
+  const needsAdminCenter = false
+  const showStaffWork = adminFeaturesEnabled && me?.role === 'admin' && category === 'staffWork'
+  const showConsultationList = !!me && me.role !== 'admin'
 
   const sortLabels: Record<SortBy, string> = {
     consultationDate: t.consultation.sort_visit,
     createdAt: t.consultation.sort_created,
     updatedAt: t.consultation.sort_updated,
-  }
-
-  const categoryLabels: Record<ReportCategory, string> = {
-    staffWork: t.consultation.category_staff_work,
-    interpreterWork: t.consultation.category_interpreter_work,
-    migrantReport: t.consultation.category_migrant_report,
   }
 
   const { data: workLogResponse, isLoading: workLogsLoading, error: workLogsError } = useQuery({
@@ -107,8 +102,8 @@ export default function ConsultationsPage() {
   })
 
   useEffect(() => {
-    if (me?.role === 'admin') setCategory('staffWork')
-  }, [me?.role])
+    if (adminFeaturesEnabled && me?.role === 'admin') setCategory('staffWork')
+  }, [adminFeaturesEnabled, me?.role])
 
   useEffect(() => {
     setPage(0)
@@ -173,160 +168,118 @@ export default function ConsultationsPage() {
   }
 
   if (meLoading || (showConsultationList && loading) || (showStaffWork && workLogsLoading)) {
-    return <AppShell><Spinner /></AppShell>
+    return <AppShell noPadding><div className="flex justify-center pt-20"><Spinner /></div></AppShell>
   }
 
   return (
-    <AppShell>
-      <div className="mb-4 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold">{t.consultation.title}</h1>
-            {me?.role === 'admin' && (
-              <p className="mt-0.5 text-xs text-gray-500">{t.consultation.admin_note}</p>
-            )}
-          </div>
-          {me?.role === 'interpreter' && (
-            <Link href="/consultations/new" className="btn-primary text-sm py-1.5 px-3">
-              {t.consultation.write}
-            </Link>
-          )}
-          {showStaffWork && (
-            <button
-              type="button"
-              className="btn-primary text-sm py-1.5 px-3"
-              onClick={() => setShowWorkForm(prev => !prev)}
-            >
-              {t.consultation.staff_work_write}
-            </button>
-          )}
-        </div>
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center justify-between">
+        <h1 className="text-base font-semibold text-[#424242]">{t.consultation.title}</h1>
+        {me?.role === 'interpreter' && (
+          <Link
+            href="/consultations/new"
+            className="bg-[#2592FF] text-white text-sm font-semibold px-3 py-1.5 rounded-lg"
+          >
+            {t.consultation.write}
+          </Link>
+        )}
+      </div>
 
-        {me?.role === 'admin' && (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            {(Object.entries(categoryLabels) as [ReportCategory, string][]).map(([value, label]) => (
+      {/* 검색 + 정렬 */}
+      {showConsultationList && (
+        <div className="bg-white px-4 py-3 border-b border-[#EEEEEE] space-y-2">
+          <input
+            className="w-full bg-[#F5F5F5] rounded-lg px-4 py-2.5 text-base outline-none placeholder:text-[#A0A0A0] text-[#161616]"
+            value={patientQuery}
+            onChange={e => {
+              setPage(0)
+              setPatientQuery(e.target.value)
+            }}
+            placeholder={t.consultation.search_placeholder}
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            {(Object.entries(sortLabels) as [SortBy, string][]).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
-                className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                  category === value
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium border ${
+                  sortBy === value
+                    ? 'border-[#2592FF] bg-[#EAF4FF] text-[#2592FF]'
+                    : 'border-[#EEEEEE] text-[#808080] bg-white'
                 }`}
-                onClick={() => setCategory(value)}
+                onClick={() => {
+                  setPage(0)
+                  setSortBy(value)
+                }}
               >
                 {label}
               </button>
             ))}
+            <button
+              type="button"
+              className="rounded-lg border border-[#2592FF] bg-[#2592FF] px-3 py-1.5 text-xs font-semibold text-white"
+              onClick={toggleDirection}
+            >
+              {direction === 'desc' ? t.consultation.sort_desc : t.consultation.sort_asc}
+            </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {showConsultationList && (
-          <div className="space-y-2 rounded-lg border border-gray-100 bg-white p-3">
-            <input
-              className="input"
-              value={patientQuery}
-              onChange={e => {
-                setPage(0)
-                setPatientQuery(e.target.value)
-              }}
-              placeholder={t.consultation.search_placeholder}
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              {(Object.entries(sortLabels) as [SortBy, string][]).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
-                    sortBy === value
-                      ? 'border-primary-600 bg-primary-50 text-primary-700'
-                      : 'border-gray-200 text-gray-500'
-                  }`}
-                  onClick={() => {
-                    setPage(0)
-                    setSortBy(value)
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="rounded-lg border border-primary-600 bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-700"
-                onClick={toggleDirection}
-              >
-                {direction === 'desc' ? t.consultation.sort_desc : t.consultation.sort_asc}
-              </button>
-            </div>
-          </div>
+      {/* 목록 */}
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
+        {showStaffWork ? (
+          <StaffWorkSection
+            workLogs={workLogs}
+            page={workLogPage}
+            pageInfo={workLogPageInfo}
+            showForm={showWorkForm}
+            workDate={workDate}
+            workMemo={workMemo}
+            workTaskLines={workTaskLines}
+            saving={createWorkLog.isPending}
+            error={createWorkLog.error ?? workLogsError}
+            t={t}
+            onPageChange={setWorkLogPage}
+            onToggleForm={() => setShowWorkForm(prev => !prev)}
+            onWorkDateChange={setWorkDate}
+            onWorkMemoChange={setWorkMemo}
+            onWorkTaskLinesChange={setWorkTaskLines}
+            onSubmit={(e) => {
+              e.preventDefault()
+              createWorkLog.mutate()
+            }}
+            onToggleTask={toggleTask}
+            onDelete={handleDeleteWorkLog}
+          />
+        ) : error ? (
+          <EmptyState message={error} />
+        ) : items.length === 0 ? (
+          <EmptyState message={t.consultation.empty} />
+        ) : (
+          <ReportList
+            items={items}
+            labels={labels}
+            page={page}
+            pageInfo={pageInfo}
+            locale={t.locale}
+            t={t}
+            onPageChange={setPage}
+            isInterpreter={me?.role === 'interpreter'}
+            chatLoading={chatLoading}
+            onOpenChat={handleOpenChatWithPatient}
+          />
         )}
       </div>
-
-      {showStaffWork ? (
-        <StaffWorkSection
-          workLogs={workLogs}
-          page={workLogPage}
-          pageInfo={workLogPageInfo}
-          showForm={showWorkForm}
-          workDate={workDate}
-          workMemo={workMemo}
-          workTaskLines={workTaskLines}
-          saving={createWorkLog.isPending}
-          error={createWorkLog.error ?? workLogsError}
-          t={t}
-          onPageChange={setWorkLogPage}
-          onToggleForm={() => setShowWorkForm(prev => !prev)}
-          onWorkDateChange={setWorkDate}
-          onWorkMemoChange={setWorkMemo}
-          onWorkTaskLinesChange={setWorkTaskLines}
-          onSubmit={(e) => {
-            e.preventDefault()
-            createWorkLog.mutate()
-          }}
-          onToggleTask={toggleTask}
-          onDelete={handleDeleteWorkLog}
-        />
-      ) : error ? (
-        <EmptyState message={error} />
-      ) : items.length === 0 ? (
-        <EmptyState message={t.consultation.empty} />
-      ) : (
-        <ReportList
-          items={items}
-          labels={labels}
-          page={page}
-          pageInfo={pageInfo}
-          locale={t.locale}
-          t={t}
-          onPageChange={setPage}
-          isInterpreter={me?.role === 'interpreter'}
-          chatLoading={chatLoading}
-          onOpenChat={handleOpenChatWithPatient}
-        />
-      )}
     </AppShell>
   )
 }
 
 function StaffWorkSection({
-  workLogs,
-  page,
-  pageInfo,
-  showForm,
-  workDate,
-  workMemo,
-  workTaskLines,
-  saving,
-  error,
-  t,
-  onPageChange,
-  onToggleForm,
-  onWorkDateChange,
-  onWorkMemoChange,
-  onWorkTaskLinesChange,
-  onSubmit,
-  onToggleTask,
-  onDelete,
+  workLogs, page, pageInfo, showForm, workDate, workMemo, workTaskLines,
+  saving, error, t, onPageChange, onToggleForm, onWorkDateChange,
+  onWorkMemoChange, onWorkTaskLinesChange, onSubmit, onToggleTask, onDelete,
 }: {
   workLogs: AdminWorkLog[]
   page: number
@@ -348,40 +301,25 @@ function StaffWorkSection({
   onDelete: (id: string) => void
 }) {
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-gray-100 bg-white p-4">
-        <h2 className="text-sm font-semibold">{t.consultation.staff_work_title}</h2>
-        <p className="mt-1 text-xs text-gray-500">{t.consultation.staff_work_desc}</p>
-      </div>
-
+    <div className="space-y-3">
       {showForm && (
-        <form onSubmit={onSubmit} className="card space-y-3">
+        <form onSubmit={onSubmit} className="bg-white rounded-xl px-4 py-4 space-y-3">
           <div>
-            <label className="label">{t.consultation.work_date}</label>
-            <input type="date" className="input" value={workDate} onChange={e => onWorkDateChange(e.target.value)} required />
+            <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.work_date}</label>
+            <input type="date" className="w-full bg-[#F5F5F5] rounded-lg px-4 py-2.5 text-base outline-none text-[#161616]" value={workDate} onChange={e => onWorkDateChange(e.target.value)} required />
           </div>
           <div>
-            <label className="label">{t.consultation.work_memo}</label>
-            <textarea
-              className="input min-h-20"
-              value={workMemo}
-              onChange={e => onWorkMemoChange(e.target.value)}
-              placeholder={t.consultation.work_memo_placeholder}
-            />
+            <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.work_memo}</label>
+            <textarea className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] min-h-20 resize-none" value={workMemo} onChange={e => onWorkMemoChange(e.target.value)} placeholder={t.consultation.work_memo_placeholder} />
           </div>
           <div>
-            <label className="label">{t.consultation.work_tasks}</label>
-            <textarea
-              className="input min-h-24"
-              value={workTaskLines}
-              onChange={e => onWorkTaskLinesChange(e.target.value)}
-              placeholder={t.consultation.work_tasks_placeholder}
-            />
+            <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.work_tasks}</label>
+            <textarea className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] min-h-24 resize-none" value={workTaskLines} onChange={e => onWorkTaskLinesChange(e.target.value)} placeholder={t.consultation.work_tasks_placeholder} />
           </div>
           {!!error && <p className="text-xs text-red-500">{error instanceof Error ? error.message : t.consultation.err_save}</p>}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button type="button" className="btn-secondary" onClick={onToggleForm}>{t.common.cancel}</button>
-            <button type="submit" className="btn-primary" disabled={saving}>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className="h-11 rounded-lg bg-[#F0F1F5] text-sm font-medium text-[#494949]" onClick={onToggleForm}>{t.common.cancel}</button>
+            <button type="submit" className="h-11 rounded-lg bg-[#2592FF] text-sm font-semibold text-white disabled:opacity-60" disabled={saving}>
               {saving ? t.consultation.saving : t.common.save}
             </button>
           </div>
@@ -391,13 +329,13 @@ function StaffWorkSection({
       {workLogs.length === 0 ? (
         <EmptyState message={t.consultation.work_log_empty} />
       ) : (
-        <div className="space-y-3">
+        <>
           {workLogs.map(log => (
-            <div key={log.id} className="card space-y-3">
+            <div key={log.id} className="bg-white rounded-xl px-4 py-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold">{log.workDate}</p>
-                  {log.memo && <p className="mt-1 whitespace-pre-wrap text-sm text-gray-600">{log.memo}</p>}
+                  <p className="text-base font-semibold text-[#161616]">{log.workDate}</p>
+                  {log.memo && <p className="mt-1 whitespace-pre-wrap text-sm text-[#808080]">{log.memo}</p>}
                 </div>
                 <button type="button" className="text-xs text-red-500 hover:text-red-700" onClick={() => onDelete(log.id)}>
                   {t.common.delete}
@@ -406,13 +344,9 @@ function StaffWorkSection({
               {log.tasks.length > 0 && (
                 <div className="space-y-2">
                   {log.tasks.map((task, index) => (
-                    <label key={`${log.id}-${index}`} className="flex items-center gap-2 text-sm text-gray-600">
-                      <input
-                        type="checkbox"
-                        checked={task.checked}
-                        onChange={() => onToggleTask(log, index)}
-                      />
-                      <span className={task.checked ? 'text-gray-400 line-through' : ''}>{task.content}</span>
+                    <label key={`${log.id}-${index}`} className="flex items-center gap-2 text-sm text-[#494949]">
+                      <input type="checkbox" checked={task.checked} onChange={() => onToggleTask(log, index)} />
+                      <span className={task.checked ? 'text-[#A0A0A0] line-through' : ''}>{task.content}</span>
                     </label>
                   ))}
                 </div>
@@ -422,23 +356,15 @@ function StaffWorkSection({
           {(page > 0 || pageInfo?.hasNext) && (
             <Pagination page={page} pageInfo={pageInfo} t={t} onPageChange={onPageChange} />
           )}
-        </div>
+        </>
       )}
     </div>
   )
 }
 
 function ReportList({
-  items,
-  labels,
-  page,
-  pageInfo,
-  locale,
-  t,
-  onPageChange,
-  isInterpreter,
-  chatLoading,
-  onOpenChat,
+  items, labels, page, pageInfo, locale, t, onPageChange,
+  isInterpreter, chatLoading, onOpenChat,
 }: {
   items: Consultation[]
   labels: ReturnType<typeof useEnumLabels>
@@ -453,48 +379,46 @@ function ReportList({
 }) {
   return (
     <div className="space-y-3">
-      <div className="space-y-2">
-        {items.map(c => (
-          <div key={c.id} className="card hover:border-primary-200 transition-colors">
-            <Link href={`/consultations/${c.id}`} className="block">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm">{c.patientName}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {c.consultationDate}
-                    {c.hospitalName && ` / ${c.hospitalName}`}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">{labels.issue[c.issueType]}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {t.consultation.written_by}: {c.createdByName ?? c.interpreterName ?? '-'}
-                    {c.createdAt && ` / ${t.consultation.written_at}: ${formatDateTime(c.createdAt, locale)}`}
-                  </p>
-                </div>
-                {c.confirmed
-                  ? <Badge variant="green">{t.common.confirmed}</Badge>
-                  : <Badge variant="yellow">{t.common.unconfirmed}</Badge>}
-              </div>
-              {c.nextAppointmentDate && (
-                <p className="text-xs text-primary-600 mt-2">
-                  {t.consultation.next_appointment}: {c.nextAppointmentDate}
+      {items.map(c => (
+        <div key={c.id} className="bg-white rounded-xl px-4 py-4">
+          <Link href={`/consultations/${c.id}`} className="block">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-semibold text-[#161616]">{c.patientName}</p>
+                <p className="text-sm text-[#808080] mt-0.5">
+                  {c.consultationDate}
+                  {c.hospitalName && ` / ${c.hospitalName}`}
                 </p>
-              )}
-            </Link>
-            {isInterpreter && c.patientId && onOpenChat && (
-              <div className="mt-2 flex justify-end border-t pt-2">
-                <button
-                  type="button"
-                  disabled={chatLoading === c.patientId}
-                  onClick={() => onOpenChat(c.patientId)}
-                  className="text-xs font-semibold text-primary-600 hover:text-primary-700"
-                >
-                  {chatLoading === c.patientId ? '...' : t.chat.open_chat}
-                </button>
+                <p className="text-xs text-[#A0A0A0] mt-0.5">{labels.issue[c.issueType]}</p>
+                <p className="text-xs text-[#A0A0A0] mt-1">
+                  {t.consultation.written_by}: {c.createdByName ?? c.interpreterName ?? '-'}
+                  {c.createdAt && ` / ${t.consultation.written_at}: ${formatDateTime(c.createdAt, locale)}`}
+                </p>
               </div>
+              {c.confirmed
+                ? <Badge variant="green">{t.common.confirmed}</Badge>
+                : <Badge variant="yellow">{t.common.unconfirmed}</Badge>}
+            </div>
+            {c.nextAppointmentDate && (
+              <p className="text-xs text-[#2592FF] mt-2">
+                {t.consultation.next_appointment}: {c.nextAppointmentDate}
+              </p>
             )}
-          </div>
-        ))}
-      </div>
+          </Link>
+          {isInterpreter && c.patientId && onOpenChat && (
+            <div className="mt-3 flex justify-end border-t border-[#F5F5F5] pt-2">
+              <button
+                type="button"
+                disabled={chatLoading === c.patientId}
+                onClick={() => onOpenChat(c.patientId)}
+                className="text-xs font-semibold text-[#2592FF] hover:text-blue-700"
+              >
+                {chatLoading === c.patientId ? '...' : t.chat.open_chat}
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
       {(page > 0 || pageInfo?.hasNext) && (
         <Pagination page={page} pageInfo={pageInfo} t={t} onPageChange={onPageChange} />
       )}
@@ -503,10 +427,7 @@ function ReportList({
 }
 
 function Pagination({
-  page,
-  pageInfo,
-  t,
-  onPageChange,
+  page, pageInfo, t, onPageChange,
 }: {
   page: number
   pageInfo?: PageInfo
@@ -514,19 +435,19 @@ function Pagination({
   onPageChange: (page: number) => void
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 pt-2">
       <button
         type="button"
-        className="btn-secondary px-3 py-1.5 text-sm"
+        className="bg-white rounded-lg px-3 py-2 text-sm font-medium text-[#494949] disabled:opacity-40"
         disabled={page === 0}
         onClick={() => onPageChange(Math.max(page - 1, 0))}
       >
         {t.common.prev_page}
       </button>
-      <span className="text-xs text-gray-500">{t.common.page_label(page + 1)}</span>
+      <span className="text-xs text-[#808080]">{t.common.page_label(page + 1)}</span>
       <button
         type="button"
-        className="btn-secondary px-3 py-1.5 text-sm"
+        className="bg-white rounded-lg px-3 py-2 text-sm font-medium text-[#494949] disabled:opacity-40"
         disabled={!pageInfo?.hasNext}
         onClick={() => onPageChange(page + 1)}
       >

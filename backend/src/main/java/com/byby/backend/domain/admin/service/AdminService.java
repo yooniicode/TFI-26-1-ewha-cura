@@ -20,6 +20,7 @@ import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.center.service.CenterService;
 import com.byby.backend.domain.patient.entity.Patient;
+import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,6 +42,7 @@ public class AdminService {
     private final AdminWorkLogRepository adminWorkLogRepository;
     private final CenterPatientMemoRepository centerPatientMemoRepository;
     private final PatientRepository patientRepository;
+    private final PatientCenterRepository patientCenterRepository;
     private final InterpreterRepository interpreterRepository;
     private final PatientMatchRepository patientMatchRepository;
     private final CenterService centerService;
@@ -123,34 +125,55 @@ public class AdminService {
     @Transactional
     public AdminResponse.PatientMemo createPatientMemo(UUID patientId, AdminRequest.UpsertPatientMemo req,
                                                        UserPrincipal principal) {
-        requireAdmin(principal);
+        requireStaffOrInterpreter(principal);
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
+        boolean isAdmin = principal.isAdmin();
+        if (!isAdmin) {
+            requireAssignedInterpreter(patientId, principal);
+        }
         CenterPatientMemo memo = CenterPatientMemo.builder()
                 .adminAuthUserId(principal.getAuthUserId())
                 .patient(patient)
                 .publicMemo(trimToNull(req.publicMemo()))
-                .privateMemo(trimToNull(req.privateMemo()))
-                .interpreterVisible(req.interpreterVisible())
+                .privateMemo(isAdmin ? trimToNull(req.privateMemo()) : null)
+                .interpreterVisible(isAdmin ? req.interpreterVisible() : true)
                 .build();
-        return AdminResponse.PatientMemo.from(centerPatientMemoRepository.save(memo), true);
+        return AdminResponse.PatientMemo.from(centerPatientMemoRepository.save(memo), isAdmin);
     }
 
     @Transactional
     public AdminResponse.PatientMemo updatePatientMemo(UUID memoId, AdminRequest.UpsertPatientMemo req,
                                                        UserPrincipal principal) {
-        requireAdmin(principal);
+        requireStaffOrInterpreter(principal);
         CenterPatientMemo memo = centerPatientMemoRepository.findById(memoId)
                 .orElseThrow(() -> new GeneralException(GeneralErrorCode.NOT_FOUND));
-        memo.update(trimToNull(req.publicMemo()), trimToNull(req.privateMemo()), req.interpreterVisible());
-        return AdminResponse.PatientMemo.from(memo, true);
+        boolean isAdmin = principal.isAdmin();
+        if (!isAdmin && !memo.getAdminAuthUserId().equals(principal.getAuthUserId())) {
+            throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+        }
+        memo.update(trimToNull(req.publicMemo()),
+                isAdmin ? trimToNull(req.privateMemo()) : null,
+                isAdmin ? req.interpreterVisible() : true);
+        return AdminResponse.PatientMemo.from(memo, isAdmin);
+    }
+
+    public AdminResponse.CenterStats getStats(UserPrincipal principal) {
+        Center center = getAdminCenter(principal);
+        long patients     = patientCenterRepository.countByCenterId(center.getId());
+        long interpreters = interpreterRepository.countByCenter_IdAndActiveTrue(center.getId());
+        long matches      = patientMatchRepository.countActiveByInterpreterCenter(center.getId());
+        return new AdminResponse.CenterStats(patients, interpreters, matches);
     }
 
     @Transactional
     public void deletePatientMemo(UUID memoId, UserPrincipal principal) {
-        requireAdmin(principal);
+        requireStaffOrInterpreter(principal);
         CenterPatientMemo memo = centerPatientMemoRepository.findById(memoId)
                 .orElseThrow(() -> new GeneralException(GeneralErrorCode.NOT_FOUND));
+        if (!principal.isAdmin() && !memo.getAdminAuthUserId().equals(principal.getAuthUserId())) {
+            throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+        }
         centerPatientMemoRepository.delete(memo);
     }
 

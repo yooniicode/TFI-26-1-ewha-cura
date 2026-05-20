@@ -149,23 +149,18 @@ public class AuthService {
 
         UserRole effectiveRole = principal.getRole();
 
-        // JWT role may still be 'patient' during Supabase role sync delay.
-        // A pending interpreter record (created by completeSignup after email verify) is the safe gate.
-        boolean hasPendingInterpreter = req.role() == UserRole.interpreter
+        // 관리자 승인 없이 통번역가/이주민 등록 허용.
+        // req.role()이 interpreter이면 JWT role이나 pending record 여부와 무관하게 허용.
+        boolean requestingInterpreter = req.role() == UserRole.interpreter;
+        boolean hasPendingInterpreter = requestingInterpreter
                 && interpreterRepository.existsByAuthUserId(principal.getAuthUserId());
 
-        if (effectiveRole == UserRole.interpreter || hasPendingInterpreter) {
+        if (effectiveRole == UserRole.interpreter || hasPendingInterpreter || requestingInterpreter) {
             registerInterpreterProfile(req, principal);
             updateSupabaseRole(principal, UserRole.interpreter);
             return;
         }
-        if (effectiveRole == UserRole.patient) {
-            if (req.role() != null && req.role() != UserRole.patient) {
-                throw new GeneralException(GeneralErrorCode.FORBIDDEN, "센터 직원 승인 후 사용할 수 있는 계정입니다");
-            }
-            if (hasPendingMemberRequest(principal.getAuthUserId())) {
-                throw new GeneralException(GeneralErrorCode.FORBIDDEN, "센터 직원 승인 후 사용할 수 있는 계정입니다");
-            }
+        if (effectiveRole == UserRole.patient || req.role() == UserRole.patient) {
             registerPatientProfile(req, principal);
             updateSupabaseRole(principal, UserRole.patient);
             return;
@@ -719,6 +714,7 @@ public class AuthService {
                         ? centerService.getOrCreateByName(req.centerName())
                         : null;
             if (center != null) interpreter.updateCenter(center);
+            interpreter.activate();
             return;
         }
         if (req.interpreterRole() == null) {
@@ -739,7 +735,8 @@ public class AuthService {
                 .languages(req.languages())
                 .availabilityNote(trimToNull(req.availabilityNote()))
                 .build();
-        interpreterRepository.save(interpreter);
+        Interpreter saved = interpreterRepository.save(interpreter);
+        saved.activate();
     }
 
     @Transactional

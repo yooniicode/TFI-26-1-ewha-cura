@@ -69,6 +69,9 @@ export interface Patient {
   region?: string
   centers: CenterSummary[]
   accountLinked: boolean
+  assignedToMe?: boolean
+  activeInterpreterId?: string | null
+  activeInterpreterName?: string | null
   createdAt: string
   updatedAt: string
 }

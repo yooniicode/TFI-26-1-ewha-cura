@@ -38,6 +38,9 @@ export const patientSchema = z.object({
   region:        nullableString,
   centers:       z.array(centerSummarySchema).optional().default([]),
   accountLinked: z.boolean().optional().default(false),
+  assignedToMe:  z.boolean().optional().default(false),
+  activeInterpreterId: z.string().uuid().nullable().optional(),
+  activeInterpreterName: z.string().nullable().optional(),
   createdAt:     z.string(),
   updatedAt:     z.string().optional().default(''),
 })
@@ -267,6 +270,16 @@ export const chatMessageSchema = z.object({
 
 export const chatUnreadCountSchema = z.object({ total: z.number() })
 
+export const adminCenterStatsSchema = z.object({
+  patientCount:     z.number(),
+  interpreterCount: z.number(),
+  activeMatchCount: z.number(),
+})
+
+export const interpreterAssignedCountSchema = z.object({
+  count: z.number(),
+})
+
 // ─── 배열 스키마 ─────────────────────────────────────────────
 export const schemas = {
   patient:       patientSchema,
@@ -303,4 +316,6 @@ export const schemas = {
   chatMessage:  chatMessageSchema,
   chatMessages: z.array(chatMessageSchema),
   chatUnreadCount: chatUnreadCountSchema,
+  adminCenterStats: adminCenterStatsSchema,
+  interpreterAssignedCount: interpreterAssignedCountSchema,
 }

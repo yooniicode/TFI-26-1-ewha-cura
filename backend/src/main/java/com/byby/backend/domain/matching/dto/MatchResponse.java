@@ -7,6 +7,8 @@ import java.util.UUID;
 
 public class MatchResponse {
 
+    public record AssignedCount(long count) {}
+
     public record Detail(
             UUID id,
             UUID patientId,

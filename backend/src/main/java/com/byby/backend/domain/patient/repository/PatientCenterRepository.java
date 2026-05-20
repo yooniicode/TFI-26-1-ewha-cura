@@ -14,4 +14,6 @@ public interface PatientCenterRepository extends JpaRepository<PatientCenter, UU
     Optional<PatientCenter> findByPatientIdAndCenterId(UUID patientId, UUID centerId);
 
     List<PatientCenter> findByPatientId(UUID patientId);
+
+    long countByCenterId(UUID centerId);
 }

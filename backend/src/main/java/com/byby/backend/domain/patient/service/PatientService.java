@@ -83,8 +83,20 @@ public class PatientService {
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            return patientRepository.searchAssignedToInterpreter(interpreter.getId(), query, pageable)
-                    .map(PatientResponse.Summary::from);
+            Center center = interpreter.getCenter();
+            if (center == null) {
+                throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "근무 센터 정보가 필요합니다");
+            }
+            return patientRepository.searchByCenterIdentity(
+                            center.getId(),
+                            center.getName(),
+                            compactCenterName(center.getName()),
+                            query,
+                            pageable)
+                    .map(patient -> PatientResponse.Summary.from(
+                            patient,
+                            patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId()).orElse(null),
+                            interpreter.getId()));
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }

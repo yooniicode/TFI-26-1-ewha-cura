@@ -33,13 +33,16 @@ public class AnnouncementController {
     private final AnnouncementService announcementService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('admin', 'patient')")
+    @PreAuthorize("hasRole('patient')")
     public ResponseEntity<Response<List<AnnouncementResponse.Summary>>> list(
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, announcementService.list(pageable, principal)));
     }
 
+    /*
+     * Admin announcement management endpoints disabled.
+     *
     @PostMapping
     @PreAuthorize("hasRole('admin')")
     public ResponseEntity<Response<AnnouncementResponse.Summary>> create(
@@ -66,4 +69,5 @@ public class AnnouncementController {
         announcementService.delete(id, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
+    */
 }

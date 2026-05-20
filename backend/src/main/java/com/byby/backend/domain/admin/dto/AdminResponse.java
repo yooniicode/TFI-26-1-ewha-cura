@@ -50,6 +50,12 @@ public class AdminResponse {
         }
     }
 
+    public record CenterStats(
+            long patientCount,
+            long interpreterCount,
+            long activeMatchCount
+    ) {}
+
     public record PatientMemo(
             UUID id,
             UUID patientId,

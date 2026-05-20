@@ -29,7 +29,7 @@ public class HandoverController {
     private final HandoverService handoverService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "인수인계 생성")
     public ResponseEntity<Response<HandoverResponse.Detail>> create(
             @Valid @RequestBody HandoverRequest.Create req,
@@ -39,7 +39,7 @@ public class HandoverController {
     }
 
     @GetMapping("/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "환자별 인수인계 조회")
     public ResponseEntity<Response<List<HandoverResponse.Detail>>> getByPatient(
             @PathVariable UUID patientId,
@@ -49,14 +49,15 @@ public class HandoverController {
                 Response.success(SuccessCode.OK, handoverService.getByPatient(patientId, pageable, principal)));
     }
 
-    @PatchMapping("/{id}/assign")
-    @PreAuthorize("hasRole('admin')")
-    @Operation(summary = "인수인계 담당 통번역가 배정")
-    public ResponseEntity<Response<HandoverResponse.Detail>> assign(
-            @PathVariable UUID id,
-            @Valid @RequestBody HandoverRequest.Assign req,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(
-                Response.success(SuccessCode.OK, handoverService.assign(id, req, principal)));
-    }
+    // IA 미포함: admin이 인수인계 담당자를 직접 배정하는 flow 없음
+    // @PatchMapping("/{id}/assign")
+    // @PreAuthorize("hasRole('admin')")
+    // @Operation(summary = "인수인계 담당 통번역가 배정")
+    // public ResponseEntity<Response<HandoverResponse.Detail>> assign(
+    //         @PathVariable UUID id,
+    //         @Valid @RequestBody HandoverRequest.Assign req,
+    //         @AuthenticationPrincipal UserPrincipal principal) {
+    //     return ResponseEntity.ok(
+    //             Response.success(SuccessCode.OK, handoverService.assign(id, req, principal)));
+    // }
 }

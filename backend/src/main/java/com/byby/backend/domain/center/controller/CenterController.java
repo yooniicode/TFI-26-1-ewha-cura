@@ -43,6 +43,9 @@ public class CenterController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, centerService.list(query, pageable)));
     }
 
+    /*
+     * Admin center create/update endpoints disabled.
+     *
     @PostMapping
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "센터 생성")
@@ -62,4 +65,5 @@ public class CenterController {
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, centerService.update(id, req, principal)));
     }
+    */
 }

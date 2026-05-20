@@ -22,6 +22,8 @@ public interface InterpreterRepository extends JpaRepository<Interpreter, UUID> 
 
     List<Interpreter> findByCenterId(UUID centerId);
 
+    long countByCenter_IdAndActiveTrue(UUID centerId);
+
     @Query("""
             SELECT DISTINCT i FROM Interpreter i
             LEFT JOIN i.languages language

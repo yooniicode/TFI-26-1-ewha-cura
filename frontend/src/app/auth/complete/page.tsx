@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import { getRequestedMemberRole, type RequestedMemberRole } from '@/lib/authMetadata'
+import { ApiError } from '@/lib/api/client'
+import { getRequestedMemberRole } from '@/lib/authMetadata'
 import { createClient } from '@/lib/supabase'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
 import type { Gender, Nationality, UserRole, VisaType } from '@/lib/types'
@@ -34,7 +35,6 @@ export default function AuthCompletePage() {
   const labels = useEnumLabels()
   const [checking, setChecking] = useState(true)
   const [needsProfile, setNeedsProfile] = useState(false)
-  const [pendingRequest, setPendingRequest] = useState<RequestedMemberRole | null>(null)
   const [isOtpUser, setIsOtpUser] = useState(false)
   const [role, setRole] = useState<ProfileRole | null>(null)
 
@@ -47,17 +47,11 @@ export default function AuthCompletePage() {
   const [visaType, setVisaType] = useState<VisaType>('OTHER')
   const [newPassword, setNewPassword] = useState('')
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('')
-  const [bootstrapCode, setBootstrapCode] = useState('')
   const [bootstrapCenterId, setBootstrapCenterId] = useState('')
   const [bootstrapCenterName, setBootstrapCenterName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  function requestedRoleLabel(request: RequestedMemberRole): string {
-    if (request.role === 'admin') return t.auth_complete.role_admin
-    if (request.interpreterRole === 'STAFF') return t.auth_complete.role_staff
-    return t.auth_complete.role_interpreter
-  }
+  const [initializationError, setInitializationError] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -102,8 +96,9 @@ export default function AuthCompletePage() {
               router.replace('/dashboard')
               return
             }
-            setPendingRequest(requestedMemberRole)
-            setNeedsProfile(false)
+            // 관리자 승인 없이 바로 프로필 입력으로 진행
+            setRole('interpreter')
+            setNeedsProfile(true)
             return
           }
           setRole(res.payload.role === 'interpreter' ? 'interpreter' : 'patient')
@@ -113,13 +108,17 @@ export default function AuthCompletePage() {
             setNeedsProfile(true)
           }
         })
-        .catch(async () => {
-          await supabase.auth.signOut()
-          router.replace('/login')
+        .catch(async (e) => {
+          if (e instanceof ApiError && e.isUnauthorized) {
+            await supabase.auth.signOut()
+            router.replace('/login')
+            return
+          }
+          setInitializationError(e instanceof Error ? e.message : t.auth_complete.err_profile_save)
         })
         .finally(() => setChecking(false))
     })
-  }, [router])
+  }, [router, t.auth_complete.err_profile_save])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -169,30 +168,6 @@ export default function AuthCompletePage() {
     }
   }
 
-  async function handleBootstrapAdmin() {
-    setLoading(true)
-    setError('')
-    try {
-      if (!bootstrapCode.trim()) {
-        setError(t.auth_complete.err_bootstrap_code)
-        setLoading(false)
-        return
-      }
-      if (!bootstrapCenterName.trim()) {
-        setError(t.auth_complete.err_bootstrap_center)
-        setLoading(false)
-        return
-      }
-      await authApi.bootstrapAdmin(bootstrapCode.trim(), bootstrapCenterName.trim())
-      await createClient().auth.refreshSession()
-      router.replace('/dashboard')
-      router.refresh()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t.auth_complete.err_bootstrap_failed)
-      setLoading(false)
-    }
-  }
-
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -201,50 +176,20 @@ export default function AuthCompletePage() {
     )
   }
 
-  if (pendingRequest) {
+  if (initializationError) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="card max-w-sm w-full text-center py-8">
           <div className="mb-4 flex justify-end">
             <LanguageSwitcher />
           </div>
-          <h1 className="text-xl font-bold text-primary-700">{t.auth_complete.pending_title}</h1>
-          <p className="text-sm text-gray-500 mt-3">
-            {t.auth_complete.pending_desc(requestedRoleLabel(pendingRequest), pendingRequest.centerName)}
-          </p>
+          <h1 className="text-xl font-bold text-primary-700">{t.auth_complete.profile_title}</h1>
+          <p className="text-sm text-red-500 mt-3">{initializationError}</p>
           <div className="mt-6 space-y-2">
-            {pendingRequest.role === 'admin' && (
-              <>
-                <input
-                  className="input text-left"
-                  value={bootstrapCenterName}
-                  onChange={e => setBootstrapCenterName(e.target.value)}
-                  placeholder={t.auth_complete.bootstrap_center_placeholder}
-                />
-                <PasswordInput
-                  value={bootstrapCode}
-                  onChange={setBootstrapCode}
-                  placeholder={t.auth_complete.bootstrap_code_placeholder}
-                  className="input text-left"
-                />
-                <button
-                  type="button"
-                  className="btn-primary w-full"
-                  disabled={loading}
-                  onClick={handleBootstrapAdmin}
-                >
-                  {loading ? t.auth_complete.checking : t.auth_complete.create_admin}
-                </button>
-              </>
-            )}
             <button
               type="button"
-              className={pendingRequest.role === 'admin' ? 'btn-secondary w-full' : 'btn-primary w-full'}
-              disabled={loading}
-              onClick={async () => {
-                await createClient().auth.refreshSession()
-                window.location.reload()
-              }}
+              className="btn-primary w-full"
+              onClick={() => window.location.reload()}
             >
               {t.auth_complete.recheck}
             </button>
@@ -259,7 +204,6 @@ export default function AuthCompletePage() {
               {t.auth.logout}
             </button>
           </div>
-          {error && <p className="text-xs text-red-500 mt-4">{error}</p>}
         </div>
       </div>
     )

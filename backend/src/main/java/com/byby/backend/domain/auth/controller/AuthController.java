@@ -60,6 +60,9 @@ public class AuthController {
         return ResponseEntity.status(201).body(Response.success(SuccessCode.CREATED));
     }
 
+    /*
+     * Admin bootstrap/member-management endpoints disabled.
+     *
     @PostMapping("/bootstrap-admin")
     @Operation(summary = "최초 센터 직원 계정 생성", description = "승인 가능한 센터 직원이 아직 없을 때 현재 로그인 사용자를 최초 센터 직원으로 승격합니다.")
     public ResponseEntity<Response<AuthResponse.Me>> bootstrapAdmin(
@@ -85,8 +88,10 @@ public class AuthController {
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.updateMemberRole(authUserId, req, principal)));
     }
+    */
 
     @DeleteMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     @Operation(summary = "회원 탈퇴")
     public ResponseEntity<Response<Void>> deleteAccount(
             @AuthenticationPrincipal UserPrincipal principal) {

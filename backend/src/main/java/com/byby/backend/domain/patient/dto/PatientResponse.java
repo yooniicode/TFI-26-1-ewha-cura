@@ -4,6 +4,7 @@ import com.byby.backend.common.enums.Gender;
 import com.byby.backend.common.enums.Nationality;
 import com.byby.backend.common.enums.VisaType;
 import com.byby.backend.domain.center.dto.CenterResponse;
+import com.byby.backend.domain.matching.entity.PatientMatch;
 import com.byby.backend.domain.patient.entity.Patient;
 
 import java.time.LocalDate;
@@ -21,12 +22,27 @@ public class PatientResponse {
             VisaType visaType,
             String region,
             boolean accountLinked,
+            boolean assignedToMe,
+            UUID activeInterpreterId,
+            String activeInterpreterName,
             LocalDateTime createdAt
     ) {
         public static Summary from(Patient p) {
             return new Summary(p.getId(), p.getName(), p.getNationality(),
                     p.getGender(), p.getVisaType(), p.getRegion(),
-                    p.getAuthUserId() != null, p.getCreatedAt());
+                    p.getAuthUserId() != null, false, null, null, p.getCreatedAt());
+        }
+
+        public static Summary from(Patient p, PatientMatch activeMatch, UUID currentInterpreterId) {
+            UUID activeInterpreterId = activeMatch != null ? activeMatch.getInterpreter().getId() : null;
+            String activeInterpreterName = activeMatch != null ? activeMatch.getInterpreter().getName() : null;
+            return new Summary(p.getId(), p.getName(), p.getNationality(),
+                    p.getGender(), p.getVisaType(), p.getRegion(),
+                    p.getAuthUserId() != null,
+                    activeInterpreterId != null && activeInterpreterId.equals(currentInterpreterId),
+                    activeInterpreterId,
+                    activeInterpreterName,
+                    p.getCreatedAt());
         }
     }
 
