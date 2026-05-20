@@ -50,7 +50,7 @@ export default function PatientsPage() {
   const [error, setError] = useState('')
   const [listError, setListError] = useState('')
   const [copiedPatientId, setCopiedPatientId] = useState<string | null>(null)
-  const canLoadPatients = me?.role === 'admin' || me?.role === 'interpreter'
+  const canLoadPatients = me?.role === 'interpreter'
 
   useEffect(() => {
     if (!canLoadPatients) {
@@ -124,7 +124,8 @@ export default function PatientsPage() {
               <p className="text-xs text-gray-500 mt-1">{t.patient.interpreter_search_note}</p>
             )}
           </div>
-          {me?.role === 'admin' && (
+          {/* Admin patient creation disabled. */}
+          {false && me?.role === 'admin' && (
             <button
               type="button"
               className="btn-primary text-sm shrink-0"
@@ -152,7 +153,7 @@ export default function PatientsPage() {
           <button type="submit" className="btn-secondary shrink-0">{t.common.search}</button>
         </form>
 
-        {showCreate && me?.role === 'admin' && (
+        {false && showCreate && me?.role === 'admin' && (
           <form onSubmit={handleCreate} className="card space-y-3">
             <div>
               <label className="label">{t.patient.name}</label>
@@ -270,7 +271,7 @@ export default function PatientsPage() {
                       </Badge>
                     </div>
                   </Link>
-                  {me?.role === 'admin' && !p.accountLinked && (
+                  {false && me?.role === 'admin' && !p.accountLinked && (
                     <button
                       type="button"
                       className="btn-secondary w-full py-1.5 text-sm"

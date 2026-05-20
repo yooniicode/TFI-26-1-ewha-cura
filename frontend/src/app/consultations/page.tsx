@@ -50,9 +50,10 @@ export default function ConsultationsPage() {
     }
   }
 
-  const needsAdminCenter = me?.role === 'admin' && !me.centerId && !me.centerName
-  const showStaffWork = me?.role === 'admin' && category === 'staffWork' && !needsAdminCenter
-  const showConsultationList = !!me && !needsAdminCenter && (me.role !== 'admin' || category !== 'staffWork')
+  const adminFeaturesEnabled = false
+  const needsAdminCenter = false
+  const showStaffWork = adminFeaturesEnabled && me?.role === 'admin' && category === 'staffWork'
+  const showConsultationList = !!me && me.role !== 'admin'
 
   const sortLabels: Record<SortBy, string> = {
     consultationDate: t.consultation.sort_visit,
@@ -107,8 +108,8 @@ export default function ConsultationsPage() {
   })
 
   useEffect(() => {
-    if (me?.role === 'admin') setCategory('staffWork')
-  }, [me?.role])
+    if (adminFeaturesEnabled && me?.role === 'admin') setCategory('staffWork')
+  }, [adminFeaturesEnabled, me?.role])
 
   useEffect(() => {
     setPage(0)
@@ -182,7 +183,8 @@ export default function ConsultationsPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold">{t.consultation.title}</h1>
-            {me?.role === 'admin' && (
+            {/* Admin consultation note disabled. */}
+            {false && me?.role === 'admin' && (
               <p className="mt-0.5 text-xs text-gray-500">{t.consultation.admin_note}</p>
             )}
           </div>
@@ -202,7 +204,8 @@ export default function ConsultationsPage() {
           )}
         </div>
 
-        {me?.role === 'admin' && (
+        {/* Admin report categories disabled. */}
+        {false && me?.role === 'admin' && (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {(Object.entries(categoryLabels) as [ReportCategory, string][]).map(([value, label]) => (
               <button

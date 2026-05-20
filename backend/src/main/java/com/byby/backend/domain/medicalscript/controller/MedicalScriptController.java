@@ -29,7 +29,7 @@ public class MedicalScriptController {
     private final MedicalScriptService scriptService;
 
     @PostMapping("/generate")
-    @PreAuthorize("hasAnyRole('patient', 'interpreter', 'admin')")
+    @PreAuthorize("hasAnyRole('patient', 'interpreter')")
     @Operation(summary = "의료 대본 생성")
     public ResponseEntity<Response<ScriptResponse.Detail>> generate(
             @Valid @RequestBody ScriptRequest.Generate req,
@@ -39,7 +39,7 @@ public class MedicalScriptController {
     }
 
     @GetMapping("/patient/{patientId}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "환자별 의료 대본 조회")
     public ResponseEntity<Response<List<ScriptResponse.Summary>>> getByPatient(
             @PathVariable UUID patientId,
@@ -50,7 +50,7 @@ public class MedicalScriptController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "의료 대본 상세 조회")
     public ResponseEntity<Response<ScriptResponse.Detail>> getById(
             @PathVariable UUID id,

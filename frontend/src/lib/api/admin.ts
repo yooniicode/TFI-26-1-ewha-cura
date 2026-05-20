@@ -10,6 +10,8 @@ function workLogPath(page = 0, from?: string, to?: string) {
 }
 
 export const adminApi = {
+  stats: () => get('/admin/stats', schemas.adminCenterStats),
+
   profile: () => get('/admin/profile', schemas.adminProfile),
   updateProfile: (body: { centerId?: string; centerName?: string; nickname?: string }) =>
     put('/admin/profile', body, schemas.adminProfile),

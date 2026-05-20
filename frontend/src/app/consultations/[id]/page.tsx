@@ -224,6 +224,7 @@ export default function ConsultationDetailPage() {
             <ReportBlock label={t.consultation.doctor_signature} value={data.doctorConfirmationSignature} />
           </section>
 
+          {/* Admin report edit/confirm actions disabled.
           {me?.role === 'admin' && (
             <div className="space-y-2">
               <button type="button" onClick={() => setEditMode(true)} className="btn-secondary w-full">
@@ -236,6 +237,7 @@ export default function ConsultationDetailPage() {
               )}
             </div>
           )}
+          */}
         </>
       )}
     </AppShell>

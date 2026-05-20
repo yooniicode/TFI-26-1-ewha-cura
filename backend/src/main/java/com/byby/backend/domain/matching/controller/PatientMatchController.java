@@ -28,6 +28,9 @@ public class PatientMatchController {
 
     private final PatientMatchService patientMatchService;
 
+    /*
+     * Admin matching management endpoints disabled.
+     *
     @PostMapping
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "매칭 생성/재배정")
@@ -57,7 +60,29 @@ public class PatientMatchController {
         return ResponseEntity.ok(
                 Response.success(SuccessCode.OK, patientMatchService.getByPatient(patientId, principal)));
     }
+    */
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('patient')")
+    @Operation(summary = "내 담당 통번역가 조회 (환자)")
+    public ResponseEntity<Response<MatchResponse.Detail>> getMyMatch(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                Response.success(SuccessCode.OK, patientMatchService.getMyMatch(principal)));
+    }
+
+    @GetMapping("/my-count")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "담당 이주민 수 조회 (통번역가)")
+    public ResponseEntity<Response<MatchResponse.AssignedCount>> getMyAssignedCount(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                Response.success(SuccessCode.OK, patientMatchService.getMyAssignedCount(principal)));
+    }
+
+    /*
+     * Admin matching deactivation endpoint disabled.
+     *
     @DeleteMapping("/{matchId}")
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "매칭 비활성화")
@@ -67,4 +92,5 @@ public class PatientMatchController {
         patientMatchService.deactivate(matchId, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
+    */
 }

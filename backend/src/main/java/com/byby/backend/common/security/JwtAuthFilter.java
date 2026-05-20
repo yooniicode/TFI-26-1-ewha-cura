@@ -18,6 +18,7 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final AuthRoleResolver authRoleResolver;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -25,7 +26,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = extractToken(request);
         if (StringUtils.hasText(token)) {
             try {
-                UserPrincipal principal = jwtUtil.toPrincipal(token);
+                UserPrincipal principal = authRoleResolver.resolve(jwtUtil.toPrincipal(token));
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);

@@ -32,7 +32,7 @@ public class PatientController {
     private final ConsultationService consultationService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('admin', 'patient')")
+    @PreAuthorize("hasRole('patient')")
     @Operation(summary = "이주민 생성")
     public ResponseEntity<Response<PatientResponse.Detail>> create(
             @Valid @RequestBody PatientRequest.Create req,
@@ -42,7 +42,7 @@ public class PatientController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "이주민 목록 조회")
     public ResponseEntity<Response<List<PatientResponse.Summary>>> getAll(
             @RequestParam(required = false) String query,
@@ -53,7 +53,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "이주민 상세 조회")
     public ResponseEntity<Response<PatientResponse.Detail>> getById(
             @PathVariable UUID id,
@@ -63,7 +63,7 @@ public class PatientController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "이주민 정보 수정")
     public ResponseEntity<Response<PatientResponse.Detail>> update(
             @PathVariable UUID id,
@@ -84,7 +84,7 @@ public class PatientController {
     }
 
     @PostMapping("/{id}/centers/{centerId}")
-    @PreAuthorize("hasAnyRole('admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "이주민 센터 추가")
     public ResponseEntity<Response<PatientResponse.Detail>> addCenter(
             @PathVariable UUID id,
@@ -95,7 +95,7 @@ public class PatientController {
     }
 
     @DeleteMapping("/{id}/centers/{centerId}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "이주민 센터 제거")
     public ResponseEntity<Response<PatientResponse.Detail>> removeCenter(
             @PathVariable UUID id,
@@ -106,7 +106,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}/history")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "이주민 상담 이력 조회")
     public ResponseEntity<Response<List<ConsultationResponse.Summary>>> getHistory(
             @PathVariable UUID id,
@@ -117,7 +117,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}/my-records")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "이주민 본인용 기록 조회")
     public ResponseEntity<Response<List<ConsultationResponse.PatientView>>> getMyRecords(
             @PathVariable UUID id,

@@ -23,13 +23,14 @@ public class HospitalController {
 
     private final HospitalService hospitalService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
-    public ResponseEntity<Response<HospitalResponse.Summary>> create(
-            @Valid @RequestBody HospitalRequest.Create req) {
-        return ResponseEntity.status(201)
-                .body(Response.success(SuccessCode.CREATED, hospitalService.create(req)));
-    }
+    // IA 미포함: 병원 등록 화면 없음. GET(검색)만 보고서 작성 시 사용
+    // @PostMapping
+    // @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    // public ResponseEntity<Response<HospitalResponse.Summary>> create(
+    //         @Valid @RequestBody HospitalRequest.Create req) {
+    //     return ResponseEntity.status(201)
+    //             .body(Response.success(SuccessCode.CREATED, hospitalService.create(req)));
+    // }
 
     @GetMapping
     public ResponseEntity<Response<List<HospitalResponse.Summary>>> search(

@@ -36,13 +36,13 @@ export default function MyPage() {
   const { data: adminProfile, isLoading: adminProfileLoading } = useQuery({
     queryKey: queryKeys.adminProfile,
     queryFn: () => adminApi.profile().then(r => r.payload),
-    enabled: me?.role === 'admin',
+    enabled: false,
   })
 
   const { data: centers = [], isLoading: centersLoading } = useQuery({
     queryKey: queryKeys.centers,
     queryFn: () => centerApi.list().then(r => r.payload ?? []),
-    enabled: me?.role === 'admin',
+    enabled: false,
   })
 
   const [name, setName] = useState('')
@@ -219,6 +219,7 @@ export default function MyPage() {
           </p>
         </div>
 
+        {/* Admin profile management disabled.
         {me?.role === 'admin' && (
           <div className="space-y-6">
             <form onSubmit={e => { e.preventDefault(); saveAdminProfile() }} className="space-y-4">
@@ -261,6 +262,7 @@ export default function MyPage() {
 
           </div>
         )}
+        */}
 
         {me?.role !== 'admin' && (
           <form onSubmit={e => { e.preventDefault(); save() }} className="space-y-4">

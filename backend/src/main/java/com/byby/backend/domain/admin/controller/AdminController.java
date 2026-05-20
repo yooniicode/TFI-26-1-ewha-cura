@@ -39,6 +39,17 @@ public class AdminController {
 
     private final AdminService adminService;
 
+    /*
+     * Admin-only profile/stat/work-log endpoints disabled.
+     *
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "센터 통계 조회 (이주민·동번역가·활성 매칭 수)")
+    public ResponseEntity<Response<AdminResponse.CenterStats>> getStats(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, adminService.getStats(principal)));
+    }
+
     @GetMapping("/profile")
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "내 센터 관리자 프로필 조회")
@@ -97,6 +108,7 @@ public class AdminController {
         adminService.deleteWorkLog(id, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
+    */
 
     @GetMapping("/patients/{patientId}/memos")
     @PreAuthorize("hasAnyRole('admin', 'interpreter')")
@@ -110,7 +122,7 @@ public class AdminController {
     }
 
     @PostMapping("/patients/{patientId}/memos")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasAnyRole('admin', 'interpreter')")
     @Operation(summary = "이주민 센터 메모 작성")
     public ResponseEntity<Response<AdminResponse.PatientMemo>> createPatientMemo(
             @PathVariable UUID patientId,
@@ -122,7 +134,7 @@ public class AdminController {
     }
 
     @PutMapping("/patient-memos/{memoId}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasAnyRole('admin', 'interpreter')")
     @Operation(summary = "이주민 센터 메모 수정")
     public ResponseEntity<Response<AdminResponse.PatientMemo>> updatePatientMemo(
             @PathVariable UUID memoId,
@@ -133,7 +145,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/patient-memos/{memoId}")
-    @PreAuthorize("hasRole('admin')")
+    @PreAuthorize("hasAnyRole('admin', 'interpreter')")
     @Operation(summary = "이주민 센터 메모 삭제")
     public ResponseEntity<Response<Void>> deletePatientMemo(
             @PathVariable UUID memoId,

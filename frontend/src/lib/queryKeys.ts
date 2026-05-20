@@ -3,6 +3,7 @@ export const queryKeys = {
   members: ['members'] as const,
   centers: ['centers'] as const,
   adminProfile: ['admin', 'profile'] as const,
+  adminStats: ['admin', 'stats'] as const,
   adminWorkLogs: (page: number, from = '', to = '') => ['admin', 'work-logs', page, from, to] as const,
   announcements: {
     list: (page: number) => ['announcements', 'list', page] as const,
@@ -35,6 +36,8 @@ export const queryKeys = {
   matching: {
     list:      (page: number)     => ['matching', 'list', page] as const,
     byPatient: (patientId: string) => ['matching', 'patient', patientId] as const,
+    myMatch:   () => ['matching', 'me'] as const,
+    myCount:   () => ['matching', 'my-count'] as const,
   },
 
   scripts: {

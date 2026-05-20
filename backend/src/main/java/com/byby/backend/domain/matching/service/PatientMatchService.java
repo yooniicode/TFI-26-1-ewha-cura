@@ -90,4 +90,21 @@ public class PatientMatchService {
     public boolean isAssigned(UUID patientId, UUID interpreterId) {
         return patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreterId);
     }
+
+    public MatchResponse.Detail getMyMatch(UserPrincipal principal) {
+        if (!principal.isPatient()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+        Patient patient = patientRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
+        return patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId())
+                .map(MatchResponse.Detail::from)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND));
+    }
+
+    public MatchResponse.AssignedCount getMyAssignedCount(UserPrincipal principal) {
+        if (!principal.isInterpreter()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        long count = patientMatchRepository.countByInterpreterIdAndActiveTrue(interpreter.getId());
+        return new MatchResponse.AssignedCount(count);
+    }
 }

@@ -6,4 +6,6 @@ export const matchApi = {
   create:    (body: unknown) => post('/matching', body, schemas.match),
   byPatient: (patientId: string) => get(`/matching/patient/${patientId}`, schemas.match),
   remove:    (id: string) => del<void>(`/matching/${id}`),
+  myMatch:   () => get('/matching/me', schemas.match),
+  myCount:   () => get('/matching/my-count', schemas.interpreterAssignedCount),
 }

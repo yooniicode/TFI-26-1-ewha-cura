@@ -29,7 +29,7 @@ public class InterpreterController {
     private final InterpreterService interpreterService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "통번역가 생성")
     public ResponseEntity<Response<InterpreterResponse.Detail>> create(
             @Valid @RequestBody InterpreterRequest.Create req,
@@ -39,7 +39,7 @@ public class InterpreterController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "통번역가 목록 조회")
     public ResponseEntity<Response<List<InterpreterResponse.Summary>>> getAll(
             @RequestParam(required = false) String query,
@@ -51,7 +51,7 @@ public class InterpreterController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "통번역가 상세 조회")
     public ResponseEntity<Response<InterpreterResponse.Detail>> getById(
             @PathVariable UUID id,
@@ -61,7 +61,7 @@ public class InterpreterController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "통번역가 정보 수정 (본인 또는 ADMIN)")
     public ResponseEntity<Response<InterpreterResponse.Detail>> update(
             @PathVariable UUID id,
@@ -71,6 +71,9 @@ public class InterpreterController {
                 Response.success(SuccessCode.OK, interpreterService.update(id, req, principal)));
     }
 
+    /*
+     * Admin interpreter deactivation endpoint disabled.
+     *
     @PatchMapping("/{id}/deactivate")
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "통번역가 비활성화")
@@ -80,4 +83,5 @@ public class InterpreterController {
         interpreterService.deactivate(id, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
+    */
 }

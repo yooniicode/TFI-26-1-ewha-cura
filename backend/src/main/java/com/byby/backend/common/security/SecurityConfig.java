@@ -27,6 +27,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
+    private final AuthRoleResolver authRoleResolver;
 
     @Value("${byby.security.cors.allowed-origins:http://localhost:3000}")
     private String allowedOrigins;
@@ -45,7 +46,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/centers/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthFilter(jwtUtil, authRoleResolver), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
