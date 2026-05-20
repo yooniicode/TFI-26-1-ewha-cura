@@ -21,20 +21,31 @@ export default function ChatListPage() {
     refetchInterval: 15000,
   })
 
-  if (meLoading || isLoading) return <AppShell><Spinner /></AppShell>
+  if (meLoading || isLoading) {
+    return (
+      <AppShell noPadding>
+        <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
+          <h1 className="text-base font-semibold text-[#424242]">{t.chat.title}</h1>
+        </div>
+        <div className="flex justify-center pt-20"><Spinner /></div>
+      </AppShell>
+    )
+  }
 
   return (
-    <AppShell>
-      <div className="space-y-4">
-        <h1 className="text-lg font-bold">{t.chat.title}</h1>
+    <AppShell noPadding>
+      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
+        <h1 className="text-base font-semibold text-[#424242]">{t.chat.title}</h1>
+      </div>
 
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
         {rooms.length === 0 ? (
-          <div className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-8 text-center">
-            <p className="text-sm font-medium text-gray-600">{t.chat.empty}</p>
-            <p className="mt-1 text-xs text-gray-400">{t.chat.empty_desc}</p>
+          <div className="bg-white rounded-xl px-4 py-10 text-center">
+            <p className="text-sm font-medium text-[#494949]">{t.chat.empty}</p>
+            <p className="mt-1 text-xs text-[#A0A0A0]">{t.chat.empty_desc}</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {rooms.map(room => (
               <ChatRoomCard key={room.id} room={room} myAuthUserId={me?.authUserId} t={t} />
             ))}
@@ -55,33 +66,31 @@ function ChatRoomCard({
   t: ReturnType<typeof useTranslation>['t']
 }) {
   const otherMember = room.members.find(m => m.authUserId !== myAuthUserId)
-  const displayName = room.name
-    ?? otherMember?.memberName
-    ?? t.chat.no_name
+  const displayName = room.name ?? otherMember?.memberName ?? t.chat.no_name
 
   return (
     <Link
       href={`/chat/${room.id}`}
-      className="card flex items-center gap-3 hover:border-primary-200 transition-colors"
+      className="bg-white rounded-xl px-4 py-4 flex items-center gap-3 block"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-bold text-primary-700">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DEE2FF] text-sm font-bold text-indigo-700">
         {displayName.charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold truncate">{displayName}</p>
+          <p className="text-base font-semibold text-[#161616] truncate">{displayName}</p>
           {room.lastMessageAt && (
-            <span className="shrink-0 text-xs text-gray-400">
+            <span className="shrink-0 text-xs text-[#A0A0A0]">
               {formatTime(room.lastMessageAt)}
             </span>
           )}
         </div>
-        <p className="text-xs text-gray-500 truncate mt-0.5">
+        <p className="text-sm text-[#808080] truncate mt-0.5">
           {room.lastMessage ?? t.chat.last_message_none}
         </p>
       </div>
       {room.unreadCount > 0 && (
-        <span className="shrink-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-600 px-1 text-xs font-bold text-white">
+        <span className="shrink-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#2592FF] px-1 text-xs font-bold text-white">
           {room.unreadCount > 99 ? '99+' : room.unreadCount}
         </span>
       )}

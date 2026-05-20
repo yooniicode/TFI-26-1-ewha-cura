@@ -223,7 +223,7 @@
   },
   patient: {
     list_title: '이주민 목록',
-    interpreter_search_note: '담당 이주민 목록입니다.',
+    interpreter_search_note: '근무 센터에 등록된 이주민을 검색하고 내 담당으로 등록할 수 있습니다.',
     register: '이주민 등록',
     search_placeholder: '이름, 연락처, 지역 검색',
     name: '이름',
@@ -240,7 +240,13 @@
     invite_copied: '가입 안내를 복사했습니다.',
     invite_message: (name: string, phone?: string) =>
       `LinkUs 가입 안내\n이름: ${name}\n연락처: ${phone || '등록된 연락처'}\n아래 링크에서 이주민으로 회원가입하면 센터 등록 정보와 연결됩니다.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
-    empty_interpreter: '현재 매칭된 이주민이 없습니다.',
+    empty_interpreter: '센터에 등록된 이주민이 없습니다.',
+    self_match: '내 담당 등록',
+    self_match_takeover: '내 담당으로 변경',
+    self_matching: '등록 중...',
+    self_matched: '내 담당',
+    assigned_to: (name: string) => `담당: ${name}`,
+    err_self_match: '담당 등록에 실패했습니다.',
     empty: '등록된 이주민이 없습니다.',
     err_name: '이름을 입력해주세요.',
     err_register: '이주민 등록에 실패했습니다.',

@@ -203,229 +203,197 @@ export default function MyPage() {
   }
 
   const loading = meLoading || patientLoading || interpreterLoading || adminProfileLoading || centersLoading
-  if (loading) return <AppShell><Spinner /></AppShell>
+  if (loading) {
+    return (
+      <AppShell noPadding>
+        <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
+          <h1 className="text-base font-semibold text-[#424242]">{t.mypage.title}</h1>
+        </div>
+        <div className="flex justify-center pt-20"><Spinner /></div>
+      </AppShell>
+    )
+  }
   if (!meLoading && me && me.role !== 'admin' && !me.entityId) {
     window.location.replace('/auth/complete')
     return null
   }
 
+  const roleLabel = me?.role === 'admin' ? t.mypage.role_admin : me?.role === 'interpreter' ? t.mypage.role_interpreter : t.mypage.role_patient
+
   return (
-    <AppShell>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold">{t.mypage.title}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {me?.role === 'admin' ? t.mypage.role_admin : me?.role === 'interpreter' ? t.mypage.role_interpreter : t.mypage.role_patient} · {me?.name}
-          </p>
-        </div>
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
+        <h1 className="text-base font-semibold text-[#424242]">{t.mypage.title}</h1>
+        <p className="text-xs text-[#808080] mt-0.5">{roleLabel} · {me?.name}</p>
+      </div>
 
-        {/* Admin profile management disabled.
-        {me?.role === 'admin' && (
-          <div className="space-y-6">
-            <form onSubmit={e => { e.preventDefault(); saveAdminProfile() }} className="space-y-4">
-              <div>
-                <label className="label">{t.mypage.center_name_label}</label>
-                <select className="input mb-2" value={centerId} onChange={e => setCenterId(e.target.value)}>
-                  <option value="">{t.mypage.center_new_option}</option>
-                  {centers.map(center => (
-                    <option key={center.id} value={center.id}>{center.name}</option>
-                  ))}
-                </select>
-                <input className="input" value={centerName} onChange={e => setCenterName(e.target.value)} placeholder={t.mypage.center_example} />
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div>
-                  <label className="label">{t.mypage.center_phone}</label>
-                  <input className="input" value={centerPhone} onChange={e => setCenterPhone(e.target.value)} placeholder={t.mypage.center_phone_placeholder} />
-                </div>
-                <div>
-                  <label className="label">{t.mypage.center_address}</label>
-                  <input className="input" value={centerAddress} onChange={e => setCenterAddress(e.target.value)} placeholder={t.mypage.center_address_placeholder} />
-                </div>
-              </div>
-              <div>
-                <label className="label">{t.mypage.nickname}</label>
-                <input className="input" value={nickname} onChange={e => setNickname(e.target.value)} placeholder={t.mypage.nickname_placeholder} />
-              </div>
-              {adminSaveError && <p className="text-red-500 text-xs">{adminSaveError.message}</p>}
-              {centerSaveError && <p className="text-red-500 text-xs">{centerSaveError.message}</p>}
-              {adminSaved && <p className="text-green-600 text-xs">{t.mypage.admin_save_success}</p>}
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <button type="button" className="btn-secondary w-full" disabled={savingCenterInfo} onClick={() => saveCenterInfo()}>
-                  {savingCenterInfo ? t.mypage.saving : centerId ? t.mypage.center_update : t.mypage.center_create}
-                </button>
-                <button type="submit" className="btn-primary w-full" disabled={savingAdminProfile}>
-                  {savingAdminProfile ? t.mypage.saving : t.mypage.admin_save}
-                </button>
-              </div>
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen space-y-3">
+        {/* 프로필 정보 */}
+        {me?.role !== 'admin' && (
+          <div className="bg-white rounded-xl px-4 py-4">
+            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-4">프로필 정보</p>
+            <form onSubmit={e => { e.preventDefault(); save() }} className="space-y-4">
+              <Field label={t.mypage.name_label} hint={t.mypage.name_hint}>
+                <input
+                  className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder={t.mypage.name_placeholder}
+                  required
+                />
+              </Field>
+
+              {me?.role === 'patient' && (
+                <>
+                  <Field label={t.mypage.phone}>
+                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
+                  </Field>
+                  <Field label={t.mypage.region}>
+                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]" value={region} onChange={e => setRegion(e.target.value)} />
+                  </Field>
+                  <Field label={t.mypage.visa_type}>
+                    <select className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
+                      {VISA_TYPES.map(value => (
+                        <option key={value} value={value}>{labels.visa[value]}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label={t.mypage.visa_note}>
+                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]" value={visaNote} onChange={e => setVisaNote(e.target.value)} />
+                  </Field>
+                </>
+              )}
+
+              {me?.role === 'interpreter' && (
+                <>
+                  <Field label={t.mypage.phone}>
+                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]" value={intPhone} onChange={e => setIntPhone(e.target.value)} placeholder="010-0000-0000" />
+                    <p className="text-xs text-[#808080] mt-1">{t.mypage.interpreter_role_note}</p>
+                  </Field>
+                  <Field label={t.mypage.languages}>
+                    <div className="grid grid-cols-2 gap-2">
+                      {INTERPRETER_LANGUAGE_OPTIONS.map(language => {
+                        const selected = interpreterLanguages.includes(language)
+                        return (
+                          <button
+                            key={language}
+                            type="button"
+                            onClick={() => {
+                              setInterpreterLanguages(prev => selected
+                                ? prev.filter(item => item !== language)
+                                : [...prev, language])
+                            }}
+                            className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
+                              selected
+                                ? 'border-[#2592FF] bg-[#EAF4FF] text-[#2592FF]'
+                                : 'border-[#EEEEEE] text-[#494949] bg-[#F5F5F5]'
+                            }`}
+                          >
+                            {language}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </Field>
+                  <Field label={t.mypage.availability}>
+                    <textarea
+                      className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] min-h-20 resize-none placeholder:text-[#A0A0A0]"
+                      value={availabilityNote}
+                      onChange={e => setAvailabilityNote(e.target.value)}
+                      placeholder={t.mypage.availability_placeholder}
+                    />
+                  </Field>
+                </>
+              )}
+
+              {saveError && <p className="text-red-500 text-xs">{saveError.message}</p>}
+              {isSuccess && <p className="text-[#2592FF] text-xs">{t.mypage.save_success}</p>}
+              <button
+                type="submit"
+                className="w-full h-11 rounded-lg bg-[#2592FF] text-sm font-semibold text-white disabled:opacity-60"
+                disabled={saving}
+              >
+                {saving ? t.mypage.saving : t.common.save}
+              </button>
             </form>
-
           </div>
         )}
-        */}
 
-        {me?.role !== 'admin' && (
-          <form onSubmit={e => { e.preventDefault(); save() }} className="space-y-4">
+        {/* 소속 센터 (환자) */}
+        {me?.role === 'patient' && (
+          <div className="bg-white rounded-xl px-4 py-4 space-y-3">
+            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide">{t.patient.affiliation_center}</p>
+            <div className="space-y-1">
+              {(patient?.centers ?? []).length === 0 ? (
+                <p className="text-sm text-[#A0A0A0]">{t.patient.no_center}</p>
+              ) : (
+                patient?.centers.map(center => (
+                  <p key={center.id} className="rounded-lg bg-[#F5F5F5] px-3 py-2.5 text-sm text-[#494949]">
+                    {center.name}
+                  </p>
+                ))
+              )}
+            </div>
             <div>
-              <label className="label">{t.mypage.name_label} <span className="text-gray-400 font-normal text-xs ml-1">{t.mypage.name_hint}</span></label>
-              <input
-                className="input"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder={t.mypage.name_placeholder}
-                required
+              <p className="text-sm font-medium text-[#161616] mb-2">{t.patient.add_center}</p>
+              <CenterSearchSelect
+                valueName={patientCenterName}
+                placeholder={t.patient.center_search_placeholder}
+                onSelect={(center) => {
+                  setPatientCenterId(center.id)
+                  setPatientCenterName(center.name)
+                }}
               />
             </div>
-            {me?.role === 'patient' && (
-              <>
-                <div>
-                  <label className="label">{t.mypage.phone}</label>
-                  <input className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
-                </div>
-                <div>
-                  <label className="label">{t.mypage.region}</label>
-                  <input className="input" value={region} onChange={e => setRegion(e.target.value)} />
-                </div>
-                <div>
-                  <label className="label">{t.mypage.visa_type}</label>
-                  <select className="input" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
-                    {VISA_TYPES.map(value => (
-                      <option key={value} value={value}>{labels.visa[value]}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">{t.mypage.visa_note}</label>
-                  <input className="input" value={visaNote} onChange={e => setVisaNote(e.target.value)} />
-                </div>
-                <div className="rounded-lg border border-gray-100 bg-white p-3 space-y-3">
-                  <div>
-                    <p className="text-sm font-semibold">{t.patient.affiliation_center}</p>
-                    <div className="mt-2 space-y-1">
-                      {(patient?.centers ?? []).length === 0 ? (
-                        <p className="text-xs text-gray-400">{t.patient.no_center}</p>
-                      ) : (
-                        patient?.centers.map(center => (
-                          <p key={center.id} className="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
-                            {center.name}
-                          </p>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="label">{t.patient.add_center}</label>
-                    <CenterSearchSelect
-                      valueName={patientCenterName}
-                      placeholder={t.patient.center_search_placeholder}
-                      onSelect={(center) => {
-                        setPatientCenterId(center.id)
-                        setPatientCenterName(center.name)
-                      }}
-                    />
-                  </div>
-                  {patientCenterError && <p className="text-red-500 text-xs">{patientCenterError.message}</p>}
-                  <button
-                    type="button"
-                    className="btn-secondary w-full"
-                    disabled={!patientCenterId || addingPatientCenter || (patient?.centers ?? []).some(center => center.id === patientCenterId)}
-                    onClick={() => addPatientCenter()}
-                  >
-                    {(patient?.centers ?? []).some(center => center.id === patientCenterId)
-                      ? t.patient.already_registered
-                      : addingPatientCenter
-                        ? t.patient.adding
-                        : t.patient.add_center}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {me?.role === 'interpreter' && (
-              <>
-                <div>
-                  <label className="label">{t.mypage.phone}</label>
-                  <input className="input" value={intPhone} onChange={e => setIntPhone(e.target.value)} placeholder="010-0000-0000" />
-                  <p className="text-xs text-gray-500 mt-2">{t.mypage.interpreter_role_note}</p>
-                </div>
-                <div>
-                  <label className="label">{t.mypage.languages}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {INTERPRETER_LANGUAGE_OPTIONS.map(language => {
-                      const selected = interpreterLanguages.includes(language)
-                      return (
-                        <button
-                          key={language}
-                          type="button"
-                          onClick={() => {
-                            setInterpreterLanguages(prev => selected
-                              ? prev.filter(item => item !== language)
-                              : [...prev, language])
-                          }}
-                          className={`rounded-lg border px-3 py-2 text-sm transition-colors ${
-                            selected
-                              ? 'border-primary-600 bg-primary-50 text-primary-700'
-                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          {language}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-                <div>
-                  <label className="label">{t.mypage.availability}</label>
-                  <textarea
-                    className="input min-h-20 resize-none"
-                    value={availabilityNote}
-                    onChange={e => setAvailabilityNote(e.target.value)}
-                    placeholder={t.mypage.availability_placeholder}
-                  />
-                </div>
-              </>
-            )}
-
-            {saveError && <p className="text-red-500 text-xs">{saveError.message}</p>}
-            {isSuccess && <p className="text-green-600 text-xs">{t.mypage.save_success}</p>}
-
-            <button type="submit" className="btn-primary w-full" disabled={saving}>
-              {saving ? t.mypage.saving : t.common.save}
+            {patientCenterError && <p className="text-red-500 text-xs">{patientCenterError.message}</p>}
+            <button
+              type="button"
+              className="w-full h-11 rounded-lg bg-[#F0F1F5] text-sm font-medium text-[#494949] disabled:opacity-40"
+              disabled={!patientCenterId || addingPatientCenter || (patient?.centers ?? []).some(center => center.id === patientCenterId)}
+              onClick={() => addPatientCenter()}
+            >
+              {(patient?.centers ?? []).some(center => center.id === patientCenterId)
+                ? t.patient.already_registered
+                : addingPatientCenter
+                  ? t.patient.adding
+                  : t.patient.add_center}
             </button>
-          </form>
+          </div>
         )}
 
-        <div className="border-t pt-5">
-          <h2 className="font-semibold text-sm mb-3">{t.mypage.password_change}</h2>
+        {/* 비밀번호 변경 */}
+        <div className="bg-white rounded-xl px-4 py-4">
+          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-4">{t.mypage.password_change}</p>
           <form onSubmit={handlePasswordChange} className="space-y-3">
-            <div>
-              <label className="label">{t.mypage.new_password}</label>
+            <Field label={t.mypage.new_password}>
               <PasswordInput
                 value={newPassword}
                 onChange={setNewPassword}
                 placeholder={t.mypage.password_min_hint}
                 autoComplete="new-password"
+                className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]"
               />
-            </div>
-            <div>
-              <label className="label">{t.mypage.password_confirm}</label>
+            </Field>
+            <Field label={t.mypage.password_confirm}>
               <PasswordInput
                 value={confirmPassword}
                 onChange={setConfirmPassword}
                 placeholder={t.mypage.password_reenter}
                 autoComplete="new-password"
+                className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]"
               />
               {confirmPassword && (
-                <p className={`text-xs mt-1 ${newPassword === confirmPassword ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-xs mt-1 ${newPassword === confirmPassword ? 'text-[#2592FF]' : 'text-red-500'}`}>
                   {newPassword === confirmPassword ? t.mypage.password_match : t.mypage.password_no_match}
                 </p>
               )}
-            </div>
+            </Field>
             {pwError && <p className="text-red-500 text-xs">{pwError}</p>}
-            {pwSuccess && <p className="text-green-600 text-xs">{t.mypage.password_success}</p>}
+            {pwSuccess && <p className="text-[#2592FF] text-xs">{t.mypage.password_success}</p>}
             <button
               type="submit"
-              className="btn-secondary w-full"
+              className="w-full h-11 rounded-lg bg-[#F0F1F5] text-sm font-medium text-[#494949] disabled:opacity-40"
               disabled={pwSaving || !newPassword || !confirmPassword}
             >
               {pwSaving ? t.mypage.password_changing : t.mypage.password_change_btn}
@@ -433,23 +401,37 @@ export default function MyPage() {
           </form>
         </div>
 
-        <div className="border-t pt-4">
+        {/* 로그아웃 / 계정 삭제 */}
+        <div className="bg-white rounded-xl px-4 py-2">
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full text-sm text-red-500 hover:text-red-600 py-2"
+            className="w-full text-sm text-red-500 py-3 text-left"
           >
             {t.mypage.logout}
           </button>
+          <div className="border-t border-[#F5F5F5]" />
           <button
             type="button"
             onClick={handleDeleteAccount}
-            className="w-full text-xs text-gray-400 hover:text-gray-500 py-2 border-t mt-2"
+            className="w-full text-xs text-[#A0A0A0] py-3 text-left"
           >
             {t.mypage.delete_account}
           </button>
         </div>
       </div>
     </AppShell>
+  )
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-1">
+        <span className="text-sm font-medium text-[#161616]">{label}</span>
+        {hint && <span className="text-xs text-[#A0A0A0]">{hint}</span>}
+      </div>
+      {children}
+    </div>
   )
 }

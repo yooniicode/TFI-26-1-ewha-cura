@@ -6,7 +6,7 @@ import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import EmptyState from '@/components/ui/EmptyState'
 import Badge from '@/components/ui/Badge'
-import { patientApi } from '@/lib/api'
+import { matchApi, patientApi } from '@/lib/api'
 import { useMe } from '@/hooks/useMe'
 import type { Gender, Nationality, PageInfo, Patient, VisaType } from '@/lib/types'
 import { GENDERS, NATIONALITIES, VISA_TYPES, useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -44,11 +44,12 @@ export default function PatientsPage() {
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
-  const [showCreate, setShowCreate] = useState(false)
   const [form, setForm] = useState<CreatePatientForm>(initialForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [listError, setListError] = useState('')
+  const [matchError, setMatchError] = useState('')
+  const [matchingPatientId, setMatchingPatientId] = useState<string | null>(null)
   const [copiedPatientId, setCopiedPatientId] = useState<string | null>(null)
   const canLoadPatients = me?.role === 'interpreter'
 
@@ -76,7 +77,7 @@ export default function PatientsPage() {
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
-    })
+      })
     return () => { cancelled = true }
   }, [canLoadPatients, me?.authUserId, page, submittedQuery, t.patient.empty])
 
@@ -97,7 +98,6 @@ export default function PatientsPage() {
         visaNote: form.visaNote.trim() || undefined,
       })
       setForm(initialForm)
-      setShowCreate(false)
       setPage(0)
       setSubmittedQuery(query.trim())
     } catch (e) {
@@ -114,28 +114,41 @@ export default function PatientsPage() {
     window.setTimeout(() => setCopiedPatientId(current => current === patient.id ? null : current), 2000)
   }
 
-  return (
-    <AppShell>
-      <div className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-bold">{t.patient.list_title}</h1>
-            {me?.role === 'interpreter' && (
-              <p className="text-xs text-gray-500 mt-1">{t.patient.interpreter_search_note}</p>
-            )}
-          </div>
-          {/* Admin patient creation disabled. */}
-          {false && me?.role === 'admin' && (
-            <button
-              type="button"
-              className="btn-primary text-sm shrink-0"
-              onClick={() => setShowCreate(prev => !prev)}
-            >
-              {t.patient.register}
-            </button>
-          )}
-        </div>
+  async function handleSelfAssign(patient: Patient) {
+    setMatchingPatientId(patient.id)
+    setMatchError('')
+    try {
+      const res = await matchApi.selfAssign(patient.id)
+      const match = res.payload
+      setItems(current => current.map(item => item.id === patient.id
+        ? {
+            ...item,
+            assignedToMe: true,
+            activeInterpreterId: match.interpreterId,
+            activeInterpreterName: match.interpreterName,
+          }
+        : item.activeInterpreterId === match.interpreterId
+          ? item
+          : item))
+    } catch (e) {
+      setMatchError(e instanceof Error ? e.message : t.patient.err_self_match)
+    } finally {
+      setMatchingPatientId(null)
+    }
+  }
 
+  return (
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
+        <h1 className="text-base font-semibold text-[#424242]">{t.patient.list_title}</h1>
+      </div>
+
+      {/* 검색 */}
+      <div className="bg-white px-4 pt-3 pb-3 border-b border-[#EEEEEE]">
+        {me?.role === 'interpreter' && (
+          <p className="text-xs text-[#808080] mb-2">{t.patient.interpreter_search_note}</p>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -145,105 +158,56 @@ export default function PatientsPage() {
           className="flex gap-2"
         >
           <input
-            className="input flex-1"
+            className="flex-1 bg-[#F5F5F5] rounded-lg px-4 py-2.5 text-base outline-none placeholder:text-[#A0A0A0] text-[#161616]"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={t.patient.search_placeholder}
           />
-          <button type="submit" className="btn-secondary shrink-0">{t.common.search}</button>
+          <button
+            type="submit"
+            className="bg-[#2592FF] text-white text-sm font-semibold px-4 py-2.5 rounded-lg shrink-0"
+          >
+            {t.common.search}
+          </button>
         </form>
+        {matchError && <p className="mt-2 text-xs text-red-500">{matchError}</p>}
+      </div>
 
-        {false && showCreate && me?.role === 'admin' && (
-          <form onSubmit={handleCreate} className="card space-y-3">
+      {/* Admin patient creation disabled */}
+      {false && me?.role === 'admin' && (
+        <form onSubmit={handleCreate} className="bg-white px-4 py-4 border-b border-[#EEEEEE] space-y-3">
+          <div>
+            <label className="label">{t.patient.name}</label>
+            <input className="input" value={form.name} onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))} required />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="label">{t.patient.name}</label>
-              <input
-                className="input"
-                value={form.name}
-                onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div>
-                <label className="label">{t.patient.nationality}</label>
-                <select
-                  className="input"
-                  value={form.nationality}
-                  onChange={e => setForm(prev => ({ ...prev, nationality: e.target.value as Nationality }))}
-                >
-                  {NATIONALITIES.map(value => <option key={value} value={value}>{labels.nationality[value]}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">{t.patient.gender}</label>
-                <select
-                  className="input"
-                  value={form.gender}
-                  onChange={e => setForm(prev => ({ ...prev, gender: e.target.value as Gender }))}
-                >
-                  {GENDERS.map(value => <option key={value} value={value}>{labels.gender[value]}</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div>
-                <label className="label">{t.patient.visa}</label>
-                <select
-                  className="input"
-                  value={form.visaType}
-                  onChange={e => setForm(prev => ({ ...prev, visaType: e.target.value as VisaType }))}
-                >
-                  {VISA_TYPES.map(value => <option key={value} value={value}>{labels.visa[value]}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">{t.patient.birth_date}</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={form.birthDate}
-                  onChange={e => setForm(prev => ({ ...prev, birthDate: e.target.value }))}
-                />
-              </div>
+              <label className="label">{t.patient.nationality}</label>
+              <select className="input" value={form.nationality} onChange={e => setForm(prev => ({ ...prev, nationality: e.target.value as Nationality }))}>
+                {NATIONALITIES.map(value => <option key={value} value={value}>{labels.nationality[value]}</option>)}
+              </select>
             </div>
             <div>
-              <label className="label">{t.patient.phone}</label>
-              <input
-                className="input"
-                value={form.phone}
-                onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="010-0000-0000"
-              />
+              <label className="label">{t.patient.gender}</label>
+              <select className="input" value={form.gender} onChange={e => setForm(prev => ({ ...prev, gender: e.target.value as Gender }))}>
+                {GENDERS.map(value => <option key={value} value={value}>{labels.gender[value]}</option>)}
+              </select>
             </div>
-            <div>
-              <label className="label">{t.patient.region}</label>
-              <input
-                className="input"
-                value={form.region}
-                onChange={e => setForm(prev => ({ ...prev, region: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="label">{t.patient.visa_note}</label>
-              <textarea
-                className="input min-h-20"
-                value={form.visaNote}
-                onChange={e => setForm(prev => ({ ...prev, visaNote: e.target.value }))}
-              />
-            </div>
-            {error && <p className="text-red-500 text-xs">{error}</p>}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>
-                {t.common.cancel}
-              </button>
-              <button type="submit" className="btn-primary" disabled={saving}>
-                {saving ? t.common.saving : t.common.save}
-              </button>
-            </div>
-          </form>
-        )}
+          </div>
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className="btn-secondary" onClick={() => {}}>
+              {t.common.cancel}
+            </button>
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? t.common.saving : t.common.save}
+            </button>
+          </div>
+        </form>
+      )}
 
+      {/* 목록 */}
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
         {meLoading || loading ? (
           <Spinner />
         ) : listError ? (
@@ -254,49 +218,72 @@ export default function PatientsPage() {
           />
         ) : (
           <div className="space-y-3">
-            <div className="space-y-2">
-              {items.map(p => (
-                <div key={p.id} className="card space-y-3">
-                  <Link href={`/patients/${p.id}`} className="block hover:text-primary-700 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{p.name}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {labels.nationality[p.nationality]} / {labels.gender[p.gender]} / {labels.visa[p.visaType]}
-                        </p>
-                        {p.region && <p className="text-xs text-gray-400">{p.region}</p>}
-                      </div>
-                      <Badge variant={p.accountLinked ? 'green' : 'yellow'}>
-                        {p.accountLinked ? t.patient.account_linked : t.patient.account_unlinked}
-                      </Badge>
-                    </div>
-                  </Link>
-                  {false && me?.role === 'admin' && !p.accountLinked && (
-                    <button
-                      type="button"
-                      className="btn-secondary w-full py-1.5 text-sm"
-                      onClick={() => copySignupGuide(p)}
-                    >
-                      {copiedPatientId === p.id ? t.patient.invite_copied : t.patient.invite_signup}
-                    </button>
-                  )}
+            {items.map(p => {
+              const assignedToMe = !!p.assignedToMe
+              const assignedElsewhere = !!p.activeInterpreterName && !assignedToMe
+              const content = (
+                <div className="min-w-0 flex-1">
+                  <p className="text-base font-semibold text-[#161616] truncate">{p.name}</p>
+                  <p className="text-sm text-[#808080] mt-0.5">
+                    {labels.nationality[p.nationality]} / {labels.gender[p.gender]} / {labels.visa[p.visaType]}
+                  </p>
+                  {p.region && <p className="text-xs text-[#A0A0A0] mt-0.5">{p.region}</p>}
                 </div>
-              ))}
-            </div>
+              )
+
+              return (
+                <article
+                  key={p.id}
+                  className="bg-white rounded-xl px-4 py-4 flex items-center justify-between gap-3"
+                >
+                  {assignedToMe ? (
+                    <Link href={`/patients/${p.id}`} className="min-w-0 flex-1">
+                      {content}
+                    </Link>
+                  ) : content}
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <Badge variant={assignedToMe ? 'green' : assignedElsewhere ? 'yellow' : p.accountLinked ? 'green' : 'yellow'}>
+                      {assignedToMe
+                        ? t.patient.self_matched
+                        : assignedElsewhere
+                          ? t.patient.assigned_to(p.activeInterpreterName!)
+                          : p.accountLinked ? t.patient.account_linked : t.patient.account_unlinked}
+                    </Badge>
+                    {me?.role === 'interpreter' && (
+                      <button
+                        type="button"
+                        className="rounded-lg bg-[#2592FF] px-3 py-1.5 text-xs font-semibold text-white disabled:bg-gray-200 disabled:text-gray-500"
+                        disabled={assignedToMe || matchingPatientId === p.id}
+                        onClick={() => handleSelfAssign(p)}
+                      >
+                        {matchingPatientId === p.id
+                          ? t.patient.self_matching
+                          : assignedToMe
+                            ? t.patient.self_matched
+                            : assignedElsewhere
+                              ? t.patient.self_match_takeover
+                              : t.patient.self_match}
+                      </button>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
+
             {(page > 0 || pageInfo?.hasNext) && (
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 pt-2">
                 <button
                   type="button"
-                  className="btn-secondary px-3 py-1.5 text-sm"
+                  className="bg-white rounded-lg px-3 py-2 text-sm font-medium text-[#494949] disabled:opacity-40"
                   disabled={page === 0}
                   onClick={() => setPage(prev => Math.max(prev - 1, 0))}
                 >
                   {t.common.prev_page}
                 </button>
-                <span className="text-xs text-gray-500">{t.common.page_label(page + 1)}</span>
+                <span className="text-xs text-[#808080]">{t.common.page_label(page + 1)}</span>
                 <button
                   type="button"
-                  className="btn-secondary px-3 py-1.5 text-sm"
+                  className="bg-white rounded-lg px-3 py-2 text-sm font-medium text-[#494949] disabled:opacity-40"
                   disabled={!pageInfo?.hasNext}
                   onClick={() => setPage(prev => prev + 1)}
                 >

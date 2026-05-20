@@ -80,6 +80,16 @@ public class PatientMatchController {
                 Response.success(SuccessCode.OK, patientMatchService.getMyAssignedCount(principal)));
     }
 
+    @PostMapping("/self/{patientId}")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "센터 내 이주민을 내 담당으로 등록")
+    public ResponseEntity<Response<MatchResponse.Detail>> selfAssign(
+            @PathVariable UUID patientId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.status(201)
+                .body(Response.success(SuccessCode.CREATED, patientMatchService.selfAssign(patientId, principal)));
+    }
+
     /*
      * Admin matching deactivation endpoint disabled.
      *

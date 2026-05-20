@@ -122,33 +122,64 @@ export default function ConsultationDetailPage() {
     }
   }
 
-  if (loading) return <AppShell><Spinner /></AppShell>
+  if (loading) {
+    return (
+      <AppShell noPadding>
+        <div className="flex justify-center pt-20"><Spinner /></div>
+      </AppShell>
+    )
+  }
 
   if (me?.role === 'patient') {
-    if (!patientReport) return <AppShell><p className="text-center text-gray-400 py-10">{t.consultation.not_found}</p></AppShell>
+    if (!patientReport) {
+      return (
+        <AppShell noPadding>
+          <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
+            <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
+            <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">{t.consultation.patient_report_title}</h1>
+            <div className="w-6" />
+          </div>
+          <p className="text-center text-[#A0A0A0] py-20 text-sm">{t.consultation.not_found}</p>
+        </AppShell>
+      )
+    }
     return (
-      <AppShell>
-        <div className="flex items-center gap-2 mb-4">
-          <button onClick={() => router.back()} className="text-gray-400">←</button>
-          <h1 className="text-lg font-bold flex-1">{t.consultation.patient_report_title}</h1>
+      <AppShell noPadding>
+        <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
+          <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">{t.consultation.patient_report_title}</h1>
+          <div className="w-6" />
         </div>
-        <div className="card space-y-3">
-          <ReportRow label={t.consultation.visit_date_label} value={patientReport.consultationDate} />
-          <ReportRow label={t.consultation.hospital} value={patientReport.hospitalName} />
-          <ReportRow label={t.consultation.department} value={patientReport.department} />
-          <ReportRow label={t.consultation.doctor} value={patientReport.doctorName} />
-          <ReportRow label={t.consultation.diagnosis_label} value={patientReport.diagnosisNameCode} />
-          <ReportBlock label={t.consultation.diagnosis_content} value={patientReport.diagnosisContent} />
-          <ReportBlock label={t.consultation.treatment_result} value={patientReport.treatmentResult} />
-          <ReportBlock label={t.consultation.medication} value={patientReport.medicationInstruction} />
-          <ReportRow label={t.consultation.next_appointment_date} value={patientReport.nextAppointmentDate} />
-          <ReportBlock label={t.consultation.interpreter_comment} value={patientReport.patientComment} />
+        <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
+          <div className="bg-white rounded-xl px-4 py-4 space-y-3">
+            <ReportRow label={t.consultation.visit_date_label} value={patientReport.consultationDate} />
+            <ReportRow label={t.consultation.hospital} value={patientReport.hospitalName} />
+            <ReportRow label={t.consultation.department} value={patientReport.department} />
+            <ReportRow label={t.consultation.doctor} value={patientReport.doctorName} />
+            <ReportRow label={t.consultation.diagnosis_label} value={patientReport.diagnosisNameCode} />
+            <ReportBlock label={t.consultation.diagnosis_content} value={patientReport.diagnosisContent} />
+            <ReportBlock label={t.consultation.treatment_result} value={patientReport.treatmentResult} />
+            <ReportBlock label={t.consultation.medication} value={patientReport.medicationInstruction} />
+            <ReportRow label={t.consultation.next_appointment_date} value={patientReport.nextAppointmentDate} />
+            <ReportBlock label={t.consultation.interpreter_comment} value={patientReport.patientComment} />
+          </div>
         </div>
       </AppShell>
     )
   }
 
-  if (!data || !form) return <AppShell><p className="text-center text-gray-400 py-10">{t.consultation.not_found}</p></AppShell>
+  if (!data || !form) {
+    return (
+      <AppShell noPadding>
+        <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
+          <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">{t.consultation.detail_title}</h1>
+          <div className="w-6" />
+        </div>
+        <p className="text-center text-[#A0A0A0] py-20 text-sm">{t.consultation.not_found}</p>
+      </AppShell>
+    )
+  }
 
   const patientRows: [string, string | undefined | null][] = [
     [t.consultation.patient_name, data.patientName],
@@ -161,97 +192,99 @@ export default function ConsultationDetailPage() {
   ]
 
   return (
-    <AppShell>
-      <div className="flex items-center gap-2 mb-4">
-        <button onClick={() => router.back()} className="text-gray-400">←</button>
-        <h1 className="text-lg font-bold flex-1">{t.consultation.detail_title}</h1>
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
+        <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
+        <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">{t.consultation.detail_title}</h1>
         {data.confirmed
           ? <Badge variant="green">{t.common.confirmed}</Badge>
           : <Badge variant="yellow">{t.common.unconfirmed}</Badge>}
       </div>
 
-      <section className="card mb-4 space-y-2">
-        <ReportRow label={t.consultation.first_author} value={data.createdByName ?? data.interpreterName} />
-        <ReportRow label={t.consultation.created_at} value={formatDateTime(data.createdAt, t.locale)} />
-        <ReportRow label={t.consultation.updated_at} value={formatDateTime(data.updatedAt, t.locale)} />
-      </section>
+      {/* 내용 */}
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen space-y-3">
+        {/* 작성 정보 */}
+        <div className="bg-white rounded-xl px-4 py-4 space-y-2">
+          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-3">작성 정보</p>
+          <ReportRow label={t.consultation.first_author} value={data.createdByName ?? data.interpreterName} />
+          <ReportRow label={t.consultation.created_at} value={formatDateTime(data.createdAt, t.locale)} />
+          <ReportRow label={t.consultation.updated_at} value={formatDateTime(data.updatedAt, t.locale)} />
+        </div>
 
-      {editMode ? (
-        <EditForm
-          form={form}
-          hospitals={hospitals}
-          error={error}
-          saving={saving}
-          set={set}
-          onSave={handleSave}
-          onCancel={() => {
-            setForm(toForm(data))
-            setEditMode(false)
-            setError('')
-          }}
-        />
-      ) : (
-        <>
-          <section className="card space-y-3 mb-4">
-            <h2 className="text-sm font-semibold text-gray-600">{t.consultation.patient_section}</h2>
-            {patientRows.filter(([, v]) => v).map(([label, value]) => (
-              <ReportRow key={label} label={label} value={value} />
-            ))}
-          </section>
-
-          <section className="card space-y-3 mb-4">
-            <h2 className="text-sm font-semibold text-gray-600">{t.consultation.work_log_section}</h2>
-            <ReportRow label={t.consultation.visit_date_label} value={data.consultationDate} />
-            <ReportRow label={t.consultation.visit_hospital} value={data.hospitalName} />
-            <ReportRow label={t.consultation.department} value={data.department} />
-            <ReportRow label={t.consultation.doctor} value={data.doctorName} />
-            <ReportRow label={t.consultation.issue_type} value={labels.issue[data.issueType]} />
-            <ReportRow label={t.consultation.diagnosis_label} value={data.diagnosisNameCode} />
-            <ReportRow label={t.consultation.interp_method} value={data.method ? labels.method[data.method] : null} />
-            <ReportRow label={t.consultation.processing} value={data.processing ? labels.processing[data.processing] : null} />
-            <ReportRow label={t.consultation.counselor} value={data.counselorName} />
-            <ReportRow label={t.consultation.interp_time} value={data.durationHours ? `${data.durationHours}h` : null} />
-            <ReportRow label={t.consultation.fee} value={data.fee ? `${data.fee.toLocaleString()}원` : null} />
-            <ReportRow label={t.consultation.next_appointment_date} value={data.nextAppointmentDate} />
-            <ReportRow label={t.consultation.confirm_by} value={data.confirmedBy} />
-            <ReportRow label={t.consultation.confirm_date} value={data.confirmedAt} />
-            <ReportBlock label={t.consultation.diagnosis_content} value={data.diagnosisContent} />
-            <ReportBlock label={t.consultation.treatment_result} value={data.treatmentResult} />
-            <ReportBlock label={t.consultation.medication} value={data.medicationInstruction} />
-            <ReportBlock label={t.consultation.interpreter_comment} value={data.patientComment} />
-            <ReportBlock label={t.consultation.work_description} value={data.workDescription} />
-            <ReportBlock label={t.consultation.memo} value={data.memo} />
-            <ReportBlock label={t.consultation.doctor_signature} value={data.doctorConfirmationSignature} />
-          </section>
-
-          {/* Admin report edit/confirm actions disabled.
-          {me?.role === 'admin' && (
-            <div className="space-y-2">
-              <button type="button" onClick={() => setEditMode(true)} className="btn-secondary w-full">
-                {t.consultation.edit_report}
-              </button>
-              {!data.confirmed && (
-                <button onClick={handleConfirm} disabled={confirming} className="btn-primary w-full">
-                  {confirming ? t.consultation.confirming : t.consultation.confirm_report}
-                </button>
-              )}
+        {editMode ? (
+          <EditForm
+            form={form}
+            hospitals={hospitals}
+            error={error}
+            saving={saving}
+            set={set}
+            onSave={handleSave}
+            onCancel={() => {
+              setForm(toForm(data))
+              setEditMode(false)
+              setError('')
+            }}
+          />
+        ) : (
+          <>
+            {/* 환자 정보 */}
+            <div className="bg-white rounded-xl px-4 py-4 space-y-2">
+              <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-3">{t.consultation.patient_section}</p>
+              {patientRows.filter(([, v]) => v).map(([label, value]) => (
+                <ReportRow key={label} label={label} value={value} />
+              ))}
             </div>
-          )}
-          */}
-        </>
-      )}
+
+            {/* 진료 기록 */}
+            <div className="bg-white rounded-xl px-4 py-4 space-y-3">
+              <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-1">{t.consultation.work_log_section}</p>
+              <ReportRow label={t.consultation.visit_date_label} value={data.consultationDate} />
+              <ReportRow label={t.consultation.visit_hospital} value={data.hospitalName} />
+              <ReportRow label={t.consultation.department} value={data.department} />
+              <ReportRow label={t.consultation.doctor} value={data.doctorName} />
+              <ReportRow label={t.consultation.issue_type} value={labels.issue[data.issueType]} />
+              <ReportRow label={t.consultation.diagnosis_label} value={data.diagnosisNameCode} />
+              <ReportRow label={t.consultation.interp_method} value={data.method ? labels.method[data.method] : null} />
+              <ReportRow label={t.consultation.processing} value={data.processing ? labels.processing[data.processing] : null} />
+              <ReportRow label={t.consultation.counselor} value={data.counselorName} />
+              <ReportRow label={t.consultation.interp_time} value={data.durationHours ? `${data.durationHours}h` : null} />
+              <ReportRow label={t.consultation.fee} value={data.fee ? `${data.fee.toLocaleString()}원` : null} />
+              <ReportRow label={t.consultation.next_appointment_date} value={data.nextAppointmentDate} />
+              <ReportRow label={t.consultation.confirm_by} value={data.confirmedBy} />
+              <ReportRow label={t.consultation.confirm_date} value={data.confirmedAt} />
+              <ReportBlock label={t.consultation.diagnosis_content} value={data.diagnosisContent} />
+              <ReportBlock label={t.consultation.treatment_result} value={data.treatmentResult} />
+              <ReportBlock label={t.consultation.medication} value={data.medicationInstruction} />
+              <ReportBlock label={t.consultation.interpreter_comment} value={data.patientComment} />
+              <ReportBlock label={t.consultation.work_description} value={data.workDescription} />
+              <ReportBlock label={t.consultation.memo} value={data.memo} />
+              <ReportBlock label={t.consultation.doctor_signature} value={data.doctorConfirmationSignature} />
+            </div>
+
+            {/* Admin report edit/confirm actions disabled.
+            {me?.role === 'admin' && (
+              <div className="space-y-2">
+                <button type="button" onClick={() => setEditMode(true)} className="btn-secondary w-full">
+                  {t.consultation.edit_report}
+                </button>
+                {!data.confirmed && (
+                  <button onClick={handleConfirm} disabled={confirming} className="btn-primary w-full">
+                    {confirming ? t.consultation.confirming : t.consultation.confirm_report}
+                  </button>
+                )}
+              </div>
+            )}
+            */}
+          </>
+        )}
+      </div>
     </AppShell>
   )
 }
 
 function EditForm({
-  form,
-  hospitals,
-  error,
-  saving,
-  set,
-  onSave,
-  onCancel,
+  form, hospitals, error, saving, set, onSave, onCancel,
 }: {
   form: ReportForm
   hospitals: Hospital[]
@@ -265,15 +298,15 @@ function EditForm({
   const labels = useEnumLabels()
 
   return (
-    <section className="card space-y-3">
+    <div className="bg-white rounded-xl px-4 py-4 space-y-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">{t.consultation.visit_date_label}</label>
-          <input type="date" className="input" value={form.consultationDate} onChange={e => set('consultationDate', e.target.value)} />
+          <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.visit_date_label}</label>
+          <input type="date" className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.consultationDate} onChange={e => set('consultationDate', e.target.value)} />
         </div>
         <div>
-          <label className="label">{t.consultation.issue_type}</label>
-          <select className="input" value={form.issueType} onChange={e => set('issueType', e.target.value)}>
+          <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.issue_type}</label>
+          <select className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.issueType} onChange={e => set('issueType', e.target.value)}>
             {ISSUE_TYPES.map(value => (
               <option key={value} value={value}>{labels.issue[value]}</option>
             ))}
@@ -282,8 +315,8 @@ function EditForm({
       </div>
 
       <div>
-        <label className="label">{t.consultation.hospital}</label>
-        <select className="input" value={form.hospitalId} onChange={e => set('hospitalId', e.target.value)}>
+        <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.hospital}</label>
+        <select className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.hospitalId} onChange={e => set('hospitalId', e.target.value)}>
           <option value="">{t.consultation.select_placeholder}</option>
           {hospitals.map(hospital => (
             <option key={hospital.id} value={hospital.id}>{hospital.name}</option>
@@ -302,16 +335,16 @@ function EditForm({
       <FieldTextArea label={t.consultation.medication} value={form.medicationInstruction} onChange={v => set('medicationInstruction', v)} />
 
       <div>
-        <label className="label">{t.consultation.next_appointment_date}</label>
-        <input type="date" className="input" value={form.nextAppointmentDate} onChange={e => set('nextAppointmentDate', e.target.value)} />
+        <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.next_appointment_date}</label>
+        <input type="date" className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.nextAppointmentDate} onChange={e => set('nextAppointmentDate', e.target.value)} />
       </div>
 
       <FieldTextArea label={t.consultation.interpreter_comment} value={form.patientComment} onChange={v => set('patientComment', v)} />
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="label">{t.consultation.interp_method}</label>
-          <select className="input" value={form.method} onChange={e => set('method', e.target.value)}>
+          <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.interp_method}</label>
+          <select className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.method} onChange={e => set('method', e.target.value)}>
             <option value="">{t.consultation.select_placeholder}</option>
             {CONSULTATION_METHODS.map(value => (
               <option key={value} value={value}>{labels.method[value]}</option>
@@ -319,8 +352,8 @@ function EditForm({
           </select>
         </div>
         <div>
-          <label className="label">{t.consultation.processing}</label>
-          <select className="input" value={form.processing} onChange={e => set('processing', e.target.value)}>
+          <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.processing}</label>
+          <select className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.processing} onChange={e => set('processing', e.target.value)}>
             <option value="">{t.consultation.select_placeholder}</option>
             {PROCESSING_TYPES.map(value => (
               <option key={value} value={value}>{labels.processing[value]}</option>
@@ -340,20 +373,17 @@ function EditForm({
 
       {error && <p className="text-xs text-red-500">{error}</p>}
       <div className="grid grid-cols-2 gap-2">
-        <button type="button" className="btn-secondary" onClick={onCancel} disabled={saving}>{t.consultation.cancel_edit}</button>
-        <button type="button" className="btn-primary" onClick={onSave} disabled={saving}>
+        <button type="button" className="h-11 rounded-lg bg-[#F0F1F5] text-sm font-medium text-[#494949]" onClick={onCancel} disabled={saving}>{t.consultation.cancel_edit}</button>
+        <button type="button" className="h-11 rounded-lg bg-[#2592FF] text-sm font-semibold text-white disabled:opacity-60" onClick={onSave} disabled={saving}>
           {saving ? t.consultation.saving : t.consultation.save_edit}
         </button>
       </div>
-    </section>
+    </div>
   )
 }
 
 function TextInput({
-  label,
-  value,
-  onChange,
-  type = 'text',
+  label, value, onChange, type = 'text',
 }: {
   label: string
   value: string
@@ -362,16 +392,14 @@ function TextInput({
 }) {
   return (
     <div>
-      <label className="label">{label}</label>
-      <input type={type} className="input" value={value} onChange={e => onChange(e.target.value)} />
+      <label className="text-sm font-medium text-[#161616] block mb-1">{label}</label>
+      <input type={type} className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={value} onChange={e => onChange(e.target.value)} />
     </div>
   )
 }
 
 function FieldTextArea({
-  label,
-  value,
-  onChange,
+  label, value, onChange,
 }: {
   label: string
   value: string
@@ -379,8 +407,8 @@ function FieldTextArea({
 }) {
   return (
     <div>
-      <label className="label">{label}</label>
-      <textarea className="input min-h-24 resize-none" value={value} onChange={e => onChange(e.target.value)} />
+      <label className="text-sm font-medium text-[#161616] block mb-1">{label}</label>
+      <textarea className="w-full bg-[#F5F5F5] rounded-lg px-3 py-3 text-base outline-none text-[#161616] min-h-24 resize-none" value={value} onChange={e => onChange(e.target.value)} />
     </div>
   )
 }
@@ -388,9 +416,9 @@ function FieldTextArea({
 function ReportRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null
   return (
-    <div className="flex gap-2">
-      <span className="text-xs text-gray-500 w-24 flex-shrink-0">{label}</span>
-      <span className="text-sm font-medium">{value}</span>
+    <div className="flex gap-3">
+      <span className="text-xs text-[#808080] w-24 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="text-sm font-medium text-[#161616]">{value}</span>
     </div>
   )
 }
@@ -398,9 +426,9 @@ function ReportRow({ label, value }: { label: string; value?: string | null }) {
 function ReportBlock({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null
   return (
-    <div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className="text-sm whitespace-pre-wrap">{value}</p>
+    <div className="pt-1">
+      <p className="text-xs text-[#808080] mb-1">{label}</p>
+      <p className="text-sm text-[#161616] whitespace-pre-wrap">{value}</p>
     </div>
   )
 }

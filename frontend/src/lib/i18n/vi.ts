@@ -225,7 +225,7 @@ export const vi: AppTranslation = {
   },
   patient: {
     list_title: 'Danh sách người di cư',
-    interpreter_search_note: 'Chỉ hiển thị người di cư đã được quản trị viên phân công.',
+    interpreter_search_note: 'Tìm người di cư thuộc trung tâm của bạn và tự thêm vào danh sách phụ trách.',
     register: 'Đăng ký người di cư',
     search_placeholder: 'Tìm theo tên, số điện thoại hoặc khu vực',
     name: 'Tên',
@@ -242,7 +242,13 @@ export const vi: AppTranslation = {
     invite_copied: 'Đã sao chép hướng dẫn đăng ký.',
     invite_message: (name: string, phone?: string) =>
       `Hướng dẫn đăng ký LinkUs\nTên: ${name}\nSố điện thoại: ${phone || 'số đã đăng ký'}\nĐăng ký với vai trò người di cư bằng liên kết dưới đây để kết nối hồ sơ trung tâm.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
-    empty_interpreter: 'Chưa có người di cư nào được phân công.',
+    empty_interpreter: 'Chưa có người di cư nào được đăng ký tại trung tâm của bạn.',
+    self_match: 'Nhận phụ trách',
+    self_match_takeover: 'Chuyển cho tôi',
+    self_matching: 'Đang nhận...',
+    self_matched: 'Tôi phụ trách',
+    assigned_to: (name: string) => `Phụ trách: ${name}`,
+    err_self_match: 'Không thể nhận phụ trách.',
     empty: 'Chưa có người di cư nào được đăng ký.',
     err_name: 'Vui lòng nhập tên.',
     err_register: 'Đăng ký người di cư thất bại.',

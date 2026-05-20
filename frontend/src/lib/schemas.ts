@@ -38,6 +38,9 @@ export const patientSchema = z.object({
   region:        nullableString,
   centers:       z.array(centerSummarySchema).optional().default([]),
   accountLinked: z.boolean().optional().default(false),
+  assignedToMe:  z.boolean().optional().default(false),
+  activeInterpreterId: z.string().uuid().nullable().optional(),
+  activeInterpreterName: z.string().nullable().optional(),
   createdAt:     z.string(),
   updatedAt:     z.string().optional().default(''),
 })

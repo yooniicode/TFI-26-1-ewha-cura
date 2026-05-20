@@ -45,7 +45,8 @@ export default function ScriptGeneratePage() {
 
   async function handleGenerate(e: React.FormEvent) {
     e.preventDefault()
-    setGenerating(true); setError('')
+    setGenerating(true)
+    setError('')
     try {
       await scriptApi.generate({
         patientId,
@@ -55,83 +56,119 @@ export default function ScriptGeneratePage() {
       })
       await loadScripts()
       setForm(f => ({ ...f, additionalContext: '' }))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setGenerating(false)
     }
   }
 
-  if (loading) return <AppShell><Spinner /></AppShell>
+  if (loading) {
+    return (
+      <AppShell noPadding>
+        <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
+          <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">{t.script.title}</h1>
+          <div className="w-6" />
+        </div>
+        <div className="flex justify-center pt-20"><Spinner /></div>
+      </AppShell>
+    )
+  }
 
   return (
-    <AppShell>
-      <div className="flex items-center gap-2 mb-4">
-        <button onClick={() => router.back()} className="text-gray-400">←</button>
-        <h1 className="text-lg font-bold">{t.script.title}</h1>
-        {patient && <span className="text-sm text-gray-400">— {patient.name}</span>}
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
+        <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
+        <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">
+          {t.script.title}{patient && ` — ${patient.name}`}
+        </h1>
+        <div className="w-6" />
       </div>
 
-      <form onSubmit={handleGenerate} className="card mb-4 space-y-3">
-        <h2 className="font-semibold text-sm">{t.script.form_title}</h2>
-        <div>
-          <label className="label">{t.script.script_type}</label>
-          <select className="input" value={form.scriptType}
-            onChange={e => setForm(f => ({ ...f, scriptType: e.target.value as ScriptType }))}>
-            {SCRIPT_TYPES.map(value => (
-              <option key={value} value={value}>{labels.script[value]}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">{t.script.ref_consultation}</label>
-          <select className="input" value={form.consultationId}
-            onChange={e => setForm(f => ({ ...f, consultationId: e.target.value }))}>
-            <option value="">{t.script.ref_auto}</option>
-            {consultations.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.consultationDate} — {c.hospitalName ?? t.script.no_hospital}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">{t.script.additional_context}</label>
-          <textarea className="input resize-none min-h-[60px]"
-            placeholder={t.script.additional_placeholder}
-            value={form.additionalContext}
-            onChange={e => setForm(f => ({ ...f, additionalContext: e.target.value }))} />
-        </div>
-        {error && <p className="text-red-500 text-xs">{error}</p>}
-        <button type="submit" className="btn-primary w-full" disabled={generating}>
-          {generating ? t.script.generating : t.script.generate_btn}
-        </button>
-      </form>
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen space-y-3">
+        {/* 생성 폼 */}
+        <form onSubmit={handleGenerate} className="bg-white rounded-xl px-4 py-4 space-y-4">
+          <p className="text-sm font-semibold text-[#161616]">{t.script.form_title}</p>
+          <div>
+            <label className="text-sm font-medium text-[#161616] block mb-1">{t.script.script_type}</label>
+            <select
+              className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]"
+              value={form.scriptType}
+              onChange={e => setForm(f => ({ ...f, scriptType: e.target.value as ScriptType }))}
+            >
+              {SCRIPT_TYPES.map(value => (
+                <option key={value} value={value}>{labels.script[value]}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#161616] block mb-1">{t.script.ref_consultation}</label>
+            <select
+              className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]"
+              value={form.consultationId}
+              onChange={e => setForm(f => ({ ...f, consultationId: e.target.value }))}
+            >
+              <option value="">{t.script.ref_auto}</option>
+              {consultations.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.consultationDate} — {c.hospitalName ?? t.script.no_hospital}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-[#161616] block mb-1">{t.script.additional_context}</label>
+            <textarea
+              className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] resize-none min-h-[60px] placeholder:text-[#A0A0A0]"
+              placeholder={t.script.additional_placeholder}
+              value={form.additionalContext}
+              onChange={e => setForm(f => ({ ...f, additionalContext: e.target.value }))}
+            />
+          </div>
+          {error && <p className="text-red-500 text-xs">{error}</p>}
+          <button
+            type="submit"
+            className="w-full h-11 rounded-lg bg-[#2592FF] text-sm font-semibold text-white disabled:opacity-60"
+            disabled={generating}
+          >
+            {generating ? t.script.generating : t.script.generate_btn}
+          </button>
+        </form>
 
-      <h2 className="font-semibold text-sm mb-2">{t.script.saved_scripts} ({scripts.length})</h2>
-      {scripts.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">{t.script.no_scripts}</p>
-      ) : (
-        <div className="space-y-2">
-          {scripts.map(s => (
-            <div key={s.id} className="card">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-primary-600">
-                  {labels.script[s.scriptType]}
-                </span>
-                <span className="text-xs text-gray-400">
-                  {new Date(s.createdAt).toLocaleDateString(t.locale)}
-                </span>
-              </div>
-              <p className="text-sm text-gray-700 line-clamp-3">{s.contentKo}</p>
-              <Link href={`/scripts/${s.id}/present`}
-                className="mt-2 block text-center text-xs text-primary-600 hover:underline">
-                {t.script.present_mode}
-              </Link>
+        {/* 저장된 스크립트 목록 */}
+        <div>
+          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">
+            {t.script.saved_scripts} ({scripts.length})
+          </p>
+          {scripts.length === 0 ? (
+            <p className="text-sm text-[#A0A0A0] text-center py-6">{t.script.no_scripts}</p>
+          ) : (
+            <div className="space-y-3">
+              {scripts.map(s => (
+                <div key={s.id} className="bg-white rounded-xl px-4 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-[#2592FF]">
+                      {labels.script[s.scriptType]}
+                    </span>
+                    <span className="text-xs text-[#A0A0A0]">
+                      {new Date(s.createdAt).toLocaleDateString(t.locale)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-[#494949] line-clamp-3">{s.contentKo}</p>
+                  <Link
+                    href={`/scripts/${s.id}/present`}
+                    className="mt-3 block text-center py-2.5 rounded-lg bg-[#EAF4FF] text-[#2592FF] text-sm font-semibold"
+                  >
+                    {t.script.present_mode}
+                  </Link>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </div>
     </AppShell>
   )
 }

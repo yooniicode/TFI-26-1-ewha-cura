@@ -8,4 +8,5 @@ export const matchApi = {
   remove:    (id: string) => del<void>(`/matching/${id}`),
   myMatch:   () => get('/matching/me', schemas.match),
   myCount:   () => get('/matching/my-count', schemas.interpreterAssignedCount),
+  selfAssign: (patientId: string) => post(`/matching/self/${patientId}`, undefined, schemas.match),
 }

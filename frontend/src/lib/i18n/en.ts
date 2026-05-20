@@ -225,7 +225,7 @@ export const en: AppTranslation = {
   },
   patient: {
     list_title: 'Patients',
-    interpreter_search_note: 'Only patients matched and approved by the center admin are shown.',
+    interpreter_search_note: 'Search patients registered to your work center and add them to your own caseload.',
     register: 'Register patient',
     search_placeholder: 'Search by name, phone, or region',
     name: 'Name',
@@ -242,7 +242,13 @@ export const en: AppTranslation = {
     invite_copied: 'Sign-up guide copied.',
     invite_message: (name: string, phone?: string) =>
       `LinkUs sign-up guide\nName: ${name}\nPhone: ${phone || 'registered phone'}\nSign up as a migrant at the link below to connect this center record.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
-    empty_interpreter: 'No patients currently matched.',
+    empty_interpreter: 'No patients are registered to your center.',
+    self_match: 'Add to my caseload',
+    self_match_takeover: 'Assign to me',
+    self_matching: 'Assigning...',
+    self_matched: 'My patient',
+    assigned_to: (name: string) => `Assigned: ${name}`,
+    err_self_match: 'Failed to assign patient.',
     empty: 'No registered patients.',
     err_name: 'Please enter a name.',
     err_register: 'Failed to register patient.',
