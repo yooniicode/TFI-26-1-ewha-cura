@@ -4,6 +4,7 @@ import com.byby.backend.domain.matching.entity.PatientMatch;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
@@ -33,4 +34,8 @@ public interface PatientMatchRepository extends JpaRepository<PatientMatch, UUID
     long countActiveByInterpreterCenter(@NonNull @Param("centerId") UUID centerId);
 
     long countByInterpreterIdAndActiveTrue(UUID interpreterId);
+
+    @Modifying
+    @Query("UPDATE PatientMatch pm SET pm.active = false WHERE pm.patient.id = :patientId AND pm.active = true")
+    void deactivateAllActiveByPatientId(@Param("patientId") UUID patientId);
 }

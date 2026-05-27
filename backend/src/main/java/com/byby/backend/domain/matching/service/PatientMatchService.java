@@ -40,9 +40,7 @@ public class PatientMatchService {
         if (!principal.isAdmin()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         Center adminCenter = adminService.getAdminCenter(principal);
 
-        // 기존 활성 매칭이 있으면 비활성화
-        patientMatchRepository.findByPatientIdAndActiveTrue(req.patientId())
-                .ifPresent(PatientMatch::deactivate);
+        patientMatchRepository.deactivateAllActiveByPatientId(req.patientId());
 
         Patient patient = patientRepository.findById(req.patientId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
@@ -112,22 +110,18 @@ public class PatientMatchService {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN, "같은 센터 이주민만 담당 등록할 수 있습니다");
         }
 
-        return patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId())
-                .map(activeMatch -> {
-                    if (activeMatch.getInterpreter().getId().equals(interpreter.getId())) {
-                        return activeMatch;
-                    }
-                    activeMatch.deactivate();
-                    return patientMatchRepository.save(PatientMatch.builder()
-                            .patient(patient)
-                            .interpreter(interpreter)
-                            .build());
-                })
-                .map(MatchResponse.Detail::from)
-                .orElseGet(() -> MatchResponse.Detail.from(patientMatchRepository.save(PatientMatch.builder()
-                        .patient(patient)
-                        .interpreter(interpreter)
-                        .build())));
+        if (patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())) {
+            return patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId())
+                    .map(MatchResponse.Detail::from)
+                    .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND));
+        }
+
+        patientMatchRepository.deactivateAllActiveByPatientId(patient.getId());
+        PatientMatch newMatch = patientMatchRepository.saveAndFlush(PatientMatch.builder()
+                .patient(patient)
+                .interpreter(interpreter)
+                .build());
+        return MatchResponse.Detail.from(newMatch);
     }
 
     public MatchResponse.Detail getMyMatch(UserPrincipal principal) {

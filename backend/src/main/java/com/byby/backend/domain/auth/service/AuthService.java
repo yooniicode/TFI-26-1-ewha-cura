@@ -741,9 +741,19 @@ public class AuthService {
 
     @Transactional
     public void deleteAccount(UUID authUserId) {
-        patientRepository.findByAuthUserId(authUserId).ifPresent(patientRepository::delete);
-        interpreterRepository.findByAuthUserId(authUserId).ifPresent(interpreterRepository::delete);
-        adminProfileRepository.findByAuthUserId(authUserId).ifPresent(adminProfileRepository::delete);
+        // 진료 기록 보존을 위해 hard-delete 대신 auth 연결만 해제 (soft-delete)
+        // - consultation/handover/patient_match 등 FK 제약으로 hard-delete 불가
+        patientRepository.findByAuthUserId(authUserId)
+                .ifPresent(Patient::unlinkAuthUser);
+        interpreterRepository.findByAuthUserId(authUserId)
+                .ifPresent(Interpreter::unlinkAuthUser);
+        adminProfileRepository.findByAuthUserId(authUserId)
+                .ifPresent(adminProfileRepository::delete);
+
+        if (!StringUtils.hasText(supabaseUrl) || !StringUtils.hasText(supabaseServiceKey)) {
+            log.warn("Supabase config missing — skipping Supabase account deletion for {}", authUserId);
+            return;
+        }
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -756,8 +766,10 @@ public class AuthService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400 && response.statusCode() != 404) {
                 log.error("Failed to delete user in Supabase: {} {}", response.statusCode(), response.body());
-                throw new RuntimeException("Supabase deletion failed");
+                throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR, "Supabase deletion failed");
             }
+        } catch (GeneralException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error deleting Supabase user: {}", e.getMessage(), e);
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR, "Failed to delete account");

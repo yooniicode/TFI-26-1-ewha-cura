@@ -20,7 +20,7 @@ public class Interpreter extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private UUID authUserId;
 
     @Column(nullable = false, length = 100)
@@ -89,5 +89,10 @@ public class Interpreter extends BaseEntity {
 
     public void activate() {
         this.active = true;
+    }
+
+    public void unlinkAuthUser() {
+        this.authUserId = null;
+        this.active = false;
     }
 }
