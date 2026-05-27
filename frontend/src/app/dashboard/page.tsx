@@ -115,7 +115,8 @@ export default function DashboardPage() {
   if (meLoading) return <AppShell><Spinner /></AppShell>
 
   const today = todayKo()
-  const recentConsultations = (consultations ?? []).slice(0, 5)
+  const todayStr = new Date().toISOString().split('T')[0]
+  const recentConsultations = (consultations ?? []).filter(c => c.consultationDate === todayStr)
   const nextAppointment = (myRecords ?? []).find(r => r.nextAppointmentDate)?.nextAppointmentDate
   const announcements = announcementResponse?.payload ?? []
   const roleLabel = me?.role === 'admin' ? '센터장' : me?.role === 'interpreter' ? '통번역가' : '이주민'
@@ -152,7 +153,7 @@ export default function DashboardPage() {
         {/* 통번역가 퀵 액션 */}
         {me?.role === 'interpreter' && (
           <div className="mt-5 grid grid-cols-2 gap-2">
-            <Link href="/consultations"
+            <Link href="/consultations/start"
               className="flex flex-col items-center py-4 gap-1.5 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />

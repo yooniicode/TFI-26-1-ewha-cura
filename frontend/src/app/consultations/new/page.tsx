@@ -35,9 +35,11 @@ function ReportWriteInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const patientId = searchParams.get('patientId') ?? ''
+  const rmCid = searchParams.get('cid')
 
   const [patient, setPatient] = useState<Patient | null>(null)
   const [recentHistory, setRecentHistory] = useState<Consultation[]>([])
+  const [rmConsultation, setRmConsultation] = useState<Consultation | null>(null)
   const [step, setStep] = useState(1)
   const [done, setDone] = useState(false)
 
@@ -57,6 +59,31 @@ function ReportWriteInner() {
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [aiParsing, setAiParsing] = useState(false)
+
+  function applyParsedFields(fields: Record<string, string>) {
+    if (fields.diagnosisContent) setDiagnosisContent(fields.diagnosisContent)
+    if (fields.treatmentResult) setTreatmentResult(fields.treatmentResult)
+    if (fields.medicationInstruction) setMedicationInstruction(fields.medicationInstruction)
+    if (fields.nextAppointmentDate) setNextAppointmentDate(fields.nextAppointmentDate)
+    if (fields.department) setDepartment(fields.department)
+  }
+
+  async function parseWithClaude(rmText: string) {
+    setAiParsing(true)
+    try {
+      const res = await fetch('/api/parse-rm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rmText }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { fields: Record<string, string> | null }
+        if (data.fields) applyParsedFields(data.fields)
+      }
+    } catch { /* AI 실패 시 RM 텍스트만 표시 */ }
+    setAiParsing(false)
+  }
 
   useEffect(() => {
     if (!patientId) return
@@ -64,29 +91,89 @@ function ReportWriteInner() {
     patientApi.history(patientId).then(r => setRecentHistory(r.payload ?? [])).catch(() => {})
   }, [patientId])
 
-  function handleLoadRecentRm() {
-    const recent = recentHistory.find(c => c.workDescription?.trim())
-    if (recent?.workDescription) setWorkDescription(recent.workDescription)
-  }
+  useEffect(() => {
+    if (!rmCid) return
+    consultationApi.get(rmCid).then(r => {
+      const c = r.payload ?? null
+      setRmConsultation(c)
+      if (c?.workDescription) setWorkDescription(c.workDescription)
+      if (c?.hospitalName) setHospitalName(c.hospitalName)
+      if (c?.department) setDepartment(c.department)
+      if (c?.consultationDate) setConsultationDate(c.consultationDate)
+    }).catch(() => {})
+  }, [rmCid])
+
+  // sessionStorage: RM 페이지에서 이미 파싱된 결과 (우선순위 높음)
+  useEffect(() => {
+    const raw = sessionStorage.getItem('rm_parsed_fields')
+    console.log('[보고서] sessionStorage rm_parsed_fields:', raw ? JSON.parse(raw) : '없음')
+    if (!raw) return
+    sessionStorage.removeItem('rm_parsed_fields')
+    try {
+      applyParsedFields(JSON.parse(raw) as Record<string, string>)
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 직접 진입 시: 가장 최근 RM 자동 로드 + Claude 파싱
+  useEffect(() => {
+    if (recentHistory.length === 0) return
+    if (sessionStorage.getItem('rm_parsed_fields')) return // sessionStorage가 처리할 것
+    if (rmCid) return // cid 있으면 위 useEffect가 처리
+
+    const recentRm = recentHistory.find(c => c.workDescription?.trim())
+    if (!recentRm?.workDescription) return
+
+    setWorkDescription(recentRm.workDescription)
+    parseWithClaude(recentRm.workDescription)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recentHistory])
 
   async function handleSave() {
     if (!patientId) return
     setSubmitting(true)
     setError('')
     try {
-      await consultationApi.create({
-        patientId,
-        consultationDate,
-        issueType: 'MEDICAL',
-        processing: 'INTERPRETATION',
-        workDescription: workDescription || undefined,
-        patientComment: patientComment || undefined,
-        diagnosisContent: diagnosisContent || undefined,
-        treatmentResult: treatmentResult || undefined,
-        medicationInstruction: medicationInstruction || undefined,
-        nextAppointmentDate: nextAppointmentDate || undefined,
-        department: department || undefined,
-      })
+      if (rmCid && rmConsultation) {
+        await consultationApi.update(rmCid, {
+          consultationDate,
+          patientId: rmConsultation.patientId,
+          hospitalId: rmConsultation.hospitalId ?? null,
+          hospitalName: hospitalName || rmConsultation.hospitalName || '',
+          department: department || rmConsultation.department || '',
+          doctorName: rmConsultation.doctorName || '',
+          issueType: rmConsultation.issueType,
+          method: rmConsultation.method ?? null,
+          processing: rmConsultation.processing ?? 'INTERPRETATION',
+          patientComment: patientComment || rmConsultation.patientComment || '',
+          treatmentResult: treatmentResult || '',
+          diagnosisContent: diagnosisContent || '',
+          diagnosisNameCode: rmConsultation.diagnosisNameCode || '',
+          medicationInstruction: medicationInstruction || '',
+          nextAppointmentDate: nextAppointmentDate || null,
+          counselorName: rmConsultation.counselorName || '',
+          durationHours: rmConsultation.durationHours ?? null,
+          fee: rmConsultation.fee ?? null,
+          workDescription: workDescription || '',
+          doctorConfirmationSignature: rmConsultation.doctorConfirmationSignature || '',
+          memo: rmConsultation.memo || '',
+        })
+      } else {
+        await consultationApi.create({
+          patientId,
+          consultationDate,
+          issueType: 'MEDICAL',
+          processing: 'INTERPRETATION',
+          workDescription: workDescription || undefined,
+          patientComment: patientComment || undefined,
+          diagnosisContent: diagnosisContent || undefined,
+          treatmentResult: treatmentResult || undefined,
+          medicationInstruction: medicationInstruction || undefined,
+          nextAppointmentDate: nextAppointmentDate || undefined,
+          department: department || undefined,
+          hospitalName: hospitalName || undefined,
+        })
+      }
       setDone(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
@@ -168,8 +255,7 @@ function ReportWriteInner() {
           <Step1
             workDescription={workDescription}
             onChange={setWorkDescription}
-            canLoadRm={recentHistory.some(c => c.workDescription?.trim())}
-            onLoadRm={handleLoadRecentRm}
+            aiParsing={aiParsing}
           />
         )}
         {step === 2 && (
@@ -218,7 +304,7 @@ function ReportWriteInner() {
           disabled={submitting}
           className="flex-1 h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-60"
         >
-          {step < TOTAL_STEPS ? '다음으로' : submitting ? '저장 중...' : '다음으로'}
+          {step < TOTAL_STEPS ? '다음으로' : submitting ? '저장 중...' : '저장하기'}
         </button>
       </div>
     </AppShell>
@@ -281,29 +367,29 @@ function FieldTextarea({
 // ─── 스텝 컴포넌트 ────────────────────────────────────────────────────────────
 
 function Step1({
-  workDescription, onChange, canLoadRm, onLoadRm,
+  workDescription, onChange, aiParsing,
 }: {
   workDescription: string
   onChange: (v: string) => void
-  canLoadRm: boolean
-  onLoadRm: () => void
+  aiParsing: boolean
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <button
-        type="button"
-        onClick={onLoadRm}
-        disabled={!canLoadRm}
-        className="w-full flex items-center justify-center gap-2 px-5 py-4 bg-[#F0F1F5] rounded-lg disabled:opacity-40"
-      >
-        <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1" y="1" width="14" height="16" rx="2" />
-          <line x1="4" y1="6" x2="12" y2="6" />
-          <line x1="4" y1="9" x2="12" y2="9" />
-          <line x1="4" y1="12" x2="9" y2="12" />
-        </svg>
-        <span className="text-sm font-medium text-[#494949]">최근 RM 불러오기</span>
-      </button>
+      <div className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-50 rounded-lg border border-blue-100 min-h-[52px]">
+        {aiParsing ? (
+          <>
+            <svg className="animate-spin w-4 h-4 text-blue-500 shrink-0" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <span className="text-sm text-blue-600">AI가 RM을 분석하고 있어요...</span>
+          </>
+        ) : workDescription ? (
+          <span className="text-sm text-blue-600 font-medium">최근 RM을 불러왔어요. 수정 후 다음으로 넘어가세요.</span>
+        ) : (
+          <span className="text-sm text-gray-400">작성된 RM이 없어요. 직접 입력해주세요.</span>
+        )}
+      </div>
 
       <div className="bg-white rounded-lg border border-[#EEEEEE] px-4 py-6 min-h-[320px] flex flex-col gap-3">
         {workDescription.length === 0 && (

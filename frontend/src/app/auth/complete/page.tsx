@@ -73,6 +73,9 @@ export default function AuthCompletePage() {
       if (typeof metadata.requested_center_id === 'string') setBootstrapCenterId(metadata.requested_center_id)
       if (typeof metadata.center_id === 'string') setBootstrapCenterId(metadata.center_id)
       if (typeof metadata.requested_center_name === 'string') setBootstrapCenterName(metadata.requested_center_name)
+      if (typeof metadata.nationality === 'string') setNationality(metadata.nationality as Nationality)
+      if (typeof metadata.gender === 'string') setGender(metadata.gender as Gender)
+      if (typeof metadata.visa_type === 'string') setVisaType(metadata.visa_type as VisaType)
 
       try {
         const b64 = session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')

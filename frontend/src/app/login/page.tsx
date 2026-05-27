@@ -41,11 +41,20 @@ export default function LoginPage() {
   const [magicSent, setMagicSent] = useState(false)
   const [resetSent, setResetSent] = useState(false)
   const [signupDone, setSignupDone] = useState(false)
+  const [signupStep, setSignupStep] = useState<1 | 2>(1)
 
   function switchToSignupForMissingEmail() {
     setIsForgotPasswordMode(false)
     setIsSignupMode(true)
+    setSignupStep(1)
     setError(t.login.err_not_found)
+  }
+
+  function handleNextStep() {
+    if (!name.trim()) { setError(t.login.err_name); return }
+    if (!centerId) { setError(t.login.err_center_select); return }
+    setError('')
+    setSignupStep(2)
   }
 
   useEffect(() => {
@@ -114,15 +123,12 @@ export default function LoginPage() {
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) { setError(t.login.err_name); return }
+    if (!centerId) { setError(t.login.err_center_select); return }
     if (!email) { setError(t.login.err_email); return }
     if (!signupPassword) { setError(t.login.err_password); return }
     if (signupPassword.length < 8) { setError(t.login.err_password_min); return }
     if (signupPassword !== signupPasswordConfirm) {
       setError(t.login.err_password_confirm)
-      return
-    }
-    if ((accountType === 'patient' || accountType === 'interpreter') && !centerId) {
-      setError(t.login.err_center_select)
       return
     }
 
@@ -293,152 +299,173 @@ export default function LoginPage() {
           </form>
         ) : isSignupMode ? (
           <form onSubmit={handleSignup} className="space-y-4">
-            <div>
-              <label className="label">{t.auth.name}</label>
-              <input
-                type="text"
-                className="input"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder={t.auth.name}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">{t.login.account_type}</label>
-              <div className="grid grid-cols-2 gap-2">
-                {accountTypes.map(({ value, label, desc }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      setAccountType(value)
-                      if (value === 'patient') {
-                        setCenterId('')
-                        setCenterName('')
-                      }
-                    }}
-                    className={`rounded-lg border-2 p-3 text-left transition-colors ${
-                      accountType === value
-                        ? 'border-primary-600 bg-primary-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <p className={`text-sm font-semibold ${accountType === value ? 'text-primary-700' : 'text-gray-700'}`}>
-                      {label}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
-                  </button>
-                ))}
+            {/* Progress bar */}
+            <div className="mb-2">
+              <div className="flex items-center gap-2">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${signupStep >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>1</div>
+                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary-600 rounded-full transition-all duration-300"
+                    style={{ width: signupStep === 2 ? '100%' : '0%' }}
+                  />
+                </div>
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${signupStep >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className={`text-xs ${signupStep === 1 ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>내 정보</span>
+                <span className={`text-xs ${signupStep === 2 ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>계정 만들기</span>
               </div>
             </div>
-            <div>
-              <label className="label">{t.auth.email}</label>
-              <input
-                type="email"
-                className="input"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder={t.login.email_placeholder}
-                required
-              />
-            </div>
-            <div>
-              <label className="label">{t.login.phone}</label>
-              <input
-                type="text"
-                className="input"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="010-0000-0000"
-              />
-            </div>
-            {accountType === 'patient' && (
-              <div>
-                <label className="label">{t.login.work_center}</label>
-                <CenterSearchSelect
-                  valueName={centerName}
-                  placeholder={t.login.center_search_placeholder}
-                  onSelect={(center) => {
-                    setCenterId(center.id)
-                    setCenterName(center.name)
-                  }}
-                />
-              </div>
-            )}
-            {accountType === 'interpreter' && (
-              <div>
-                <label className="label">{t.login.work_center}</label>
-                <CenterSearchSelect
-                  valueName={centerName}
-                  placeholder={t.login.center_search_placeholder}
-                  onSelect={(center) => {
-                    setCenterId(center.id)
-                    setCenterName(center.name)
-                  }}
-                />
-                <p className="text-xs text-gray-500 mt-1">{t.login.center_admin_note}</p>
-              </div>
-            )}
-            {accountType === 'patient' && (
+
+            {signupStep === 1 && (
               <>
                 <div>
-                  <label className="label">{t.login.nationality}</label>
-                  <select className="input" value={nationality} onChange={e => setNationality(e.target.value as Nationality)}>
-                    {NATIONALITIES.map(value => (
-                      <option key={value} value={value}>{labels.nationality[value]}</option>
-                    ))}
-                  </select>
+                  <label className="label">{t.auth.name}</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={t.auth.name}
+                  />
                 </div>
                 <div>
-                  <label className="label">{t.login.gender}</label>
-                  <select className="input" value={gender} onChange={e => setGender(e.target.value as Gender)}>
-                    {GENDERS.map(value => (
-                      <option key={value} value={value}>{labels.gender[value]}</option>
+                  <label className="label">{t.login.account_type}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {accountTypes.map(({ value, label, desc }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                          setAccountType(value)
+                          setCenterId('')
+                          setCenterName('')
+                        }}
+                        className={`rounded-lg border-2 p-3 text-left transition-colors ${
+                          accountType === value
+                            ? 'border-primary-600 bg-primary-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <p className={`text-sm font-semibold ${accountType === value ? 'text-primary-700' : 'text-gray-700'}`}>
+                          {label}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 </div>
                 <div>
-                  <label className="label">{t.login.visa}</label>
-                  <select className="input" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
-                    {VISA_TYPES.map(value => (
-                      <option key={value} value={value}>{labels.visa[value]}</option>
-                    ))}
-                  </select>
+                  <label className="label">{t.login.phone}</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="010-0000-0000"
+                  />
+                </div>
+                <div>
+                  <label className="label">{t.login.work_center}</label>
+                  <CenterSearchSelect
+                    valueName={centerName}
+                    placeholder={t.login.center_search_placeholder}
+                    onSelect={(center) => {
+                      setCenterId(center.id)
+                      setCenterName(center.name)
+                    }}
+                  />
+                  {accountType === 'interpreter' && (
+                    <p className="text-xs text-gray-500 mt-1">{t.login.center_admin_note}</p>
+                  )}
+                </div>
+                {accountType === 'patient' && (
+                  <>
+                    <div>
+                      <label className="label">{t.login.nationality}</label>
+                      <select className="input" value={nationality} onChange={e => setNationality(e.target.value as Nationality)}>
+                        {NATIONALITIES.map(value => (
+                          <option key={value} value={value}>{labels.nationality[value]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">{t.login.gender}</label>
+                      <select className="input" value={gender} onChange={e => setGender(e.target.value as Gender)}>
+                        {GENDERS.map(value => (
+                          <option key={value} value={value}>{labels.gender[value]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">{t.login.visa}</label>
+                      <select className="input" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
+                        {VISA_TYPES.map(value => (
+                          <option key={value} value={value}>{labels.visa[value]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+                {error && <p className="text-red-500 text-xs">{error}</p>}
+                <button type="button" className="btn-primary w-full" onClick={handleNextStep}>
+                  다음
+                </button>
+              </>
+            )}
+
+            {signupStep === 2 && (
+              <>
+                <div>
+                  <label className="label">{t.auth.email}</label>
+                  <input
+                    type="email"
+                    className="input"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder={t.login.email_placeholder}
+                  />
+                </div>
+                <div>
+                  <label className="label">{t.auth.password}</label>
+                  <PasswordInput
+                    value={signupPassword}
+                    onChange={setSignupPassword}
+                    placeholder={t.login.password_min_hint}
+                    required
+                    autoComplete="new-password"
+                  />
+                </div>
+                <div>
+                  <label className="label">{t.login.password_confirm}</label>
+                  <PasswordInput
+                    value={signupPasswordConfirm}
+                    onChange={setSignupPasswordConfirm}
+                    placeholder={t.login.password_reenter}
+                    required
+                    autoComplete="new-password"
+                  />
+                  {signupPasswordConfirm && (
+                    <p className={`text-xs mt-1 ${signupPassword === signupPasswordConfirm ? 'text-green-600' : 'text-red-500'}`}>
+                      {signupPassword === signupPasswordConfirm ? t.login.password_match : t.login.password_no_match}
+                    </p>
+                  )}
+                </div>
+                {error && <p className="text-red-500 text-xs">{error}</p>}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary flex-1"
+                    onClick={() => { setError(''); setSignupStep(1) }}
+                  >
+                    이전
+                  </button>
+                  <button type="submit" className="btn-primary flex-1" disabled={loading}>
+                    {loading ? t.login.signing_up : t.auth.signup}
+                  </button>
                 </div>
               </>
             )}
-            <div>
-              <label className="label">{t.auth.password}</label>
-              <PasswordInput
-                value={signupPassword}
-                onChange={setSignupPassword}
-                placeholder={t.login.password_min_hint}
-                required
-                autoComplete="new-password"
-              />
-            </div>
-            <div>
-              <label className="label">{t.login.password_confirm}</label>
-              <PasswordInput
-                value={signupPasswordConfirm}
-                onChange={setSignupPasswordConfirm}
-                placeholder={t.login.password_reenter}
-                required
-                autoComplete="new-password"
-              />
-              {signupPasswordConfirm && (
-                <p className={`text-xs mt-1 ${signupPassword === signupPasswordConfirm ? 'text-green-600' : 'text-red-500'}`}>
-                  {signupPassword === signupPasswordConfirm ? t.login.password_match : t.login.password_no_match}
-                </p>
-              )}
-            </div>
-
-            {error && <p className="text-red-500 text-xs">{error}</p>}
-
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? t.login.signing_up : t.auth.signup}
-            </button>
           </form>
         ) : (
           <>
@@ -501,6 +528,7 @@ export default function LoginPage() {
               className="text-sm text-gray-600 hover:underline"
               onClick={() => {
                 setError('')
+                setSignupStep(1)
                 setIsSignupMode(prev => !prev)
               }}
             >

@@ -1,0 +1,222 @@
+'use client'
+
+import { Suspense, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
+import AppShell from '@/components/AppShell'
+import Spinner from '@/components/ui/Spinner'
+import { consultationApi } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
+import type { Consultation } from '@/lib/types'
+
+function formatTime(dateStr: string) {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function getDateLabel(dateStr: string) {
+  const todayStr = new Date().toISOString().split('T')[0]
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = yesterday.toISOString().split('T')[0]
+  if (dateStr === todayStr) return '오늘'
+  if (dateStr === yesterdayStr) return '어제'
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`
+}
+
+function GenderBadge({ gender }: { gender?: string | null }) {
+  if (!gender) return null
+  if (gender === 'FEMALE') {
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#fff2f7] text-[10px] font-semibold text-[#ff649f]">
+        여
+      </span>
+    )
+  }
+  if (gender === 'MALE') {
+    return (
+      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#eff6ff] text-[10px] font-semibold text-[#3b82f6]">
+        남
+      </span>
+    )
+  }
+  return null
+}
+
+export default function RmSelectPage() {
+  return (
+    <Suspense fallback={<AppShell><Spinner /></AppShell>}>
+      <RmSelectInner />
+    </Suspense>
+  )
+}
+
+function RmSelectInner() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const patientId = searchParams.get('patientId')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const { data: consultations = [], isLoading } = useQuery<Consultation[]>({
+    queryKey: patientId
+      ? queryKeys.consultations.byPatient(patientId, 0)
+      : queryKeys.consultations.list(0),
+    queryFn: () =>
+      patientId
+        ? consultationApi.byPatient(patientId, 0).then(r => r.payload ?? [])
+        : consultationApi.list(0).then(r => r.payload ?? []),
+  })
+
+  const rmList = useMemo(
+    () => consultations.filter(c => !!c.workDescription?.trim()),
+    [consultations],
+  )
+
+  const groups = useMemo(() => {
+    const map = new Map<string, Consultation[]>()
+    rmList.forEach(c => {
+      const arr = map.get(c.consultationDate) ?? []
+      arr.push(c)
+      map.set(c.consultationDate, arr)
+    })
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a))
+  }, [rmList])
+
+  const selected = rmList.find(c => c.id === selectedId)
+
+  function handleNext() {
+    if (!selected) return
+    router.push(`/consultations/new?patientId=${selected.patientId}&cid=${selected.id}`)
+  }
+
+  return (
+    <AppShell noPadding>
+      {/* 헤더 */}
+      <div className="bg-white px-4 py-3 flex items-center gap-3 border-b border-[#F6F6F6]">
+        <button onClick={() => router.back()} className="w-6 flex items-center justify-center">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
+            <path d="M10 2L2 10L10 18" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <h1 className="flex-1 text-center text-lg font-semibold text-[#161616]">보고서 작성</h1>
+        <button onClick={() => router.back()} className="w-6 flex items-center justify-center">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M1 1L13 13M13 1L1 13" stroke="#161616" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="bg-white px-6 pt-7 pb-6">
+        {/* 타이틀 */}
+        <div className="mb-6">
+          <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4]">
+            보고서로 작성할<br />진료 메모를 선택합니다
+          </h2>
+          <p className="mt-2 text-base font-medium text-[#808080]">
+            보고서로 쓰이지 않은 메모가 {rmList.length}개 있어요
+          </p>
+        </div>
+
+        {/* 스텝 인디케이터 */}
+        <div className="flex gap-2 mb-8">
+          {/* 1단계: 완료 (체크) */}
+          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#f3f9ff] shrink-0">
+            <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+              <path d="M1 4.5L4.5 8L11 1" stroke="#2592ff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          {/* 2단계: 현재 */}
+          <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#2592ff] text-white text-base font-semibold shrink-0">
+            2
+          </div>
+          {/* 3~6단계: 비활성 */}
+          {[3, 4, 5, 6].map(n => (
+            <div key={n} className="w-6 h-6 rounded-full flex items-center justify-center bg-[#F7F7F7] text-[#808080] text-base font-semibold shrink-0">
+              {n}
+            </div>
+          ))}
+        </div>
+
+        {/* 목록 */}
+        {isLoading ? (
+          <div className="py-16 flex justify-center"><Spinner /></div>
+        ) : groups.length === 0 ? (
+          <div className="py-16 text-center text-sm text-[#808080]">
+            작성된 진료 메모가 없어요
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {groups.map(([date, items]) => (
+              <div key={date}>
+                <p className="text-base font-medium text-[#494949] mb-2">{getDateLabel(date)}</p>
+                <div className="rounded-2xl overflow-hidden border border-[#F0F0F0]">
+                  {items.map((c, idx) => {
+                    const isSelected = selectedId === c.id
+                    const location = [c.hospitalName, c.department].filter(Boolean).join(' ')
+                    const timeStr = formatTime(c.createdAt)
+                    const locationLine = [timeStr, location].filter(Boolean).join(' | ')
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setSelectedId(isSelected ? null : c.id)}
+                        className={`w-full text-left transition-colors ${
+                          idx > 0 ? 'border-t border-[#F0F0F0]' : ''
+                        } ${isSelected ? 'bg-[#f3f9ff]' : 'bg-white hover:bg-gray-50'}`}
+                      >
+                        {/* 카드 헤더 행 */}
+                        <div className="flex items-center justify-between px-5 py-4">
+                          <div className="flex flex-col gap-1 flex-1 min-w-0 pr-3">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-lg font-semibold text-[#161616]">{c.patientName}</span>
+                              <GenderBadge gender={c.patientGender} />
+                            </div>
+                            {locationLine && (
+                              <span className="text-base text-[#494949] truncate">{locationLine}</span>
+                            )}
+                          </div>
+                          {/* 펼침/접기 화살표 */}
+                          {isSelected ? (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                              <path d="M6 15L12 9L18 15" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : (
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                              <path d="M9 6L15 12L9 18" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                        {/* 메모 미리보기 */}
+                        {isSelected && (
+                          <div className="mx-5 mb-4 bg-white rounded-xl px-4 py-4">
+                            <p className="text-sm text-[#494949] leading-relaxed line-clamp-3">
+                              {c.workDescription}
+                            </p>
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 하단 바 */}
+      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8">
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!selected}
+          className="w-full h-[60px] bg-[#2592ff] rounded-lg text-lg font-semibold text-white disabled:opacity-40 transition-opacity"
+        >
+          다음으로
+        </button>
+      </div>
+    </AppShell>
+  )
+}
