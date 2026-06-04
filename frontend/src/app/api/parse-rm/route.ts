@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -10,54 +10,53 @@ export interface ParsedRmFields {
   department: string
 }
 
-const TOOL_SCHEMA = {
-  name: 'extract_report_fields',
-  description: '의료 통번역 실시간 메모에서 보고서 필드를 추출합니다.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {
-      diagnosisContent: {
-        type: 'string',
-        description: '진단 내용 — 병명, 증상, 소견. 없으면 빈 문자열.',
-      },
-      treatmentResult: {
-        type: 'string',
-        description: '치료 내용 및 처치 결과. 없으면 빈 문자열.',
-      },
-      medicationInstruction: {
-        type: 'string',
-        description: '복약 지도 — 약 이름, 용법, 용량, 주의사항. 없으면 빈 문자열.',
-      },
-      nextAppointmentDate: {
-        type: 'string',
-        description: '다음 예약일 YYYY-MM-DD 형식. 없으면 빈 문자열.',
-      },
-      department: {
-        type: 'string',
-        description: '진료과 (예: 피부과, 내과). 없으면 빈 문자열.',
-      },
-    },
-    required: ['diagnosisContent', 'treatmentResult', 'medicationInstruction', 'nextAppointmentDate', 'department'],
-  },
-}
-
 const SYSTEM_PROMPT = '당신은 의료 통번역사를 돕는 AI입니다. 실시간 메모(RM)에서 보고서 작성에 필요한 정보만 정확하게 추출합니다. 메모에 없는 내용은 빈 문자열로 남겨두세요.'
 
-async function parseWithClaude(rmText: string): Promise<ParsedRmFields> {
-  const apiKey = process.env.ANTHROPIC_API_KEY ?? process.env.CLAUDE_API_KEY
-  const client = new Anthropic({ apiKey })
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
-    system: SYSTEM_PROMPT,
-    tools: [TOOL_SCHEMA],
-    tool_choice: { type: 'any' as const },
-    messages: [{ role: 'user', content: `다음 실시간 메모(RM)에서 보고서 필드를 추출해주세요:\n\n${rmText}` }],
-  })
-  const toolUse = message.content.find(b => b.type === 'tool_use')
-  if (!toolUse || toolUse.type !== 'tool_use') throw new Error('No tool use in response')
-  return toolUse.input as ParsedRmFields
+const RESPONSE_SCHEMA: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    diagnosisContent:      { type: SchemaType.STRING, description: '진단 내용 — 병명, 증상, 소견. 없으면 빈 문자열.' },
+    treatmentResult:       { type: SchemaType.STRING, description: '치료 내용 및 처치 결과. 없으면 빈 문자열.' },
+    medicationInstruction: { type: SchemaType.STRING, description: '복약 지도 — 약 이름, 용법, 용량, 주의사항. 없으면 빈 문자열.' },
+    nextAppointmentDate:   { type: SchemaType.STRING, description: '다음 예약일 YYYY-MM-DD 형식. 없으면 빈 문자열.' },
+    department:            { type: SchemaType.STRING, description: '진료과 (예: 피부과, 내과). 없으면 빈 문자열.' },
+  },
+  required: ['diagnosisContent', 'treatmentResult', 'medicationInstruction', 'nextAppointmentDate', 'department'],
 }
+
+// ─── Gemini ──────────────────────────────────────────────────────────────────
+
+async function parseWithGemini(rmText: string): Promise<ParsedRmFields> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY 없음')
+
+  const genAI = new GoogleGenerativeAI(apiKey)
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: SYSTEM_PROMPT,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: RESPONSE_SCHEMA,
+      maxOutputTokens: 1024,
+      temperature: 0.1,
+    },
+  })
+
+  const result = await model.generateContent(
+    `다음 실시간 메모(RM)에서 보고서 필드를 추출해주세요:\n\n${rmText}`
+  )
+  const text = result.response.text()
+  const parsed = JSON.parse(text) as Partial<ParsedRmFields>
+  return {
+    diagnosisContent:     parsed.diagnosisContent     ?? '',
+    treatmentResult:      parsed.treatmentResult      ?? '',
+    medicationInstruction: parsed.medicationInstruction ?? '',
+    nextAppointmentDate:  parsed.nextAppointmentDate  ?? '',
+    department:           parsed.department           ?? '',
+  }
+}
+
+// ─── Groq fallback ───────────────────────────────────────────────────────────
 
 async function parseWithGroq(rmText: string): Promise<ParsedRmFields> {
   const client = new Groq({ apiKey: process.env.GROQ_API_KEY })
@@ -82,47 +81,42 @@ ${rmText}`,
   const raw = chat.choices[0]?.message?.content ?? '{}'
   const parsed = JSON.parse(raw) as Partial<ParsedRmFields>
   return {
-    diagnosisContent: parsed.diagnosisContent ?? '',
-    treatmentResult: parsed.treatmentResult ?? '',
+    diagnosisContent:      parsed.diagnosisContent     ?? '',
+    treatmentResult:       parsed.treatmentResult      ?? '',
     medicationInstruction: parsed.medicationInstruction ?? '',
-    nextAppointmentDate: parsed.nextAppointmentDate ?? '',
-    department: parsed.department ?? '',
+    nextAppointmentDate:   parsed.nextAppointmentDate  ?? '',
+    department:            parsed.department           ?? '',
   }
 }
+
+// ─── Handler ─────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { rmText?: string }
     const rmText = body.rmText?.trim()
+    if (!rmText) return NextResponse.json({ fields: null })
 
-    if (!rmText) {
-      return NextResponse.json({ fields: null })
-    }
-
-    // Claude 시도 → 실패 시 Groq fallback
-    const claudeKey = process.env.ANTHROPIC_API_KEY ?? process.env.CLAUDE_API_KEY
-    if (claudeKey && claudeKey !== '여기에_API_키_입력' && claudeKey !== 'your-claude-api-key') {
+    // 1순위: Gemini
+    const geminiKey = process.env.GEMINI_API_KEY
+    if (geminiKey) {
       try {
-        const fields = await parseWithClaude(rmText)
-        return NextResponse.json({ fields, provider: 'claude' })
+        const fields = await parseWithGemini(rmText)
+        return NextResponse.json({ fields, provider: 'gemini' })
       } catch (e) {
-        console.error('[parse-rm] Claude 실패:', e instanceof Error ? e.message : e)
+        console.error('[parse-rm] Gemini 실패:', e instanceof Error ? e.message : e)
       }
-    } else {
-      console.log('[parse-rm] Claude 키 없음 또는 placeholder')
     }
 
+    // 2순위: Groq
     const groqKey = process.env.GROQ_API_KEY
-    if (groqKey && groqKey !== '여기에_Groq_API_키_입력') {
+    if (groqKey) {
       try {
         const fields = await parseWithGroq(rmText)
-        console.log('[parse-rm] Groq 성공:', JSON.stringify(fields))
         return NextResponse.json({ fields, provider: 'groq' })
       } catch (e) {
         console.error('[parse-rm] Groq 실패:', e instanceof Error ? e.message : e)
       }
-    } else {
-      console.log('[parse-rm] Groq 키 없음 또는 placeholder. GROQ_API_KEY=', groqKey?.slice(0, 8))
     }
 
     return NextResponse.json({ fields: null, error: 'AI 서비스를 사용할 수 없습니다.' })

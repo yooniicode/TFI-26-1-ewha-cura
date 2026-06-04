@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum Nationality {
+    KOREA("한국"),
+    UNITED_STATES("미국"),
     VIETNAM("베트남"),
     CHINA("중국"),
     CAMBODIA("캄보디아"),

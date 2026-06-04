@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import { createClient } from '@/lib/supabase'
+import { setAccessToken } from '@/lib/auth-token'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
 import type { Gender, Nationality, VisaType } from '@/lib/types'
 import { GENDERS, NATIONALITIES, VISA_TYPES, useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -12,18 +12,21 @@ import PasswordInput from '@/components/ui/PasswordInput'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
 type SignupType = 'patient' | 'interpreter'
-
-function isInvalidLoginCredentials(error: { message: string }) {
-  return error.message.toLowerCase().includes('invalid login credentials')
-}
+type Mode = 'login' | 'signup'
 
 export default function LoginPage() {
   const router = useRouter()
   const { t } = useTranslation()
   const labels = useEnumLabels()
+  const [mode, setMode] = useState<Mode>('login')
+
+  // 로그인
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  // 회원가입
   const [name, setName] = useState('')
+  const [signupEmail, setSignupEmail] = useState('')
   const [signupPassword, setSignupPassword] = useState('')
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('')
   const [accountType, setAccountType] = useState<SignupType>('patient')
@@ -33,448 +36,129 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('')
   const [centerId, setCenterId] = useState('')
   const [centerName, setCenterName] = useState('')
-  const [isSignupMode, setIsSignupMode] = useState(false)
-  const [isForgotPasswordMode, setIsForgotPasswordMode] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [callbackMessage, setCallbackMessage] = useState('')
-  const [magicSent, setMagicSent] = useState(false)
-  const [resetSent, setResetSent] = useState(false)
-  const [signupDone, setSignupDone] = useState(false)
   const [signupStep, setSignupStep] = useState<1 | 2>(1)
 
-  function switchToSignupForMissingEmail() {
-    setIsForgotPasswordMode(false)
-    setIsSignupMode(true)
-    setSignupStep(1)
-    setError(t.login.err_not_found)
-  }
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  function handleNextStep() {
-    if (!name.trim()) { setError(t.login.err_name); return }
-    if (!centerId) { setError(t.login.err_center_select); return }
-    setError('')
-    setSignupStep(2)
-  }
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const errorCode = params.get('error')
-    if (!errorCode) return
-    const msgMap: Record<string, string> = {
-      auth_link_browser_mismatch: t.login.err_browser_mismatch,
-      auth_link_invalid: t.login.err_link_invalid,
-      auth_callback_failed: t.login.err_callback_failed,
-    }
-    setCallbackMessage(msgMap[errorCode] ?? t.login.err_callback_failed)
-    setIsSignupMode(false)
-    setIsForgotPasswordMode(false)
-    window.history.replaceState(null, '', '/login')
-  }, [t])
+  // ─── 로그인 ────────────────────────────────────────────────────────────────
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true); setError('')
-    const supabase = createClient()
     const loginEmail = email.trim()
-    if (!loginEmail) { setError(t.login.err_email); setLoading(false); return }
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
-    if (error) {
-      if (isInvalidLoginCredentials(error)) {
-        try {
-          const res = await authApi.emailExists(loginEmail)
-          if (!res.payload.exists) {
-            switchToSignupForMissingEmail()
-            setLoading(false)
-            return
-          }
-        } catch {
-          // Keep Supabase's original error if the email existence lookup is unavailable.
-        }
-      }
-      setError(error.message); setLoading(false); return
-    }
-    router.push('/auth/complete')
-  }
-
-  async function handleMagicLink() {
-    if (!email) { setError(t.login.err_email); return }
+    if (!loginEmail) { setError(t.login.err_email); return }
+    if (!password) { setError(t.login.err_password); return }
     setLoading(true); setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { 
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        shouldCreateUser: false,
-      },
-    })
-    
-    if (error) { 
-      if (error.message.includes('Signups not allowed for otp') || error.status === 400) {
-        switchToSignupForMissingEmail()
-      } else {
-        setError(error.message)
+    try {
+      const res = await authApi.login({ email: loginEmail, password })
+      if (res.payload?.token) {
+        setAccessToken(res.payload.token)
+        router.replace('/dashboard')
       }
-      setLoading(false); return 
-    }
-    setMagicSent(true); setLoading(false)
-  }
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) { setError(t.login.err_name); return }
-    if (!centerId) { setError(t.login.err_center_select); return }
-    if (!email) { setError(t.login.err_email); return }
-    if (!signupPassword) { setError(t.login.err_password); return }
-    if (signupPassword.length < 8) { setError(t.login.err_password_min); return }
-    if (signupPassword !== signupPasswordConfirm) {
-      setError(t.login.err_password_confirm)
-      return
-    }
-
-    setLoading(true); setError('')
-    const supabase = createClient()
-    const requestedRole = accountType === 'patient' ? 'patient' : 'interpreter'
-    const requestedInterpreterRole = accountType === 'interpreter' ? 'ACTIVIST' : undefined
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: signupPassword,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: {
-          name: name.trim(),
-          phone,
-          requested_role: requestedRole,
-          ...(accountType !== 'patient'
-            ? {
-                requested_center_name: centerName.trim(),
-                ...(centerId ? { requested_center_id: centerId } : {}),
-              }
-            : {}),
-          ...(requestedInterpreterRole ? { requested_interpreter_role: requestedInterpreterRole } : {}),
-          ...(accountType === 'patient' ? {
-            requested_center_id: centerId,
-            requested_center_name: centerName.trim(),
-            nationality,
-            gender,
-            visa_type: visaType,
-          } : {}),
-        },
-      },
-    })
-
-    if (error) { setError(error.message); setLoading(false); return }
-
-    if (data.session) {
-      router.push('/auth/complete')
-    } else {
-      setSignupDone(true)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '로그인에 실패했습니다')
+    } finally {
       setLoading(false)
     }
   }
 
-  async function handleForgotPassword(e?: React.FormEvent) {
-    if (e) e.preventDefault()
-    if (!email) {
-      setError(t.login.err_email)
-      setIsForgotPasswordMode(true)
-      setIsSignupMode(false)
-      return
-    }
+  // ─── 회원가입 step 1 → 2 ───────────────────────────────────────────────────
+
+  function handleNextStep() {
+    if (!name.trim()) { setError(t.login.err_name); return }
+    if (!centerId) { setError(t.login.err_center_select); return }
+    setError(''); setSignupStep(2)
+  }
+
+  // ─── 회원가입 제출 ─────────────────────────────────────────────────────────
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault()
+    if (!signupEmail.trim()) { setError(t.login.err_email); return }
+    if (!signupPassword) { setError(t.login.err_password); return }
+    if (signupPassword.length < 8) { setError(t.login.err_password_min); return }
+    if (signupPassword !== signupPasswordConfirm) { setError(t.login.err_password_confirm); return }
     setLoading(true); setError('')
-    const supabase = createClient()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
-    })
-    if (error) { setError(error.message); setLoading(false); return }
-    setResetSent(true); setLoading(false)
+    try {
+      const res = await authApi.signup({
+        email: signupEmail.trim(),
+        password: signupPassword,
+        name: name.trim(),
+        role: accountType,
+        phone: phone.trim() || undefined,
+        centerId: centerId || undefined,
+        centerName: centerName.trim() || undefined,
+        ...(accountType === 'patient' ? { nationality, gender, visaType } : {}),
+        ...(accountType === 'interpreter' ? { interpreterRole: 'ACTIVIST' as const } : {}),
+      })
+      if (res.payload?.token) {
+        setAccessToken(res.payload.token)
+        router.replace('/dashboard')
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '회원가입에 실패했습니다')
+      setLoading(false)
+    }
   }
 
-  if (magicSent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="card max-w-sm w-full text-center py-10">
-          <p className="text-4xl mb-4">📧</p>
-          <h2 className="font-bold text-lg mb-2">{t.login.check_email}</h2>
-          <p className="text-sm text-gray-500">{t.login.magic_link_sent(email)}</p>
-        </div>
-      </div>
-    )
+  function switchMode(next: Mode) {
+    setError('')
+    setSignupStep(1)
+    setMode(next)
   }
 
-  if (resetSent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="card max-w-sm w-full text-center py-10">
-          <p className="text-4xl mb-4">📧</p>
-          <h2 className="font-bold text-lg mb-2">{t.login.check_email}</h2>
-          <p className="text-sm text-gray-500">{t.login.reset_sent(email)}</p>
-          <button
-            type="button"
-            className="btn-primary w-full mt-5"
-            onClick={() => {
-              setResetSent(false)
-              setIsForgotPasswordMode(false)
-            }}
-          >
-            {t.login.back_to_login}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (signupDone) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="card max-w-sm w-full text-center py-10">
-          <p className="text-4xl mb-4">✅</p>
-          <h2 className="font-bold text-lg mb-2">{t.login.signup_done_title}</h2>
-          <p className="text-sm text-gray-500">{t.login.signup_done_msg(email)}</p>
-          <button
-            type="button"
-            className="btn-primary w-full mt-5"
-            onClick={() => {
-              setSignupDone(false)
-              setIsSignupMode(false)
-            }}
-          >
-            {t.login.back_to_login}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  const accountTypes: { value: SignupType; label: string; desc: string }[] = [
-    { value: 'patient', label: t.login.type_patient, desc: t.login.type_patient_desc },
-    // Admin signup is disabled.
-    { value: 'interpreter', label: t.login.type_interpreter, desc: t.login.type_interpreter_desc },
-  ]
+  // ─── 렌더 ──────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="card max-w-sm w-full">
-        <div className="mb-4 flex justify-end">
-          <LanguageSwitcher />
-        </div>
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-primary-700">{t.login.app_name}</h1>
-          <p className="text-sm text-gray-500 mt-1">{t.login.subtitle}</p>
-        </div>
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col max-w-lg mx-auto">
 
-        {callbackMessage && (
-          <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-relaxed text-red-700">
-            {callbackMessage}
+      {/* 헤더 */}
+      <header className="bg-white px-5 py-4 flex items-center justify-between border-b border-[#EEEEEE]">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-[#2592FF] flex items-center justify-center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 00-3-3.87" />
+              <path d="M16 3.13a4 4 0 010 7.75" />
+            </svg>
           </div>
-        )}
+          <span className="text-base font-bold text-[#161616]">LinkUs</span>
+        </div>
+        <LanguageSwitcher />
+      </header>
 
-        {isForgotPasswordMode ? (
-          <form onSubmit={handleForgotPassword} className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-4 font-medium">{t.login.forgot_desc}</p>
-              <label className="label">{t.auth.email}</label>
-              <input
-                type="email"
-                className="input"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder={t.login.email_placeholder}
-                required
-              />
-            </div>
-            {error && <p className="text-red-500 text-xs">{error}</p>}
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? t.login.sending : t.login.forgot_submit}
-            </button>
-            <div className="mt-3 text-center">
-              <button
-                type="button"
-                onClick={() => { setError(''); setIsForgotPasswordMode(false) }}
-                className="text-sm text-gray-600 hover:underline"
-              >
-                {t.login.back_to_login_link}
-              </button>
-            </div>
-          </form>
-        ) : isSignupMode ? (
-          <form onSubmit={handleSignup} className="space-y-4">
-            {/* Progress bar */}
-            <div className="mb-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${signupStep >= 1 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>1</div>
-                <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary-600 rounded-full transition-all duration-300"
-                    style={{ width: signupStep === 2 ? '100%' : '0%' }}
-                  />
-                </div>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${signupStep >= 2 ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className={`text-xs ${signupStep === 1 ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>내 정보</span>
-                <span className={`text-xs ${signupStep === 2 ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>계정 만들기</span>
-              </div>
-            </div>
-
-            {signupStep === 1 && (
-              <>
-                <div>
-                  <label className="label">{t.auth.name}</label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    placeholder={t.auth.name}
-                  />
-                </div>
-                <div>
-                  <label className="label">{t.login.account_type}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {accountTypes.map(({ value, label, desc }) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() => {
-                          setAccountType(value)
-                          setCenterId('')
-                          setCenterName('')
-                        }}
-                        className={`rounded-lg border-2 p-3 text-left transition-colors ${
-                          accountType === value
-                            ? 'border-primary-600 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <p className={`text-sm font-semibold ${accountType === value ? 'text-primary-700' : 'text-gray-700'}`}>
-                          {label}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="label">{t.login.phone}</label>
-                  <input
-                    type="text"
-                    className="input"
-                    value={phone}
-                    onChange={e => setPhone(e.target.value)}
-                    placeholder="010-0000-0000"
-                  />
-                </div>
-                <div>
-                  <label className="label">{t.login.work_center}</label>
-                  <CenterSearchSelect
-                    valueName={centerName}
-                    placeholder={t.login.center_search_placeholder}
-                    onSelect={(center) => {
-                      setCenterId(center.id)
-                      setCenterName(center.name)
-                    }}
-                  />
-                  {accountType === 'interpreter' && (
-                    <p className="text-xs text-gray-500 mt-1">{t.login.center_admin_note}</p>
-                  )}
-                </div>
-                {accountType === 'patient' && (
-                  <>
-                    <div>
-                      <label className="label">{t.login.nationality}</label>
-                      <select className="input" value={nationality} onChange={e => setNationality(e.target.value as Nationality)}>
-                        {NATIONALITIES.map(value => (
-                          <option key={value} value={value}>{labels.nationality[value]}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="label">{t.login.gender}</label>
-                      <select className="input" value={gender} onChange={e => setGender(e.target.value as Gender)}>
-                        {GENDERS.map(value => (
-                          <option key={value} value={value}>{labels.gender[value]}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="label">{t.login.visa}</label>
-                      <select className="input" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
-                        {VISA_TYPES.map(value => (
-                          <option key={value} value={value}>{labels.visa[value]}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                )}
-                {error && <p className="text-red-500 text-xs">{error}</p>}
-                <button type="button" className="btn-primary w-full" onClick={handleNextStep}>
-                  다음
-                </button>
-              </>
+      {/* 탭 */}
+      <div className="bg-white border-b border-[#EEEEEE] flex">
+        {(['login', 'signup'] as Mode[]).map(m => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => switchMode(m)}
+            className={`flex-1 py-3.5 text-sm font-semibold transition-colors relative ${
+              mode === m ? 'text-[#2592FF]' : 'text-[#A0A0A0]'
+            }`}
+          >
+            {m === 'login' ? '로그인' : '회원가입'}
+            {mode === m && (
+              <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#2592FF] rounded-full" />
             )}
+          </button>
+        ))}
+      </div>
 
-            {signupStep === 2 && (
-              <>
-                <div>
-                  <label className="label">{t.auth.email}</label>
-                  <input
-                    type="email"
-                    className="input"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder={t.login.email_placeholder}
-                  />
-                </div>
-                <div>
-                  <label className="label">{t.auth.password}</label>
-                  <PasswordInput
-                    value={signupPassword}
-                    onChange={setSignupPassword}
-                    placeholder={t.login.password_min_hint}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div>
-                  <label className="label">{t.login.password_confirm}</label>
-                  <PasswordInput
-                    value={signupPasswordConfirm}
-                    onChange={setSignupPasswordConfirm}
-                    placeholder={t.login.password_reenter}
-                    required
-                    autoComplete="new-password"
-                  />
-                  {signupPasswordConfirm && (
-                    <p className={`text-xs mt-1 ${signupPassword === signupPasswordConfirm ? 'text-green-600' : 'text-red-500'}`}>
-                      {signupPassword === signupPasswordConfirm ? t.login.password_match : t.login.password_no_match}
-                    </p>
-                  )}
-                </div>
-                {error && <p className="text-red-500 text-xs">{error}</p>}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="btn-secondary flex-1"
-                    onClick={() => { setError(''); setSignupStep(1) }}
-                  >
-                    이전
-                  </button>
-                  <button type="submit" className="btn-primary flex-1" disabled={loading}>
-                    {loading ? t.login.signing_up : t.auth.signup}
-                  </button>
-                </div>
-              </>
-            )}
-          </form>
-        ) : (
-          <>
-            <form onSubmit={handleLogin} className="space-y-4">
+      {/* 컨텐츠 */}
+      <div className="flex-1 px-4 py-6">
+
+        {/* ── 로그인 ─────────────────────────────────────────────────────────── */}
+        {mode === 'login' && (
+          <form onSubmit={handleLogin} className="space-y-3">
+            <div className="bg-white rounded-2xl px-5 py-5 space-y-4">
               <div>
-                <label className="label">{t.auth.email}</label>
+                <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.auth.email}</label>
                 <input
                   type="email"
-                  className="input"
+                  className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-[#2592FF]/30"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder={t.login.email_placeholder}
@@ -482,61 +166,248 @@ export default function LoginPage() {
                 />
               </div>
               <div>
-                <label className="label">{t.auth.password}</label>
+                <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.auth.password}</label>
                 <PasswordInput
                   value={password}
                   onChange={setPassword}
                   placeholder={t.login.password_placeholder}
                   autoComplete="current-password"
+                  className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-[#2592FF]/30"
                 />
               </div>
-
-              {error && <p className="text-red-500 text-xs">{error}</p>}
-
-              <button type="submit" className="btn-primary w-full" disabled={loading}>
-                {loading ? t.login.logging_in : t.auth.login}
-              </button>
-            </form>
-
-            <div className="mt-3 text-center space-x-1">
-              <button
-                type="button"
-                onClick={handleMagicLink}
-                disabled={loading}
-                className="text-sm text-primary-600 hover:underline"
-              >
-                {t.login.magic_link}
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                type="button"
-                onClick={() => handleForgotPassword()}
-                disabled={loading}
-                className="text-sm text-primary-600 hover:underline"
-              >
-                {t.login.forgot_password}
-              </button>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
-          </>
+
+            <button
+              type="submit"
+              className="w-full h-[56px] bg-[#2592FF] rounded-2xl text-base font-bold text-white disabled:opacity-40 transition-opacity hover:bg-[#1a7ee6] active:bg-[#1568c7]"
+              disabled={loading}
+            >
+              {loading ? '로그인 중...' : t.auth.login}
+            </button>
+
+            <p className="text-center text-sm text-[#808080] pt-1">
+              계정이 없으신가요?{' '}
+              <button type="button" onClick={() => switchMode('signup')} className="text-[#2592FF] font-semibold hover:underline">
+                회원가입
+              </button>
+            </p>
+          </form>
         )}
 
-        {!isForgotPasswordMode && (
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              disabled={loading}
-              className="text-sm text-gray-600 hover:underline"
-              onClick={() => {
-                setError('')
-                setSignupStep(1)
-                setIsSignupMode(prev => !prev)
-              }}
-            >
-              {isSignupMode ? t.login.already_have_account : t.auth.signup}
-            </button>
-          </div>
+        {/* ── 회원가입 ────────────────────────────────────────────────────────── */}
+        {mode === 'signup' && (
+          <form onSubmit={handleSignup} className="space-y-3">
+
+            {/* 스텝 인디케이터 */}
+            <div className="flex items-center gap-2 px-1 mb-1">
+              {[1, 2].map(n => (
+                <div key={n} className="flex items-center gap-2 flex-1">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                    signupStep >= n ? 'bg-[#2592FF] text-white' : 'bg-[#EEEEEE] text-[#A0A0A0]'
+                  }`}>
+                    {signupStep > n ? (
+                      <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                        <path d="M1 4.5L4.5 8L11 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : n}
+                  </div>
+                  <span className={`text-xs font-medium ${signupStep >= n ? 'text-[#2592FF]' : 'text-[#A0A0A0]'}`}>
+                    {n === 1 ? '내 정보' : '계정 만들기'}
+                  </span>
+                  {n === 1 && <div className={`flex-1 h-0.5 rounded-full transition-colors ${signupStep > 1 ? 'bg-[#2592FF]' : 'bg-[#EEEEEE]'}`} />}
+                </div>
+              ))}
+            </div>
+
+            {/* Step 1 */}
+            {signupStep === 1 && (
+              <div className="bg-white rounded-2xl px-5 py-5 space-y-4">
+                {/* 이름 */}
+                <FormField label={t.auth.name}>
+                  <input
+                    type="text"
+                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    placeholder={t.auth.name}
+                  />
+                </FormField>
+
+                {/* 역할 선택 */}
+                <FormField label={t.login.account_type}>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { value: 'patient' as SignupType, label: '이주민', desc: '의료 대본 · 진료 기록', icon: '/icons/immigrant/home/진료기록.svg' },
+                      { value: 'interpreter' as SignupType, label: '통번역가', desc: '보고서 · 담당 환자', icon: '/icons/interpreter/home/담당환자.svg' },
+                    ] as const).map(({ value, label, desc, icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => { setAccountType(value); setCenterId(''); setCenterName('') }}
+                        className={`rounded-2xl border-2 p-4 text-left transition-all ${
+                          accountType === value
+                            ? 'border-[#2592FF] bg-[#f3f9ff]'
+                            : 'border-[#EEEEEE] bg-white hover:border-[#D1D1D1]'
+                        }`}
+                      >
+                        <img src={icon} alt="" width={22} height={22} className="mb-2" />
+                        <p className={`text-sm font-bold ${accountType === value ? 'text-[#2592FF]' : 'text-[#161616]'}`}>{label}</p>
+                        <p className="text-xs text-[#A0A0A0] mt-0.5">{desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </FormField>
+
+                {/* 전화번호 */}
+                <FormField label={t.login.phone}>
+                  <input
+                    type="text"
+                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="010-0000-0000"
+                  />
+                </FormField>
+
+                {/* 센터 */}
+                <FormField label={accountType === 'patient' ? '담당 센터' : t.login.work_center}>
+                  <CenterSearchSelect
+                    valueName={centerName}
+                    placeholder={t.login.center_search_placeholder}
+                    onSelect={center => { setCenterId(center.id); setCenterName(center.name) }}
+                  />
+                </FormField>
+
+                {/* 이주민 전용 */}
+                {accountType === 'patient' && (
+                  <>
+                    <FormField label={t.login.nationality}>
+                      <select
+                        className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none"
+                        value={nationality}
+                        onChange={e => setNationality(e.target.value as Nationality)}
+                      >
+                        {NATIONALITIES.map(v => <option key={v} value={v}>{labels.nationality[v]}</option>)}
+                      </select>
+                    </FormField>
+                    <FormField label={t.login.gender}>
+                      <div className="grid grid-cols-3 gap-2">
+                        {GENDERS.map(v => (
+                          <button
+                            key={v}
+                            type="button"
+                            onClick={() => setGender(v)}
+                            className={`rounded-xl py-3 text-sm font-medium transition-all border-2 ${
+                              gender === v
+                                ? 'border-[#2592FF] bg-[#f3f9ff] text-[#2592FF]'
+                                : 'border-[#EEEEEE] bg-white text-[#494949] hover:border-[#D1D1D1]'
+                            }`}
+                          >
+                            {labels.gender[v]}
+                          </button>
+                        ))}
+                      </div>
+                    </FormField>
+                    <FormField label={t.login.visa}>
+                      <select
+                        className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none"
+                        value={visaType}
+                        onChange={e => setVisaType(e.target.value as VisaType)}
+                      >
+                        {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
+                      </select>
+                    </FormField>
+                  </>
+                )}
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                <button
+                  type="button"
+                  className="w-full h-[56px] bg-[#2592FF] rounded-2xl text-base font-bold text-white hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
+                  onClick={handleNextStep}
+                >
+                  다음
+                </button>
+              </div>
+            )}
+
+            {/* Step 2 */}
+            {signupStep === 2 && (
+              <div className="bg-white rounded-2xl px-5 py-5 space-y-4">
+                <FormField label={t.auth.email}>
+                  <input
+                    type="email"
+                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
+                    value={signupEmail}
+                    onChange={e => setSignupEmail(e.target.value)}
+                    placeholder={t.login.email_placeholder}
+                  />
+                </FormField>
+                <FormField label={t.auth.password}>
+                  <PasswordInput
+                    value={signupPassword}
+                    onChange={setSignupPassword}
+                    placeholder={t.login.password_min_hint}
+                    autoComplete="new-password"
+                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
+                  />
+                </FormField>
+                <FormField label={t.login.password_confirm}>
+                  <PasswordInput
+                    value={signupPasswordConfirm}
+                    onChange={setSignupPasswordConfirm}
+                    placeholder={t.login.password_reenter}
+                    autoComplete="new-password"
+                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
+                  />
+                  {signupPasswordConfirm && (
+                    <p className={`text-xs mt-1.5 ${signupPassword === signupPasswordConfirm ? 'text-[#2592FF]' : 'text-red-500'}`}>
+                      {signupPassword === signupPasswordConfirm ? t.login.password_match : t.login.password_no_match}
+                    </p>
+                  )}
+                </FormField>
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    className="w-[100px] h-[56px] bg-[#F0F1F5] rounded-2xl text-base font-semibold text-[#494949] hover:bg-[#e4e4e8] transition-colors"
+                    onClick={() => { setError(''); setSignupStep(1) }}
+                  >
+                    이전
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 h-[56px] bg-[#2592FF] rounded-2xl text-base font-bold text-white disabled:opacity-40 hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
+                    disabled={loading}
+                  >
+                    {loading ? '가입 중...' : t.auth.signup}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <p className="text-center text-sm text-[#808080] pt-1">
+              이미 계정이 있으신가요?{' '}
+              <button type="button" onClick={() => switchMode('login')} className="text-[#2592FF] font-semibold hover:underline">
+                로그인
+              </button>
+            </p>
+          </form>
         )}
       </div>
+    </div>
+  )
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-[#161616] mb-1.5">{label}</label>
+      {children}
     </div>
   )
 }

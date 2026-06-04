@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { z } from 'zod'
-import { getAccessToken, refreshAccessToken } from '../supabase'
+import { getAccessToken, clearAccessToken } from '../auth-token'
 import type { ApiResponse } from '../types'
 
 export class ApiError extends Error {
@@ -19,32 +19,24 @@ export class ApiError extends Error {
 
 const instance = axios.create({ baseURL: '/api/v1' })
 
-type AuthRetryConfig = InternalAxiosRequestConfig & {
-  _authRetry?: boolean
-}
-
-instance.interceptors.request.use(async config => {
-  const token = await getAccessToken()
+instance.interceptors.request.use(config => {
+  const token = getAccessToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
 instance.interceptors.response.use(
   res => res,
-  async err => {
+  (err) => {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status ?? 0
-      const config = err.config as AuthRetryConfig | undefined
-
-      if (status === 401 && config && !config._authRetry) {
-        config._authRetry = true
-        const token = await refreshAccessToken()
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`
-          return instance.request(config)
+      // 401 응답이면 토큰을 지우고 로그인 페이지로 (클라이언트 사이드에서)
+      if (status === 401) {
+        clearAccessToken()
+        if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
         }
       }
-
       const message = extractErrorMessage(err.response?.data) ?? err.message
       throw new ApiError(message, status)
     }

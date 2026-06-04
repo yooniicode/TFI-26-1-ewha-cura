@@ -4,15 +4,18 @@ import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
+import PageHeader from '@/components/interpreter/PageHeader'
+import PatientInfoBar, { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
+import { useTranslation } from '@/lib/i18n/I18nContext'
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 
-function consultDateKo(dateStr: string) {
-  const d = new Date(dateStr + 'T00:00:00')
-  if (isNaN(d.getTime())) return dateStr
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
-  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${dow})`
+function getKSTDateStr() {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000)
+  return kst.toISOString().split('T')[0]
 }
 
 function calcAge(birthDate?: string | null): string {
@@ -27,6 +30,13 @@ function calcAge(birthDate?: string | null): string {
 
 function formatTime(date: Date) {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+function consultDateKo(dateStr: string) {
+  const d = new Date(dateStr + 'T00:00:00')
+  if (isNaN(d.getTime())) return dateStr
+  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${dow})`
 }
 
 function formatStartedAt(date: Date) {
@@ -45,12 +55,136 @@ export default function RmNewPage() {
 }
 
 function RmWriteInner() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const patientId = searchParams.get('patientId') ?? ''
   const cid = searchParams.get('cid')
 
+  if (!patientId) return <RmPatientSelect />
+
+  return <RmMemoEditor patientId={patientId} cid={cid} />
+}
+
+// ─── 환자 선택 화면 ────────────────────────────────────────────────────────────
+
+function RmPatientSelect() {
+  const router = useRouter()
   const labels = useEnumLabels()
+  const { t } = useTranslation()
+  const todayStr = getKSTDateStr()
+
+  const { data: allConsultations = [] } = useQuery<Consultation[]>({
+    queryKey: queryKeys.consultations.list(0),
+    queryFn: () => consultationApi.list(0).then(r => r.payload ?? []),
+  })
+  const { data: allPatients = [], isLoading: patientsLoading } = useQuery<Patient[]>({
+    queryKey: queryKeys.patients.list(0),
+    queryFn: () => patientApi.list(0).then(r => r.payload ?? []),
+  })
+
+  const todayConsultations = allConsultations.filter(c => c.consultationDate === todayStr)
+  const assignedPatients = allPatients.filter(p => p.assignedToMe)
+
+  return (
+    <AppShell noPadding>
+      <PageHeader title={t.realtime_memo.title} showClose onClose={() => router.back()} />
+      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen space-y-4">
+
+        {/* 오늘 진료 예정 */}
+        {todayConsultations.length > 0 && (
+          <section>
+            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">오늘 진료 예정</p>
+            <div className="space-y-2">
+              {todayConsultations.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => router.push(`/rm/new?patientId=${c.patientId}&cid=${c.id}`)}
+                  className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-4 hover:bg-[#f3f9ff] transition-colors text-left"
+                >
+                  <div className="relative shrink-0">
+                    <img
+                      src={c.patientGender === 'FEMALE'
+                        ? '/icons/common/gender/small-여성-배경o.svg'
+                        : '/icons/common/gender/small-남성-배경o.svg'}
+                      alt="" width={36} height={36}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-semibold text-[#161616] truncate">{c.patientName}</p>
+                    <p className="text-sm text-[#808080]">
+                      {[c.hospitalName, c.department].filter(Boolean).join(' ') || '병원 미정'}
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold text-[#2592FF] bg-[#EAF4FF] rounded-full px-2.5 py-1 shrink-0">오늘</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {todayConsultations.length > 0 && assignedPatients.length > 0 && (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#E0E0E0]" />
+            <span className="text-xs text-[#A0A0A0] shrink-0">담당 환자</span>
+            <div className="flex-1 h-px bg-[#E0E0E0]" />
+          </div>
+        )}
+
+        {/* 담당 환자 목록 */}
+        {patientsLoading ? (
+          <div className="flex justify-center py-10"><Spinner /></div>
+        ) : assignedPatients.length === 0 && todayConsultations.length === 0 ? (
+          <div className="bg-white rounded-2xl px-5 py-10 text-center">
+            <p className="text-sm text-[#A0A0A0]">담당 환자가 없습니다</p>
+          </div>
+        ) : (
+          <section>
+            {todayConsultations.length === 0 && (
+              <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">담당 환자</p>
+            )}
+            <div className="space-y-2">
+              {assignedPatients.map(p => {
+                const flag = getFlagSrc(p.nationality)
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => router.push(`/rm/new?patientId=${p.id}`)}
+                    className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-4 hover:bg-[#f3f9ff] transition-colors text-left"
+                  >
+                    <div className="relative shrink-0">
+                      <img
+                        src={p.gender === 'FEMALE'
+                          ? '/icons/common/gender/small-여성-배경o.svg'
+                          : '/icons/common/gender/small-남성-배경o.svg'}
+                        alt="" width={36} height={36}
+                      />
+                      {flag && <img src={flag} alt="" width={12} height={12} className="absolute -bottom-0.5 -right-0.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold text-[#161616] truncate">{p.name}</p>
+                      <p className="text-sm text-[#808080]">{labels.nationality[p.nationality]}</p>
+                    </div>
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
+                      <path d="M1 1l6 6-6 6" stroke="#C7C7C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        )}
+      </div>
+    </AppShell>
+  )
+}
+
+// ─── 메모 작성 화면 ───────────────────────────────────────────────────────────
+
+function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | null }) {
+  const router = useRouter()
+  const labels = useEnumLabels()
+  const { t } = useTranslation()
 
   const [patient, setPatient] = useState<Patient | null>(null)
   const [consultation, setConsultation] = useState<Consultation | null>(null)
@@ -78,14 +212,12 @@ function RmWriteInner() {
     }
   }, [patientId, cid])
 
-  // ref pattern: always captures latest state without stale closures
   const autoSaveRef = useRef<() => Promise<void>>(async () => {})
   autoSaveRef.current = async () => {
     if (!patientId || !remark.trim()) return
     setAutoSaving(true)
     try {
       if (savedCid) {
-        // consultation이 null이어도 기본값으로 update
         await consultationApi.update(savedCid, {
           consultationDate: consultation?.consultationDate ?? new Date().toISOString().split('T')[0],
           patientId: consultation?.patientId ?? patientId,
@@ -148,21 +280,17 @@ function RmWriteInner() {
             body: JSON.stringify({ rmText: remark }),
           })
           if (res.ok) {
-            const data = await res.json() as { fields: Record<string, string> | null; error?: string; provider?: string }
-            console.log('[RM] parse-rm 응답:', JSON.stringify(data))
+            const data = await res.json() as { fields: Record<string, string> | null; error?: string }
             if (data.fields) {
               sessionStorage.setItem('rm_parsed_fields', JSON.stringify(data.fields))
               setAiStatus('ok')
             } else {
-              console.warn('[RM] AI 파싱 결과 없음:', data.error)
               setAiStatus('fail')
             }
           } else {
-            console.warn('[RM] /api/parse-rm 응답 오류:', res.status)
             setAiStatus('fail')
           }
-        } catch (e) {
-          console.error('[RM] AI 파싱 fetch 실패:', e)
+        } catch {
           setAiStatus('fail')
         }
       }
@@ -184,54 +312,46 @@ function RmWriteInner() {
     : ''
 
   const patientName = patient?.name ?? consultation?.patientName ?? ''
+  const ageStr = calcAge(patient?.birthDate)
   const demographics = patient
     ? [
         labels.nationality[patient.nationality],
         labels.gender[patient.gender],
-        calcAge(patient.birthDate),
+        ageStr,
       ].filter(Boolean).join(' | ')
     : ''
 
   const patientRequest = consultation?.patientComment?.trim()
   const patientFirstName = patientName.split(' ')[0]
+  const flagSrc = patient ? getFlagSrc(patient.nationality) : undefined
 
   return (
     <AppShell noPadding>
-      {/* 헤더 */}
-      <div className="bg-white px-4 py-3 flex items-center gap-3 border-b border-[#F6F6F6]">
-        <button onClick={() => router.back()} className="text-gray-400 text-xl leading-none w-6">←</button>
-        <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">실시간 Remark 작성</h1>
-        <div className="w-6" />
-      </div>
+      <PageHeader title={t.realtime_memo.title} showClose onClose={() => router.back()} />
 
-      {/* 환자 정보 바 */}
-      <div className="bg-white px-8 py-5 border-b border-[#F6F6F6] flex justify-between items-center">
-        <div className="flex flex-col gap-1">
-          <span className="text-[#161616] text-xl font-medium">{patientName}</span>
-          {demographics && (
-            <span className="text-[#808080] text-base">{demographics}</span>
-          )}
-        </div>
-        <div className="w-6 h-6 flex items-center justify-center">
-          <div className="w-1.5 h-4 rounded-sm border-2 border-[#C7C7C7]" />
-        </div>
-      </div>
+      {/* 환자 정보 바 — 클릭 시 환자 프로필로 이동 */}
+      <PatientInfoBar
+        patientId={patientId || null}
+        patientName={patientName}
+        subtitle={demographics}
+        flagSrc={flagSrc}
+      />
 
       {/* 메인 */}
       <div className="bg-neutral-100 px-4 py-4 min-h-screen">
-        <div className="bg-white rounded-lg px-4 py-5 flex flex-col gap-4">
+        <div className="bg-white rounded-xl px-4 py-5 flex flex-col gap-4">
 
           {/* 이번 진료 + 작성 시작 */}
           <div className="flex justify-between items-start">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[#161616] text-base font-medium">이번진료</span>
+              <span className="text-[#161616] text-base font-medium">{t.realtime_memo.this_consultation}</span>
               <span className="text-[#5D5D5D] text-base">{contextDate}</span>
               {contextLocation && (
                 <span className="text-[#5D5D5D] text-sm max-w-[180px]">{contextLocation}</span>
               )}
             </div>
             <div className="flex flex-col items-end gap-0.5">
-              <span className="text-[#A0A0A0] text-xs">작성 시작</span>
+              <span className="text-[#A0A0A0] text-xs">{t.realtime_memo.started_at}</span>
               <span className="text-[#5D5D5D] text-sm font-medium">{formatStartedAt(startedAt)}</span>
             </div>
           </div>
@@ -240,63 +360,63 @@ function RmWriteInner() {
           {patientRequest && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-amber-700 tracking-wide">
-                {patientFirstName ? `${patientFirstName}씨 사전 요청사항` : '환자 사전 요청사항'}
+                {patientFirstName ? t.realtime_memo.patient_request_prefix(patientFirstName) : t.realtime_memo.patient_request_default}
               </span>
               <p className="text-sm text-[#424242] leading-relaxed whitespace-pre-wrap">{patientRequest}</p>
             </div>
           )}
 
-          {/* Remark 입력 */}
+          {/* 메모 입력 */}
           <textarea
             className="w-full min-h-[300px] px-4 py-6 bg-[#F3F9FF] rounded-lg border border-[#D1E8FF] text-[#161616] text-base leading-relaxed resize-none focus:outline-none focus:border-blue-400 placeholder:text-[#808080]"
             value={remark}
             onChange={e => setRemark(e.target.value)}
-            placeholder={'예시\n\n얼굴에 1도 화상으로 내원함. 처방받은 연고를 하루 3회 도포하도록 안내함. 피부 자극을 줄이기 위해 뜨거운 물 세안은 피하도록 설명함.'}
+            placeholder={t.realtime_memo.placeholder}
             autoFocus
           />
 
           {error && <p className="text-red-500 text-xs">{error}</p>}
 
-          {/* 저장 상태 + 수동 저장 버튼 */}
+          {/* 저장 상태 */}
           <div className="flex items-center justify-between">
             <div className="h-4">
               {autoSaving ? (
-                <span className="text-xs text-gray-400">저장 중...</span>
+                <span className="text-xs text-gray-400">{t.realtime_memo.saving}</span>
               ) : lastSavedAt ? (
-                <span className="text-xs text-gray-400">저장됨 {formatTime(lastSavedAt)}</span>
+                <span className="text-xs text-gray-400">{t.realtime_memo.saved(formatTime(lastSavedAt))}</span>
               ) : null}
             </div>
             <button
               type="button"
               onClick={() => autoSaveRef.current()}
               disabled={autoSaving || !remark.trim()}
-              className="text-xs text-blue-500 font-medium disabled:opacity-40 hover:underline"
+              className="text-xs text-[#2592FF] font-medium disabled:opacity-40 hover:underline"
             >
-              지금 저장
+              {t.realtime_memo.save_now}
             </button>
           </div>
 
           {/* AI 상태 */}
           {aiStatus !== 'idle' && (
             <div className={`text-center text-xs py-1 rounded ${
-              aiStatus === 'loading' ? 'text-blue-500' :
+              aiStatus === 'loading' ? 'text-[#2592FF]' :
               aiStatus === 'ok' ? 'text-green-600' :
               'text-red-400'
             }`}>
-              {aiStatus === 'loading' && 'AI가 RM을 분석하는 중...'}
-              {aiStatus === 'ok' && 'AI 분석 완료 — 보고서 칸에 자동 입력됩니다'}
-              {aiStatus === 'fail' && 'AI 분석 실패 — 보고서에서 직접 입력해주세요 (콘솔 확인)'}
+              {aiStatus === 'loading' && t.realtime_memo.ai_analyzing}
+              {aiStatus === 'ok' && t.realtime_memo.ai_done}
+              {aiStatus === 'fail' && t.realtime_memo.ai_fail}
             </div>
           )}
 
           {/* 보고서 쓰기 */}
           <button
             type="button"
-            className="btn-primary w-full"
+            className="w-full h-[54px] bg-[#2592FF] rounded-lg text-base font-semibold text-white disabled:opacity-40 transition-opacity"
             onClick={handleGoToReport}
             disabled={submitting || aiStatus === 'loading'}
           >
-            {submitting ? '저장 중...' : aiStatus === 'loading' ? 'AI 분석 중...' : '보고서 쓰기 →'}
+            {submitting ? t.realtime_memo.saving_btn : aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : t.realtime_memo.write_report}
           </button>
 
         </div>

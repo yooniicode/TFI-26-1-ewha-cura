@@ -38,4 +38,9 @@ public class AuthResponse {
     public record EmailExists(
             boolean exists
     ) {}
+
+    public record TokenMe(
+            String token,
+            Me me
+    ) {}
 }

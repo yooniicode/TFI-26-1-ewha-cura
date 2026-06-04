@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import AppShell from '@/components/AppShell'
+import PageHeader from '@/components/interpreter/PageHeader'
 import { adminApi, centerApi, patientApi, interpreterApi, authApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
-import { createClient } from '@/lib/supabase'
+import { clearAccessToken } from '@/lib/auth-token'
 import { useMe } from '@/hooks/useMe'
 import type { Center, Patient, Interpreter, VisaType } from '@/lib/types'
 import { VISA_TYPES, useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -14,6 +15,7 @@ import Spinner from '@/components/ui/Spinner'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { INTERPRETER_LANGUAGE_OPTIONS } from '@/lib/constants'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
+import { createClient } from '@/lib/supabase'
 
 export default function MyPage() {
   const queryClient = useQueryClient()
@@ -89,7 +91,7 @@ export default function MyPage() {
   }, [adminProfile])
 
   useEffect(() => {
-    const selected = centers.find(center => center.id === centerId)
+    const selected = centers.find(c => c.id === centerId)
     if (!selected) return
     setCenterName(selected.name)
     setCenterAddress(selected.address ?? '')
@@ -147,12 +149,7 @@ export default function MyPage() {
     useMutation<Center, Error>({
       mutationFn: () => {
         if (!centerName.trim()) return Promise.reject(new Error(t.mypage.err_center_name))
-        const body = {
-          name: centerName.trim(),
-          address: centerAddress.trim() || undefined,
-          phone: centerPhone.trim() || undefined,
-          active: true,
-        }
+        const body = { name: centerName.trim(), address: centerAddress.trim() || undefined, phone: centerPhone.trim() || undefined, active: true }
         return centerId
           ? centerApi.update(centerId, body).then(r => r.payload as Center)
           : centerApi.create(body).then(r => r.payload as Center)
@@ -163,6 +160,36 @@ export default function MyPage() {
       },
     })
 
+  // 프로필 사진
+  const AVATAR_KEY = `byby_avatar_${me?.authUserId ?? 'anon'}`
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem(`byby_avatar_${me?.authUserId ?? ''}`) : null
+  )
+  const [avatarUploading, setAvatarUploading] = useState(false)
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !me?.authUserId) return
+    setAvatarUploading(true)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `avatars/${me.authUserId}.${ext}`
+      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+      const url = `${data.publicUrl}?t=${Date.now()}`
+      setAvatarUrl(url)
+      localStorage.setItem(AVATAR_KEY, url)
+    } catch (err) {
+      console.error('아바타 업로드 실패:', err)
+    } finally {
+      setAvatarUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [pwError, setPwError] = useState('')
@@ -171,34 +198,33 @@ export default function MyPage() {
 
   async function handlePasswordChange(e: React.FormEvent) {
     e.preventDefault()
-    setPwError('')
-    setPwSuccess(false)
+    setPwError(''); setPwSuccess(false)
+    if (!currentPassword) { setPwError('현재 비밀번호를 입력해주세요'); return }
     if (newPassword.length < 8) { setPwError(t.mypage.err_password_min); return }
     if (newPassword !== confirmPassword) { setPwError(t.mypage.err_password_confirm); return }
     setPwSaving(true)
-    const { error } = await createClient().auth.updateUser({ password: newPassword })
-    setPwSaving(false)
-    if (error) { setPwError(error.message); return }
-    setPwSuccess(true)
-    setNewPassword('')
-    setConfirmPassword('')
+    try {
+      await authApi.changePassword({ currentPassword, newPassword })
+      setPwSuccess(true)
+      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
+    } catch (e) {
+      setPwError(e instanceof Error ? e.message : '비밀번호 변경에 실패했습니다')
+    } finally {
+      setPwSaving(false)
+    }
   }
 
   async function handleDeleteAccount() {
     if (!confirm(t.mypage.delete_confirm)) return
     try {
       await authApi.deleteAccount()
-      const supabase = createClient()
-      await supabase.auth.signOut()
+      clearAccessToken()
       window.location.href = '/login'
-    } catch (e) {
-      console.error(e)
-      alert(t.mypage.delete_error)
-    }
+    } catch { alert(t.mypage.delete_error) }
   }
 
-  async function handleLogout() {
-    await createClient().auth.signOut()
+  function handleLogout() {
+    clearAccessToken()
     window.location.href = '/login'
   }
 
@@ -206,9 +232,7 @@ export default function MyPage() {
   if (loading) {
     return (
       <AppShell noPadding>
-        <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
-          <h1 className="text-base font-semibold text-[#424242]">{t.mypage.title}</h1>
-        </div>
+        <PageHeader title={t.mypage.title} />
         <div className="flex justify-center pt-20"><Spinner /></div>
       </AppShell>
     )
@@ -218,49 +242,95 @@ export default function MyPage() {
     return null
   }
 
-  const roleLabel = me?.role === 'admin' ? t.mypage.role_admin : me?.role === 'interpreter' ? t.mypage.role_interpreter : t.mypage.role_patient
+  const roleLabel = me?.role === 'admin' ? t.mypage.role_admin
+    : me?.role === 'interpreter' ? t.mypage.role_interpreter
+    : t.mypage.role_patient
+
+  const genderIconSrc = me?.role === 'patient' && patient
+    ? patient.gender === 'FEMALE'
+      ? '/icons/common/gender/big-여성-배경o.svg'
+      : '/icons/common/gender/big-남성-배경o.svg'
+    : null
 
   return (
     <AppShell noPadding>
-      {/* 헤더 */}
-      <div className="bg-white px-4 py-3 border-b border-[#F6F6F6]">
-        <h1 className="text-base font-semibold text-[#424242]">{t.mypage.title}</h1>
-        <p className="text-xs text-[#808080] mt-0.5">{roleLabel} · {me?.name}</p>
-      </div>
+      <PageHeader title={t.mypage.title} />
 
-      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen space-y-3">
-        {/* 프로필 정보 */}
+      <div className="bg-[#F5F5F5] px-4 py-4 pb-10 min-h-screen space-y-3">
+
+        {/* 프로필 카드 — 상단 */}
+        <div className="bg-white rounded-2xl px-5 py-5 flex items-center gap-4">
+          {/* 아바타 + 업로드 버튼 */}
+          <label className="relative shrink-0 cursor-pointer group">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="프로필"
+                width={56}
+                height={56}
+                className="w-14 h-14 rounded-full object-cover border-2 border-[#EEEEEE]"
+              />
+            ) : genderIconSrc ? (
+              <img src={genderIconSrc} alt="" width={56} height={56} />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-[#DEE2FF] flex items-center justify-center text-2xl font-bold text-indigo-700">
+                {me?.name?.charAt(0) ?? '?'}
+              </div>
+            )}
+            {/* 카메라 오버레이 */}
+            <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              {avatarUploading ? (
+                <svg className="animate-spin w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+              disabled={avatarUploading}
+            />
+          </label>
+          <div className="min-w-0">
+            <p className="text-xl font-bold text-[#161616] truncate">{me?.name ?? '이름 없음'}</p>
+            <p className="text-sm text-[#808080] mt-0.5">
+              {roleLabel}
+              {me?.centerName ? ` · ${me.centerName}` : ''}
+            </p>
+          </div>
+        </div>
+
+        {/* 프로필 정보 수정 */}
         {me?.role !== 'admin' && (
-          <div className="bg-white rounded-xl px-4 py-4">
-            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-4">프로필 정보</p>
+          <Section title="프로필 정보">
             <form onSubmit={e => { e.preventDefault(); save() }} className="space-y-4">
-              <Field label={t.mypage.name_label} hint={t.mypage.name_hint}>
-                <input
-                  className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder={t.mypage.name_placeholder}
-                  required
-                />
+              <Field label={t.mypage.name_label}>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder={t.mypage.name_placeholder} required />
               </Field>
 
               {me?.role === 'patient' && (
                 <>
                   <Field label={t.mypage.phone}>
-                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
+                    <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
                   </Field>
                   <Field label={t.mypage.region}>
-                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]" value={region} onChange={e => setRegion(e.target.value)} />
+                    <Input value={region} onChange={e => setRegion(e.target.value)} />
                   </Field>
                   <Field label={t.mypage.visa_type}>
-                    <select className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
-                      {VISA_TYPES.map(value => (
-                        <option key={value} value={value}>{labels.visa[value]}</option>
-                      ))}
+                    <select className={INPUT_CLS} value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
+                      {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
                     </select>
                   </Field>
                   <Field label={t.mypage.visa_note}>
-                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616]" value={visaNote} onChange={e => setVisaNote(e.target.value)} />
+                    <Input value={visaNote} onChange={e => setVisaNote(e.target.value)} />
                   </Field>
                 </>
               )}
@@ -268,29 +338,19 @@ export default function MyPage() {
               {me?.role === 'interpreter' && (
                 <>
                   <Field label={t.mypage.phone}>
-                    <input className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]" value={intPhone} onChange={e => setIntPhone(e.target.value)} placeholder="010-0000-0000" />
-                    <p className="text-xs text-[#808080] mt-1">{t.mypage.interpreter_role_note}</p>
+                    <Input value={intPhone} onChange={e => setIntPhone(e.target.value)} placeholder="010-0000-0000" />
                   </Field>
                   <Field label={t.mypage.languages}>
                     <div className="grid grid-cols-2 gap-2">
-                      {INTERPRETER_LANGUAGE_OPTIONS.map(language => {
-                        const selected = interpreterLanguages.includes(language)
+                      {INTERPRETER_LANGUAGE_OPTIONS.map(lang => {
+                        const sel = interpreterLanguages.includes(lang)
                         return (
                           <button
-                            key={language}
-                            type="button"
-                            onClick={() => {
-                              setInterpreterLanguages(prev => selected
-                                ? prev.filter(item => item !== language)
-                                : [...prev, language])
-                            }}
-                            className={`rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors ${
-                              selected
-                                ? 'border-[#2592FF] bg-[#EAF4FF] text-[#2592FF]'
-                                : 'border-[#EEEEEE] text-[#494949] bg-[#F5F5F5]'
-                            }`}
+                            key={lang} type="button"
+                            onClick={() => setInterpreterLanguages(prev => sel ? prev.filter(l => l !== lang) : [...prev, lang])}
+                            className={`rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-colors ${sel ? 'border-[#2592FF] bg-[#f3f9ff] text-[#2592FF]' : 'border-[#EEEEEE] text-[#494949] bg-[#F5F5F5]'}`}
                           >
-                            {language}
+                            {lang}
                           </button>
                         )
                       })}
@@ -298,7 +358,7 @@ export default function MyPage() {
                   </Field>
                   <Field label={t.mypage.availability}>
                     <textarea
-                      className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] min-h-20 resize-none placeholder:text-[#A0A0A0]"
+                      className={`${INPUT_CLS} min-h-[80px] resize-none`}
                       value={availabilityNote}
                       onChange={e => setAvailabilityNote(e.target.value)}
                       placeholder={t.mypage.availability_placeholder}
@@ -307,131 +367,159 @@ export default function MyPage() {
                 </>
               )}
 
-              {saveError && <p className="text-red-500 text-xs">{saveError.message}</p>}
-              {isSuccess && <p className="text-[#2592FF] text-xs">{t.mypage.save_success}</p>}
-              <button
-                type="submit"
-                className="w-full h-11 rounded-lg bg-[#2592FF] text-sm font-semibold text-white disabled:opacity-60"
-                disabled={saving}
-              >
+              {saveError && <p className="text-red-500 text-sm">{saveError.message}</p>}
+              {isSuccess && <p className="text-[#2592FF] text-sm">{t.mypage.save_success}</p>}
+              <ActionButton type="submit" variant="primary" disabled={saving}>
                 {saving ? t.mypage.saving : t.common.save}
-              </button>
+              </ActionButton>
             </form>
-          </div>
+          </Section>
         )}
 
         {/* 소속 센터 (환자) */}
         {me?.role === 'patient' && (
-          <div className="bg-white rounded-xl px-4 py-4 space-y-3">
-            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide">{t.patient.affiliation_center}</p>
-            <div className="space-y-1">
+          <Section title={t.patient.affiliation_center}>
+            <div className="space-y-2 mb-3">
               {(patient?.centers ?? []).length === 0 ? (
-                <p className="text-sm text-[#A0A0A0]">{t.patient.no_center}</p>
+                <p className="text-sm text-[#A0A0A0] text-center py-3">{t.patient.no_center}</p>
               ) : (
-                patient?.centers.map(center => (
-                  <p key={center.id} className="rounded-lg bg-[#F5F5F5] px-3 py-2.5 text-sm text-[#494949]">
-                    {center.name}
-                  </p>
+                patient?.centers.map(c => (
+                  <div key={c.id} className="flex items-center gap-2 bg-[#F5F5F5] rounded-xl px-4 py-3">
+                    <div className="w-7 h-7 rounded-full bg-[#DEE2FF] flex items-center justify-center text-xs font-bold text-indigo-700 shrink-0">
+                      {c.name.charAt(0)}
+                    </div>
+                    <p className="text-sm font-medium text-[#161616] truncate">{c.name}</p>
+                  </div>
                 ))
               )}
             </div>
-            <div>
-              <p className="text-sm font-medium text-[#161616] mb-2">{t.patient.add_center}</p>
-              <CenterSearchSelect
-                valueName={patientCenterName}
-                placeholder={t.patient.center_search_placeholder}
-                onSelect={(center) => {
-                  setPatientCenterId(center.id)
-                  setPatientCenterName(center.name)
-                }}
-              />
-            </div>
-            {patientCenterError && <p className="text-red-500 text-xs">{patientCenterError.message}</p>}
-            <button
-              type="button"
-              className="w-full h-11 rounded-lg bg-[#F0F1F5] text-sm font-medium text-[#494949] disabled:opacity-40"
-              disabled={!patientCenterId || addingPatientCenter || (patient?.centers ?? []).some(center => center.id === patientCenterId)}
+            <CenterSearchSelect
+              valueName={patientCenterName}
+              placeholder={t.patient.center_search_placeholder}
+              onSelect={c => { setPatientCenterId(c.id); setPatientCenterName(c.name) }}
+            />
+            {patientCenterError && <p className="text-red-500 text-xs mt-1">{patientCenterError.message}</p>}
+            <ActionButton
+              className="mt-3"
+              variant="secondary"
+              disabled={!patientCenterId || addingPatientCenter || (patient?.centers ?? []).some(c => c.id === patientCenterId)}
               onClick={() => addPatientCenter()}
             >
-              {(patient?.centers ?? []).some(center => center.id === patientCenterId)
+              {(patient?.centers ?? []).some(c => c.id === patientCenterId)
                 ? t.patient.already_registered
-                : addingPatientCenter
-                  ? t.patient.adding
-                  : t.patient.add_center}
-            </button>
-          </div>
+                : addingPatientCenter ? t.patient.adding : t.patient.add_center}
+            </ActionButton>
+          </Section>
         )}
 
         {/* 비밀번호 변경 */}
-        <div className="bg-white rounded-xl px-4 py-4">
-          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-4">{t.mypage.password_change}</p>
+        <Section title={t.mypage.password_change}>
           <form onSubmit={handlePasswordChange} className="space-y-3">
+            <Field label="현재 비밀번호">
+              <PasswordInput value={currentPassword} onChange={setCurrentPassword} placeholder="현재 비밀번호 입력" autoComplete="current-password" className={INPUT_CLS} />
+            </Field>
             <Field label={t.mypage.new_password}>
-              <PasswordInput
-                value={newPassword}
-                onChange={setNewPassword}
-                placeholder={t.mypage.password_min_hint}
-                autoComplete="new-password"
-                className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]"
-              />
+              <PasswordInput value={newPassword} onChange={setNewPassword} placeholder={t.mypage.password_min_hint} autoComplete="new-password" className={INPUT_CLS} />
             </Field>
             <Field label={t.mypage.password_confirm}>
-              <PasswordInput
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                placeholder={t.mypage.password_reenter}
-                autoComplete="new-password"
-                className="w-full bg-[#F5F5F5] rounded-lg px-4 py-3 text-base outline-none text-[#161616] placeholder:text-[#A0A0A0]"
-              />
+              <PasswordInput value={confirmPassword} onChange={setConfirmPassword} placeholder={t.mypage.password_reenter} autoComplete="new-password" className={INPUT_CLS} />
               {confirmPassword && (
                 <p className={`text-xs mt-1 ${newPassword === confirmPassword ? 'text-[#2592FF]' : 'text-red-500'}`}>
                   {newPassword === confirmPassword ? t.mypage.password_match : t.mypage.password_no_match}
                 </p>
               )}
             </Field>
-            {pwError && <p className="text-red-500 text-xs">{pwError}</p>}
-            {pwSuccess && <p className="text-[#2592FF] text-xs">{t.mypage.password_success}</p>}
-            <button
-              type="submit"
-              className="w-full h-11 rounded-lg bg-[#F0F1F5] text-sm font-medium text-[#494949] disabled:opacity-40"
-              disabled={pwSaving || !newPassword || !confirmPassword}
-            >
+            {pwError && <p className="text-red-500 text-sm">{pwError}</p>}
+            {pwSuccess && <p className="text-[#2592FF] text-sm">{t.mypage.password_success}</p>}
+            <ActionButton type="submit" variant="secondary" disabled={pwSaving || !newPassword || !confirmPassword}>
               {pwSaving ? t.mypage.password_changing : t.mypage.password_change_btn}
-            </button>
+            </ActionButton>
           </form>
-        </div>
+        </Section>
 
         {/* 로그아웃 / 계정 삭제 */}
-        <div className="bg-white rounded-xl px-4 py-2">
+        <div className="bg-white rounded-2xl overflow-hidden">
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full text-sm text-red-500 py-3 text-left"
+            className="w-full flex items-center gap-3 px-5 py-4 text-sm font-semibold text-[#161616] hover:bg-[#F5F5F5] transition-colors"
           >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
             {t.mypage.logout}
           </button>
-          <div className="border-t border-[#F5F5F5]" />
+          <div className="h-px bg-[#F0F0F0] mx-5" />
           <button
             type="button"
             onClick={handleDeleteAccount}
-            className="w-full text-xs text-[#A0A0A0] py-3 text-left"
+            className="w-full flex items-center gap-3 px-5 py-4 text-sm text-red-400 hover:bg-red-50 transition-colors"
           >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
             {t.mypage.delete_account}
           </button>
         </div>
+
       </div>
     </AppShell>
   )
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+// ─── 공통 컴포넌트 ─────────────────────────────────────────────────────────────
+
+const INPUT_CLS = 'w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-[#2592FF]/20'
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-1">
-        <span className="text-sm font-medium text-[#161616]">{label}</span>
-        {hint && <span className="text-xs text-[#A0A0A0]">{hint}</span>}
-      </div>
+    <div className="bg-white rounded-2xl px-5 py-5">
+      <p className="text-xs font-bold text-[#A0A0A0] uppercase tracking-wider mb-4">{title}</p>
       {children}
     </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-[#161616]">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function Input({ className = '', ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={`${INPUT_CLS} ${className}`} {...props} />
+}
+
+function ActionButton({
+  children, variant = 'primary', className = '', type = 'button', disabled, onClick,
+}: {
+  children: React.ReactNode
+  variant?: 'primary' | 'secondary'
+  className?: string
+  type?: 'button' | 'submit'
+  disabled?: boolean
+  onClick?: () => void
+}) {
+  return (
+    <button
+      type={type}
+      disabled={disabled}
+      onClick={onClick}
+      className={`w-full h-[52px] rounded-xl text-sm font-bold transition-colors disabled:opacity-40 ${
+        variant === 'primary'
+          ? 'bg-[#2592FF] text-white hover:bg-[#1a7ee6] active:bg-[#1568c7]'
+          : 'bg-[#F0F1F5] text-[#494949] hover:bg-[#e4e4e8]'
+      } ${className}`}
+    >
+      {children}
+    </button>
   )
 }

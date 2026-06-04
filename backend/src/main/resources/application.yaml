@@ -2,6 +2,10 @@ spring:
   application:
     name: byby
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/byby}
     username: ${SPRING_DATASOURCE_USERNAME:byby}
@@ -19,7 +23,10 @@ spring:
         default_schema: public
 
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 3
 
   servlet:
     multipart:
@@ -53,7 +60,7 @@ byby:
       allowed-origins:
         - http://localhost:3000
         - ${FRONTEND_URL:http://localhost:3000}
-        - ${BACKEND_URL:http://localhost:8080}
+        - ${RAILWAY_STATIC_URL:}
 
   supabase:
     url: ${SUPABASE_URL:}
@@ -63,10 +70,9 @@ byby:
   admin:
     bootstrap-code: ${ADMIN_BOOTSTRAP_CODE:admin-setup-code}
 
-  claude:
-    api-key: ${CLAUDE_API_KEY:}
-    model: claude-3-5-haiku-20241022
-    base-url: https://api.anthropic.com
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: gemini-2.0-flash
 
 ---
 spring:

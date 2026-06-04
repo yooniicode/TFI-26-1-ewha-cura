@@ -35,7 +35,7 @@ public class ConsultationResponse {
                     c.getInterpreter() != null ? c.getInterpreter().getId() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
-                    c.getHospital() != null ? c.getHospital().getName() : null,
+                    c.getResolvedHospitalName(),
                     c.getIssueType(), c.isConfirmed(), c.getCreatedAt());
         }
     }
@@ -94,7 +94,7 @@ public class ConsultationResponse {
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getHospital() != null ? c.getHospital().getId() : null,
-                    c.getHospital() != null ? c.getHospital().getName() : null,
+                    c.getResolvedHospitalName(),
                     c.getDepartment(), c.getDoctorName(), c.getIssueType(), c.getMethod(), c.getProcessing(),
                     c.getMemo(), c.getPatientComment(), c.getTreatmentResult(),
                     c.getDiagnosisContent(), c.getDiagnosisNameCode(),
@@ -127,7 +127,7 @@ public class ConsultationResponse {
                     c.getId(), c.getConsultationDate(),
                     c.getInterpreter() != null ? c.getInterpreter().getId() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
-                    c.getHospital() != null ? c.getHospital().getName() : null,
+                    c.getResolvedHospitalName(),
                     c.getDepartment(), c.getDoctorName(), c.getPatientComment(),
                     c.getTreatmentResult(), c.getDiagnosisContent(), c.getDiagnosisNameCode(),
                     c.getMedicationInstruction(), c.getNextAppointmentDate());

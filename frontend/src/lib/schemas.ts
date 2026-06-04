@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 // ─── 공통 Enum ───────────────────────────────────────────────
 export const nationalitySchema = z.enum([
-  'VIETNAM','CHINA','CAMBODIA','MYANMAR','PHILIPPINES',
+  'KOREA','UNITED_STATES','VIETNAM','CHINA','CAMBODIA','MYANMAR','PHILIPPINES',
   'INDONESIA','THAILAND','NEPAL','MONGOLIA','UZBEKISTAN',
   'SRI_LANKA','BANGLADESH','PAKISTAN','OTHER',
 ])

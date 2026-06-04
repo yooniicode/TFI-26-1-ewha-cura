@@ -61,6 +61,7 @@ public class ConsultationService {
                 .patient(patient)
                 .interpreter(interpreter)
                 .hospital(hospital)
+                .hospitalName(hospital == null ? req.hospitalName() : null)
                 .department(req.department())
                 .doctorName(req.doctorName())
                 .issueType(req.issueType())
@@ -126,7 +127,8 @@ public class ConsultationService {
                 ? hospitalRepository.findById(req.hospitalId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.HOSPITAL_NOT_FOUND))
                 : c.getHospital();
-        c.update(req.consultationDate(), hospital, req.issueType(), req.method(), req.processing(),
+        String freeHospitalName = (hospital == null) ? req.hospitalName() : null;
+        c.update(req.consultationDate(), hospital, freeHospitalName, req.issueType(), req.method(), req.processing(),
                 req.memo(), req.nextAppointmentDate(), req.department(),
                 req.doctorName(), req.patientComment(), req.treatmentResult(),
                 req.diagnosisContent(), req.diagnosisNameCode(), req.medicationInstruction(),
@@ -220,7 +222,12 @@ public class ConsultationService {
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            if (!c.getInterpreter().getId().equals(interpreter.getId())) {
+            // 본인 작성 OR 현재 담당 환자의 기록 열람 허용
+            boolean isOwnConsultation = c.getInterpreter() != null
+                    && c.getInterpreter().getId().equals(interpreter.getId());
+            boolean isAssignedToPatient = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
+                    c.getPatient().getId(), interpreter.getId());
+            if (!isOwnConsultation && !isAssignedToPatient) {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
             }
             return;

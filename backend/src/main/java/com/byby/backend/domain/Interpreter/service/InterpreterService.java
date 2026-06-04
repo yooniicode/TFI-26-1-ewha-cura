@@ -62,7 +62,6 @@ public class InterpreterService {
     public Page<InterpreterResponse.Summary> getAll(String query, String language, Pageable pageable, UserPrincipal principal) {
         if (!principal.isAdmin()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         Center adminCenter = adminService.getAdminCenter(principal);
-        authService.syncApprovedInterpreterProfiles();
         YearMonth month = YearMonth.now();
         LocalDate from = month.atDay(1);
         LocalDate to = month.atEndOfMonth();

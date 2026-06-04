@@ -2,27 +2,131 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import AppHeader from '@/components/layout/AppHeader'
 import AuthGateOverlays from '@/components/layout/AuthGateOverlays'
-import { DesktopSidebar, DesktopTopNav, NavIcon } from '@/components/layout/AppNavigation'
+import { DesktopSidebar, DesktopTopNav } from '@/components/layout/AppNavigation'
 import { getNavItems } from '@/components/layout/navItems'
 import { useLayoutMode } from '@/hooks/useLayoutMode'
 import { useMe } from '@/hooks/useMe'
 import { chatApi } from '@/lib/api'
+import { clearAccessToken } from '@/lib/auth-token'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
+import type { AuthMe } from '@/lib/types'
+
+// ─── 역할별 드로어 네비 아이템 ──────────────────────────────────────────────────
+
+interface DrawerNavItem {
+  href: string
+  label: string
+  iconSrc?: string
+  inlineSvg?: string
+}
+
+import type { AppTranslation } from '@/lib/i18n/ko'
+
+function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation): DrawerNavItem[] {
+  const home: DrawerNavItem = { href: '/dashboard', label: t.drawer.home, inlineSvg: 'home' }
+  const mypage: DrawerNavItem = { href: '/mypage', label: t.drawer.mypage, inlineSvg: 'user' }
+
+  if (me?.role === 'interpreter') {
+    return [
+      home,
+      { href: '/rm/new',             label: t.drawer.realtime_memo, iconSrc: '/icons/interpreter/home/실시간메모작성.svg' },
+      { href: '/consultations/start', label: t.drawer.report,        iconSrc: '/icons/interpreter/home/보고서.svg' },
+      { href: '/patients',            label: t.drawer.my_patients,   iconSrc: '/icons/interpreter/home/담당환자.svg' },
+      { href: '/consultations',       label: t.drawer.my_activity,   iconSrc: '/icons/interpreter/home/나의활동.svg' },
+      { href: '/consultations/schedule', label: t.drawer.add_schedule, inlineSvg: 'calendar-plus' },
+      mypage,
+    ]
+  }
+
+  if (me?.role === 'patient') {
+    return [
+      home,
+      { href: '/chat',                                                    label: t.drawer.medical_translation, iconSrc: '/icons/immigrant/home/의료통번역.svg' },
+      { href: '/emergency-call',                                          label: t.drawer.emergency_call,      iconSrc: '/icons/immigrant/home/긴급전화.svg' },
+      { href: '/my-records',                                              label: t.drawer.medical_records,     iconSrc: '/icons/immigrant/home/진료기록.svg' },
+      { href: me.entityId ? `/scripts/patient/${me.entityId}` : '#',     label: t.drawer.medical_script,      iconSrc: '/icons/immigrant/home/의료대본.svg' },
+      mypage,
+    ]
+  }
+
+  return [home, mypage]
+}
+
+// SVG 아이콘 — 모두 20×20, 검정색(stroke="currentColor") 통일
+function DrawerIcon({ item }: { item: DrawerNavItem }) {
+  // iconSrc: brightness(0) 필터로 모든 색상 → 검정
+  if (item.iconSrc) {
+    return (
+      <img
+        src={item.iconSrc}
+        alt=""
+        width={20}
+        height={20}
+        className="shrink-0"
+        style={{ filter: 'brightness(0)', width: 20, height: 20 }}
+      />
+    )
+  }
+  const svgClass = 'shrink-0 text-[#161616]'
+  const svgProps = {
+    width: 20, height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    className: svgClass,
+  }
+
+  switch (item.inlineSvg) {
+    case 'home':
+      return (
+        <svg {...svgProps}>
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
+      )
+    case 'user':
+      return (
+        <svg {...svgProps}>
+          <path d="M20 21a8 8 0 0 0-16 0" />
+          <circle cx="12" cy="7" r="4" />
+        </svg>
+      )
+    case 'calendar-plus':
+      return (
+        <svg {...svgProps}>
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+          <line x1="12" y1="14" x2="12" y2="18" />
+          <line x1="10" y1="16" x2="14" y2="16" />
+        </svg>
+      )
+    default:
+      return null
+  }
+}
+
+// ─── AppShell ─────────────────────────────────────────────────────────────────
 
 export default function AppShell({ children, noPadding = false }: { children: React.ReactNode; noPadding?: boolean }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { data: me } = useMe()
   const { layoutMode, setLayoutMode } = useLayoutMode()
   const { t } = useTranslation()
   const isDesktopMode = layoutMode === 'desktop'
   const [drawerOpen, setDrawerOpen] = useState(false)
-  // Admin approval polling is disabled with the rest of the admin feature set.
+
   const pendingApprovals = 0
   const { data: unreadData } = useQuery({
     queryKey: queryKeys.chat.unreadCount(),
@@ -31,6 +135,7 @@ export default function AppShell({ children, noPadding = false }: { children: Re
     refetchInterval: 30000,
   })
   const unreadChatCount = unreadData ?? 0
+
   const visibleNav = me?.role
     ? getNavItems(t)
       .filter(item => item.roles.includes(me.role!))
@@ -41,6 +146,18 @@ export default function AppShell({ children, noPadding = false }: { children: Re
       })
     : []
 
+  const drawerItems = getDrawerNavItems(me, t)
+
+  function handleLogout() {
+    clearAccessToken()
+    router.replace('/login')
+  }
+
+  const roleLabel = me?.role === 'interpreter' ? '통번역가'
+    : me?.role === 'patient' ? '이주민'
+    : me?.role === 'admin' ? '센터장'
+    : ''
+
   return (
     <div className={clsx(
       'min-h-screen bg-gray-50',
@@ -48,57 +165,115 @@ export default function AppShell({ children, noPadding = false }: { children: Re
     )}>
       <AuthGateOverlays me={me} pathname={pathname} />
 
-      {/* 드로어 */}
-      <>
-        {drawerOpen && (
-          <div
-            className="fixed inset-0 bg-black/40 z-40"
-            onClick={() => setDrawerOpen(false)}
-          />
-        )}
-        <div className={clsx(
-          'fixed top-0 left-0 bottom-0 w-64 bg-white z-50 shadow-2xl transition-transform duration-200 ease-out',
-          drawerOpen ? 'translate-x-0' : '-translate-x-full',
-        )}>
-            <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
-              <Link href="/dashboard" onClick={() => setDrawerOpen(false)}
-                className="font-bold text-primary-700 text-lg">LinkUs</Link>
-              <button
-                onClick={() => setDrawerOpen(false)}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-            <nav className="px-2 py-3 space-y-0.5">
-              {visibleNav.map(item => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setDrawerOpen(false)}
-                  className={clsx(
-                    'flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors',
-                    pathname.startsWith(item.href)
-                      ? 'bg-primary-50 text-primary-700 font-semibold'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800',
-                  )}
-                >
-                  <NavIcon name={item.icon} size={18} />
-                  <span>{item.label}</span>
-                  {!!item.badgeCount && (
-                    <span className="ml-auto rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                      {item.badgeCount}
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </nav>
-          </div>
-      </>
+      {/* 드로어 오버레이 */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
 
+      {/* 드로어 */}
+      <div className={clsx(
+        'fixed top-0 left-0 bottom-0 w-72 bg-white z-50 shadow-2xl flex flex-col transition-transform duration-200 ease-out',
+        drawerOpen ? 'translate-x-0' : '-translate-x-full',
+      )}>
+        {/* 드로어 헤더: PC/모바일 토글 + 프로필 + 닫기 */}
+        <div className="px-5 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+            {/* PC/모바일 토글 */}
+            <button
+              onClick={() => setLayoutMode(isDesktopMode ? 'mobile' : 'desktop')}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              {isDesktopMode ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                    <line x1="12" y1="18" x2="12.01" y2="18" />
+                  </svg>
+                  {t.drawer.mobile_mode}
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="8" y1="21" x2="16" y2="21" />
+                    <line x1="12" y1="17" x2="12" y2="21" />
+                  </svg>
+                  {t.drawer.pc_mode}
+                </>
+              )}
+            </button>
+
+            {/* 닫기 버튼 */}
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 프로필 */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#DEE2FF] flex items-center justify-center text-indigo-700 font-bold text-base shrink-0">
+              {me?.name?.charAt(0) ?? '?'}
+            </div>
+            <div className="min-w-0">
+              <p className="text-base font-semibold text-[#161616] truncate">{me?.name ?? '이름 없음'}</p>
+              <p className="text-xs text-[#808080] truncate">
+                {roleLabel}{me?.centerName ? ` · ${me.centerName}` : ''}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 네비게이션 */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+          {drawerItems.map(item => {
+            const active = item.href !== '#' && pathname.startsWith(item.href) && item.href !== '/dashboard'
+              ? true
+              : pathname === '/dashboard' && item.href === '/dashboard'
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setDrawerOpen(false)}
+                className={clsx(
+                  'flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors',
+                  active
+                    ? 'bg-[#f3f9ff] text-[#2592FF] font-semibold'
+                    : 'text-[#494949] hover:bg-gray-50 hover:text-[#161616]',
+                )}
+              >
+                <DrawerIcon item={item} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* 로그아웃 */}
+        <div className="px-3 pb-6 pt-3 border-t border-gray-100">
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#808080] hover:bg-red-50 hover:text-red-600 transition-colors"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            {t.drawer.logout}
+          </button>
+        </div>
+      </div>
+
+      {/* 메인 레이아웃 */}
       <div className={clsx('min-h-screen', isDesktopMode ? 'flex' : 'flex flex-col')}>
         {isDesktopMode && <DesktopSidebar items={visibleNav} pathname={pathname} />}
 

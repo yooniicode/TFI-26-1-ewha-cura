@@ -39,6 +39,10 @@ public class Consultation extends BaseEntity {
     @JoinColumn(name = "hospital_id")
     private Hospital hospital;
 
+    /** Hospital entity 없을 때 자유 입력 병원명 */
+    @Column(length = 200)
+    private String hospitalName;
+
     @Column(length = 100)
     private String department;
 
@@ -99,9 +103,15 @@ public class Consultation extends BaseEntity {
     @Column(length = 20)
     private String confirmedByPhone;
 
+    /** 병원명 resolve: Hospital 엔티티 > 자유입력 hospitalName */
+    public String getResolvedHospitalName() {
+        if (this.hospital != null) return this.hospital.getName();
+        return this.hospitalName;
+    }
+
     @Builder
     public Consultation(LocalDate consultationDate, Patient patient, Interpreter interpreter,
-                        Hospital hospital, String department, IssueType issueType,
+                        Hospital hospital, String hospitalName, String department, IssueType issueType,
                         ConsultationMethod method, ProcessingType processing, String memo,
                         String doctorName, String patientComment, String treatmentResult,
                         String diagnosisContent, String diagnosisNameCode,
@@ -112,6 +122,7 @@ public class Consultation extends BaseEntity {
         this.patient = patient;
         this.interpreter = interpreter;
         this.hospital = hospital;
+        this.hospitalName = hospitalName;
         this.department = department;
         this.doctorName = doctorName;
         this.issueType = issueType;
@@ -137,7 +148,8 @@ public class Consultation extends BaseEntity {
         this.confirmedByPhone = confirmedByPhone;
     }
 
-    public void update(LocalDate consultationDate, Hospital hospital, IssueType issueType,
+    public void update(LocalDate consultationDate, Hospital hospital, String hospitalName,
+                       IssueType issueType,
                        ConsultationMethod method, ProcessingType processing,
                        String memo, LocalDate nextAppointmentDate, String department,
                        String doctorName, String patientComment, String treatmentResult,
@@ -147,6 +159,7 @@ public class Consultation extends BaseEntity {
                        BigDecimal durationHours, Integer fee) {
         if (consultationDate != null) this.consultationDate = consultationDate;
         this.hospital = hospital;
+        if (hospitalName != null) this.hospitalName = hospitalName;
         if (issueType != null) this.issueType = issueType;
         this.method = method;
         this.processing = processing;

@@ -6,9 +6,10 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
-import { adminApi, announcementApi, consultationApi, matchApi, patientApi } from '@/lib/api'
+import { adminApi, announcementApi, consultationApi, matchApi, patientApi, chatApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
 import { useMe } from '@/hooks/useMe'
+import { useRouter } from 'next/navigation'
 import type { Announcement, AnnouncementCategory, Consultation } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
@@ -36,6 +37,7 @@ function formatDateTime(value: string, locale: string) {
 
 export default function DashboardPage() {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const { data: me, isLoading: meLoading } = useMe()
   const { t } = useTranslation()
 
@@ -115,7 +117,12 @@ export default function DashboardPage() {
   if (meLoading) return <AppShell><Spinner /></AppShell>
 
   const today = todayKo()
-  const todayStr = new Date().toISOString().split('T')[0]
+  // 한국 표준시(UTC+9) 기준 오늘 날짜
+  const todayStr = (() => {
+    const now = new Date()
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
+    return kst.toISOString().split('T')[0]
+  })()
   const recentConsultations = (consultations ?? []).filter(c => c.consultationDate === todayStr)
   const nextAppointment = (myRecords ?? []).find(r => r.nextAppointmentDate)?.nextAppointmentDate
   const announcements = announcementResponse?.payload ?? []
@@ -152,35 +159,61 @@ export default function DashboardPage() {
 
         {/* 통번역가 퀵 액션 */}
         {me?.role === 'interpreter' && (
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <Link href="/consultations/start"
-              className="flex flex-col items-center py-4 gap-1.5 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <line x1="10" y1="9" x2="8" y2="9" />
-              </svg>
-              <span className="text-xs font-medium text-center text-primary-700">보고서</span>
-            </Link>
-            <Link href="/patients"
-              className="flex flex-col items-center py-4 gap-1.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-              <div className="relative">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 00-3-3.87" />
-                  <path d="M16 3.13a4 4 0 010 7.75" />
-                </svg>
-                {myAssignedCount !== undefined && myAssignedCount.count > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 rounded-full bg-primary-500 px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
-                    {myAssignedCount.count}
-                  </span>
-                )}
+          <div className="mt-5 space-y-2.5">
+            {/* 실시간 메모 작성 — 주요 액션 */}
+            <Link
+              href="/rm/new"
+              className="flex items-center gap-4 px-5 py-4 bg-[#2592FF] rounded-2xl hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
+            >
+              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                <img
+                  src="/icons/interpreter/home/실시간메모작성.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                />
               </div>
-              <span className="text-xs font-medium text-center text-gray-600">담당 환자</span>
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-white">{t.interpreter_home.realtime_memo}</p>
+                <p className="text-xs text-white/70 mt-0.5">{t.interpreter_home.realtime_memo_desc}</p>
+              </div>
+              <svg className="ml-auto shrink-0" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
             </Link>
+
+            {/* 3칸 그리드 */}
+            <div className="grid grid-cols-3 gap-2">
+              <Link
+                href="/consultations/start"
+                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <img src="/icons/interpreter/home/보고서.svg" alt="" width={24} height={24} />
+                <span className="text-xs font-medium text-neutral-700">{t.interpreter_home.report}</span>
+              </Link>
+              <Link
+                href="/patients"
+                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <div className="relative">
+                  <img src="/icons/interpreter/home/담당환자.svg" alt="" width={24} height={24} />
+                  {myAssignedCount !== undefined && myAssignedCount.count > 0 && (
+                    <span className="absolute -top-2 -right-3 rounded-full bg-[#2592FF] px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
+                      {myAssignedCount.count}
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-medium text-neutral-700">{t.interpreter_home.my_patients}</span>
+              </Link>
+              <Link
+                href="/consultations"
+                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <img src="/icons/interpreter/home/나의활동.svg" alt="" width={24} height={24} />
+                <span className="text-xs font-medium text-neutral-700">{t.interpreter_home.my_activity}</span>
+              </Link>
+            </div>
           </div>
         )}
 
@@ -203,51 +236,75 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 이주민 퀵 링크 + 정보 */}
+        {/* 이주민 퀵 액션 */}
         {me?.role === 'patient' && (
           <>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <Link href="/my-records"
-                className="flex flex-col items-center py-4 gap-1.5 bg-primary-50 rounded-xl hover:bg-primary-100 transition-colors">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-                  <line x1="16" y1="11" x2="8" y2="11" />
-                  <line x1="16" y1="15" x2="8" y2="15" />
-                </svg>
-                <span className="text-xs font-medium text-center text-primary-700">내 진료 기록</span>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <Link
+                href="/interpretation-request"
+                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <img src="/icons/immigrant/home/의료통번역.svg" alt="" width={24} height={24} />
+                <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_translation}</span>
+              </Link>
+              <Link
+                href="/emergency-call"
+                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <img src="/icons/immigrant/home/긴급전화.svg" alt="" width={24} height={24} />
+                <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.emergency_call}</span>
+              </Link>
+              <Link
+                href="/my-records"
+                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <img src="/icons/immigrant/home/진료기록.svg" alt="" width={24} height={24} />
+                <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_records}</span>
               </Link>
               {me.entityId ? (
-                <Link href={`/scripts/patient/${me.entityId}`}
-                  className="flex flex-col items-center py-4 gap-1.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-                  </svg>
-                  <span className="text-xs font-medium text-center text-gray-600">의료 대본</span>
+                <Link
+                  href={`/scripts/patient/${me.entityId}`}
+                  className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  <img src="/icons/immigrant/home/의료대본.svg" alt="" width={24} height={24} />
+                  <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_script}</span>
                 </Link>
               ) : (
-                <div className="flex flex-col items-center py-4 gap-1.5 bg-gray-50 rounded-xl opacity-40">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-                  </svg>
-                  <span className="text-xs font-medium text-center text-gray-600">의료 대본</span>
+                <div className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl opacity-40">
+                  <img src="/icons/immigrant/home/의료대본.svg" alt="" width={24} height={24} />
+                  <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_script}</span>
                 </div>
               )}
             </div>
+
+            {/* 담당 통번역가 + 다음 예약 */}
             <div className="mt-2 grid grid-cols-2 gap-2">
+              {myMatch?.interpreterId ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await chatApi.roomWithInterpreter(myMatch.interpreterId)
+                      if (res.payload) router.push(`/chat/${res.payload.id}`)
+                    } catch { /* ignore */ }
+                  }}
+                  className="bg-gray-50 rounded-xl px-3 py-3 text-left hover:bg-gray-100 transition-colors"
+                >
+                  <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.assigned_interpreter}</p>
+                  <p className="text-sm font-semibold text-[#2592FF] truncate">{myMatch.interpreterName}</p>
+                  <p className="text-[10px] text-[#2592FF]/70 mt-0.5">채팅하기 →</p>
+                </button>
+              ) : (
+                <div className="bg-gray-50 rounded-xl px-3 py-3">
+                  <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.assigned_interpreter}</p>
+                  <p className="text-xs text-gray-400">{t.immigrant_home.no_interpreter}</p>
+                </div>
+              )}
               <div className="bg-gray-50 rounded-xl px-3 py-3">
-                <p className="text-xs text-gray-400 mb-0.5">담당 통번역가</p>
-                {myMatch?.interpreterName
-                  ? <p className="text-sm font-semibold text-neutral-900 truncate">{myMatch.interpreterName}</p>
-                  : <p className="text-xs text-gray-400">배정 없음</p>}
-              </div>
-              <div className="bg-gray-50 rounded-xl px-3 py-3">
-                <p className="text-xs text-gray-400 mb-0.5">다음 예약</p>
+                <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.next_appointment}</p>
                 {nextAppointment
                   ? <p className="text-sm font-semibold text-neutral-900 truncate">{nextAppointment}</p>
-                  : <p className="text-xs text-gray-400">예약 없음</p>}
+                  : <p className="text-xs text-gray-400">{t.immigrant_home.no_appointment}</p>}
               </div>
             </div>
           </>
@@ -260,14 +317,26 @@ export default function DashboardPage() {
         {/* 통번역가: 오늘 통역 일정 */}
         {me?.role === 'interpreter' && (
           <div className="space-y-2.5">
-            <div className="mb-1">
-              <p className="text-sm text-zinc-700">{today}</p>
-              <p className="text-base font-semibold text-zinc-700">오늘 통역 일정</p>
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <p className="text-sm text-zinc-500">{today}</p>
+                <p className="text-base font-semibold text-zinc-700">{t.interpreter_home.today_schedule}</p>
+              </div>
+              <Link
+                href="/consultations/schedule"
+                className="flex items-center justify-center w-9 h-9 bg-[#2592FF] rounded-xl hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors shrink-0"
+                title={t.interpreter_home.add_schedule}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </Link>
             </div>
-            {listLoading && <p className="text-sm text-gray-400 py-4">로딩 중...</p>}
+            {listLoading && <p className="text-sm text-gray-400 py-4">{t.interpreter_home.loading}</p>}
             {!listLoading && recentConsultations.length === 0 && (
               <div className="bg-white rounded-lg px-5 py-8 text-center">
-                <p className="text-sm text-gray-400">예정된 통역 일정이 없습니다.</p>
+                <p className="text-sm text-gray-400">{t.interpreter_home.no_schedule}</p>
               </div>
             )}
             {recentConsultations.map(c => (
@@ -289,7 +358,7 @@ export default function DashboardPage() {
             ))}
             {recentConsultations.length > 0 && (
               <Link href="/consultations" className="block text-center text-sm text-primary-600 py-2">
-                전체 보기
+                {t.interpreter_home.view_all}
               </Link>
             )}
           </div>

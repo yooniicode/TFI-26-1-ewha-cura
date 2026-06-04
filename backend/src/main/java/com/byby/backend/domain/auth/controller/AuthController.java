@@ -17,9 +17,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -27,6 +24,20 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
+
+    @PostMapping("/login")
+    @Operation(summary = "이메일/비밀번호 로그인")
+    public ResponseEntity<Response<AuthResponse.TokenMe>> login(
+            @Valid @RequestBody AuthRequest.Login req) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.login(req)));
+    }
+
+    @PostMapping("/signup")
+    @Operation(summary = "회원가입 + 프로필 즉시 생성")
+    public ResponseEntity<Response<AuthResponse.TokenMe>> signup(
+            @Valid @RequestBody AuthRequest.Signup req) {
+        return ResponseEntity.status(201).body(Response.success(SuccessCode.CREATED, authService.signup(req)));
+    }
 
     @GetMapping("/me")
     @Operation(summary = "내 인증/역할 정보 조회")
@@ -43,11 +54,13 @@ public class AuthController {
                 new AuthResponse.EmailExists(authService.emailExists(email))));
     }
 
-    @PostMapping("/complete-signup")
-    @Operation(summary = "이메일 인증 완료 후 통번역가 프로필 사전 생성")
-    public ResponseEntity<Response<Void>> completeSignup(
+    @PostMapping("/change-password")
+    @Operation(summary = "비밀번호 변경")
+    public ResponseEntity<Response<Void>> changePassword(
+            @Valid @RequestBody AuthRequest.ChangePassword req,
             @AuthenticationPrincipal UserPrincipal principal) {
-        authService.completeSignup(principal);
+        if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
+        authService.changePassword(req, principal.getAuthUserId());
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
 

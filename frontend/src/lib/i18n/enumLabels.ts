@@ -13,6 +13,8 @@ import type {
 } from '@/lib/types'
 
 export const NATIONALITIES: Nationality[] = [
+  'KOREA',
+  'UNITED_STATES',
   'VIETNAM',
   'CHINA',
   'CAMBODIA',
@@ -51,6 +53,8 @@ export interface EnumLabels {
 export const enumLabels: Record<Language, EnumLabels> = {
   ko: {
     nationality: {
+      KOREA: '한국',
+      UNITED_STATES: '미국',
       VIETNAM: '베트남',
       CHINA: '중국',
       CAMBODIA: '캄보디아',
@@ -115,6 +119,8 @@ export const enumLabels: Record<Language, EnumLabels> = {
   },
   en: {
     nationality: {
+      KOREA: 'Korea',
+      UNITED_STATES: 'United States',
       VIETNAM: 'Vietnam',
       CHINA: 'China',
       CAMBODIA: 'Cambodia',
@@ -179,6 +185,8 @@ export const enumLabels: Record<Language, EnumLabels> = {
   },
   vi: {
     nationality: {
+      KOREA: 'Hàn Quốc',
+      UNITED_STATES: 'Hoa Kỳ',
       VIETNAM: 'Việt Nam',
       CHINA: 'Trung Quốc',
       CAMBODIA: 'Campuchia',

@@ -15,6 +15,7 @@ public class ConsultationRequest {
             @NotNull LocalDate consultationDate,
             @NotNull UUID patientId,
             UUID hospitalId,
+            String hospitalName,
             String department,
             String doctorName,
             @NotNull IssueType issueType,
@@ -37,6 +38,7 @@ public class ConsultationRequest {
     public record Update(
             LocalDate consultationDate,
             UUID hospitalId,
+            String hospitalName,
             IssueType issueType,
             ConsultationMethod method,
             ProcessingType processing,

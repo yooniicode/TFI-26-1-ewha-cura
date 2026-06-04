@@ -101,10 +101,12 @@ function PatientSelectInner() {
     queryFn: () => consultationApi.list(0).then(r => r.payload ?? []),
   })
 
-  const { data: patientsData = [], isLoading: loadingAll } = useQuery<Patient[]>({
+  const { data: patientsRaw = [], isLoading: loadingAll } = useQuery<Patient[]>({
     queryKey: queryKeys.patients.list(0),
     queryFn: () => patientApi.list(0).then(r => r.payload ?? []),
   })
+  // 보고서 작성은 내 담당 환자만
+  const patientsData = patientsRaw.filter(p => p.assignedToMe)
 
   const recentPatients = useMemo<RecentPatient[]>(() => {
     const seen = new Set<string>()

@@ -1,7 +1,7 @@
 export type UserRole = 'admin' | 'interpreter' | 'patient'
 
 export type Nationality =
-  | 'VIETNAM' | 'CHINA' | 'CAMBODIA' | 'MYANMAR' | 'PHILIPPINES'
+  | 'KOREA' | 'UNITED_STATES' | 'VIETNAM' | 'CHINA' | 'CAMBODIA' | 'MYANMAR' | 'PHILIPPINES'
   | 'INDONESIA' | 'THAILAND' | 'NEPAL' | 'MONGOLIA' | 'UZBEKISTAN'
   | 'SRI_LANKA' | 'BANGLADESH' | 'PAKISTAN' | 'OTHER'
 
@@ -15,6 +15,7 @@ export type ScriptType = 'GENERAL' | 'EMERGENCY'
 export type AnnouncementCategory = 'NOTICE' | 'POLICY' | 'RESOURCE'
 
 export const NATIONALITY_LABEL: Record<Nationality, string> = {
+  KOREA: '한국', UNITED_STATES: '미국',
   VIETNAM: '베트남', CHINA: '중국', CAMBODIA: '캄보디아', MYANMAR: '미얀마',
   PHILIPPINES: '필리핀', INDONESIA: '인도네시아', THAILAND: '태국',
   NEPAL: '네팔', MONGOLIA: '몽골', UZBEKISTAN: '우즈베키스탄',

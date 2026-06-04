@@ -1,53 +1,30 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+const PUBLIC_PATHS = ['/login', '/auth/', '/']
+const COOKIE_NAME = 'byby_auth'
+
+export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // API 프록시는 통과
   if (pathname.startsWith('/api/')) {
-    console.log(`[proxy] ${request.method} ${pathname}`)
-    return NextResponse.next({ request })
+    return NextResponse.next()
   }
 
-  let response = NextResponse.next({ request })
+  const isPublic = PUBLIC_PATHS.some(p =>
+    pathname === p || pathname.startsWith(p + '/') || (p.endsWith('/') && pathname.startsWith(p))
+  )
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !supabaseKey) return response
+  const isAuthenticated = request.cookies.get(COOKIE_NAME)?.value === '1'
 
-  try {
-    const supabase = createServerClient(supabaseUrl, supabaseKey, {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet: { name: string; value: string; options: CookieOptions }[]) => {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          )
-        },
-      },
-    })
-
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const isLoginPage = pathname.startsWith('/login')
-    const isAuthRoute = pathname.startsWith('/auth/')
-    const isLandingPage = pathname === '/'
-
-    if (!user && !isLoginPage && !isAuthRoute && !isLandingPage) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-    if (user && isLoginPage) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  } catch {
-    const isLoginPage = pathname.startsWith('/login')
-    const isAuthRoute = pathname.startsWith('/auth/')
-    const isLandingPage = pathname === '/'
-    if (!isLoginPage && !isAuthRoute && !isLandingPage) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
+  if (!isAuthenticated && !isPublic) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+  if (isAuthenticated && pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
