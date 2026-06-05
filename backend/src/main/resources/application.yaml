@@ -64,6 +64,8 @@ byby:
         - http://localhost:3000
         - ${FRONTEND_URL:http://localhost:3000}
         - ${RAILWAY_STATIC_URL:}
+        - ${RAILWAY_PUBLIC_DOMAIN:}
+        - https://tfi-26-1-archive-production.up.railway.app
 
   supabase:
     url: ${SUPABASE_URL:}
@@ -127,6 +129,9 @@ spring:
       hibernate:
         jdbc:
           time_zone: Asia/Seoul   # PostgreSQL 운영 환경 전용 — H2 테스트에서는 제외
+
+server:
+  forward-headers-strategy: framework
 
 logging:
   level:
