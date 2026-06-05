@@ -24,8 +24,8 @@ public class JwtUtil {
     private final long expirationMs;
 
     public JwtUtil(
-            @Value("${byby.security.jwt.secret}") String secret,
-            @Value("${byby.security.jwt.expiration-ms}") long expirationMs) {
+            @Value("${byby.security.jwt.secret:local-dev-secret-key-change-in-production-minimum-256-bits-long!!}") String secret,
+            @Value("${byby.security.jwt.expiration-ms:86400000}") long expirationMs) {
         this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.verificationKeys = buildVerificationKeys(secret, signingKey);
         this.expirationMs = expirationMs;

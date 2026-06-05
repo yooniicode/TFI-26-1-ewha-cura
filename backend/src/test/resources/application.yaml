@@ -24,8 +24,7 @@ byby:
       expiration-ms: 86400000
     swagger-secret: ""
     cors:
-      allowed-origins:
-        - http://localhost:3000
+      allowed-origins: http://localhost:3000
 
   supabase:
     url: ""

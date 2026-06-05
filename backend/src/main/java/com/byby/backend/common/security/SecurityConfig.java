@@ -30,7 +30,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final AuthRoleResolver authRoleResolver;
 
-    @Value("${byby.security.cors.allowed-origins}")
+    @Value("${byby.security.cors.allowed-origins:http://localhost:3000}")
     private List<String> allowedOrigins;
 
     @Bean
