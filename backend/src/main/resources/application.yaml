@@ -33,6 +33,9 @@ spring:
       max-file-size: 20MB
       max-request-size: 20MB
 
+server:
+  forward-headers-strategy: framework
+
 management:
   endpoints:
     web:
@@ -129,9 +132,6 @@ spring:
       hibernate:
         jdbc:
           time_zone: Asia/Seoul   # PostgreSQL 운영 환경 전용 — H2 테스트에서는 제외
-
-server:
-  forward-headers-strategy: framework
 
 logging:
   level:
