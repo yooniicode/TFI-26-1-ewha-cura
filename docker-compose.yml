@@ -27,6 +27,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-${POSTGRES_PASSWORD:-byby123}}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       BYBY_SECURITY_CORS_ALLOWED_ORIGINS: ${FRONTEND_URL:-http://localhost:3000}
+      TZ: Asia/Seoul
     depends_on:
       - db
 

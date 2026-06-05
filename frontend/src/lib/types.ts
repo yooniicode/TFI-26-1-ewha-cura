@@ -202,6 +202,7 @@ export interface AuthMe {
   centerId?: string | null
   centerName?: string | null
   nickname?: string | null
+  avatarUrl?: string | null
 }
 
 export interface EmailExists {

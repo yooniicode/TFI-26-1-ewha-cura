@@ -75,7 +75,7 @@ function ScheduleInner() {
       {/* Step 1 — 환자 선택 */}
       {step === 1 && (
         <>
-          <div className="bg-white px-6 pt-7 pb-5">
+          <div className="bg-white px-4 pt-7 pb-5">
             <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] mb-2 whitespace-pre-line">
               {t.schedule.select_patient_title}
             </h2>
@@ -135,7 +135,7 @@ function ScheduleInner() {
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8">
+          <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
             <button
               type="button"
               onClick={() => setStep(2)}
@@ -151,7 +151,7 @@ function ScheduleInner() {
       {/* Step 2 — 날짜·장소 선택 */}
       {step === 2 && selectedPatient && (
         <>
-          <div className="bg-white px-6 pt-7 pb-5">
+          <div className="bg-white px-4 pt-7 pb-5">
             <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] mb-2 whitespace-pre-line">
               {t.schedule.when_where_title}
             </h2>
@@ -201,7 +201,7 @@ function ScheduleInner() {
             </div>
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8 flex gap-2.5">
+          <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
             <button
               type="button"
               onClick={() => setStep(1)}

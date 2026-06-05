@@ -139,7 +139,7 @@ function RmMemoEditInner() {
         flagSrc={flagSrc}
       />
 
-      <div className="bg-white px-6 pt-7 pb-6">
+      <div className="bg-white px-4 pt-7 pb-6">
         <div className="mb-6">
           <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4]">
             메모를 살짝<br />수정할 수 있어요
@@ -180,7 +180,7 @@ function RmMemoEditInner() {
       </div>
 
       {/* 하단 바 */}
-      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8">
+      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
         <button
           type="button"
           onClick={handleNext}

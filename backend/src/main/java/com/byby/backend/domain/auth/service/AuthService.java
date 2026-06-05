@@ -2,7 +2,9 @@ package com.byby.backend.domain.auth.service;
 
 import com.byby.backend.common.enums.InterpreterRole;
 import com.byby.backend.common.enums.UserRole;
+import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
+import com.byby.backend.common.response.code.BusinessErrorCode;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.security.JwtUtil;
 import com.byby.backend.common.security.UserPrincipal;
@@ -45,6 +47,9 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Value("${byby.admin.bootstrap-code:}")
+    private String adminBootstrapCode;
+
     // ─── Login ──────────────────────────────────────────────────────────────────
 
     @Transactional
@@ -53,7 +58,7 @@ public class AuthService {
         if (!StringUtils.hasText(email)) throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이메일을 입력해주세요");
 
         UserCredential cred = userCredentialRepository.findByEmail(email.toLowerCase(Locale.ROOT))
-                .orElseThrow(() -> new GeneralException(GeneralErrorCode.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다"));
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(req.password(), cred.getPasswordHash())) {
             throw new GeneralException(GeneralErrorCode.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다");
@@ -111,13 +116,16 @@ public class AuthService {
     public AuthResponse.Me getMe(UserPrincipal principal) {
         if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
 
+        String avatarUrl = userCredentialRepository.findByAuthUserId(principal.getAuthUserId())
+                .map(UserCredential::getAvatarUrl).orElse(null);
+
         if (principal.getRole() == UserRole.admin) {
             AdminProfile profile = adminService.getOrCreateProfile(principal.getAuthUserId());
             String nickname = profile.getNickname() != null ? profile.getNickname() : "관리자";
             return new AuthResponse.Me(principal.getAuthUserId(), UserRole.admin,
                     nickname, null,
                     profile.getCenter() != null ? profile.getCenter().getId() : null,
-                    profile.getEffectiveCenterName(), profile.getNickname());
+                    profile.getEffectiveCenterName(), profile.getNickname(), avatarUrl);
         }
 
         var interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId());
@@ -127,16 +135,25 @@ public class AuthService {
                     i.getName(), i.isActive() ? i.getId() : null,
                     i.getCenter() != null ? i.getCenter().getId() : null,
                     i.getCenter() != null ? i.getCenter().getName() : null,
-                    null);
+                    null, avatarUrl);
         }
 
         var patient = patientRepository.findByAuthUserId(principal.getAuthUserId());
         if (patient.isPresent()) {
             var p = patient.get();
-            return new AuthResponse.Me(principal.getAuthUserId(), UserRole.patient, p.getName(), p.getId());
+            return new AuthResponse.Me(principal.getAuthUserId(), UserRole.patient,
+                    p.getName(), p.getId(), null, null, null, avatarUrl);
         }
 
-        return new AuthResponse.Me(principal.getAuthUserId(), principal.getRole(), null, null);
+        return new AuthResponse.Me(principal.getAuthUserId(), principal.getRole(), null, null,
+                null, null, null, avatarUrl);
+    }
+
+    @Transactional
+    public void updateAvatar(UUID authUserId, String avatarUrl) {
+        UserCredential cred = userCredentialRepository.findByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
+        cred.updateAvatarUrl(avatarUrl);
     }
 
     // ─── Email exists ────────────────────────────────────────────────────────────
@@ -199,6 +216,48 @@ public class AuthService {
         userCredentialRepository.findByAuthUserId(authUserId).ifPresent(userCredentialRepository::delete);
     }
 
+    // ─── Admin 회원가입 (secret 코드 필요, UI 미노출) ─────────────────────────────
+
+    @Transactional
+    public AuthResponse.TokenMe registerAdmin(AuthRequest.AdminSignup req) {
+        // secret 코드 검증
+        if (!StringUtils.hasText(adminBootstrapCode) || !adminBootstrapCode.equals(req.secretCode().trim())) {
+            throw new GeneralException(GeneralErrorCode.FORBIDDEN, "관리자 가입 코드가 올바르지 않습니다");
+        }
+        String normalizedEmail = req.email().trim().toLowerCase(Locale.ROOT);
+        if (userCredentialRepository.existsByEmail(normalizedEmail)) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 사용 중인 이메일입니다");
+        }
+        if (req.password().length() < 8) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "비밀번호는 8자 이상이어야 합니다");
+        }
+
+        UUID authUserId = UUID.randomUUID();
+        UserCredential cred = UserCredential.builder()
+                .email(normalizedEmail)
+                .passwordHash(passwordEncoder.encode(req.password()))
+                .authUserId(authUserId)
+                .requestedRole(UserRole.admin)
+                .build();
+        userCredentialRepository.save(cred);
+
+        // 센터 연결
+        Center center = req.centerId() != null
+                ? centerService.find(req.centerId())
+                : (StringUtils.hasText(req.centerName()) ? centerService.getOrCreateByName(req.centerName()) : null);
+
+        UserPrincipal principal = new UserPrincipal(authUserId, UserRole.admin);
+        adminService.getOrCreateProfile(authUserId);
+        if (center != null) adminService.assignCenter(authUserId, center);
+
+        // 이름 저장 (AdminProfile nickname)
+        adminService.getOrCreateProfile(authUserId);
+
+        String token = jwtUtil.generate(authUserId, UserRole.admin);
+        AuthResponse.Me me = getMe(principal);
+        return new AuthResponse.TokenMe(token, me);
+    }
+
     // ─── Admin bootstrap ─────────────────────────────────────────────────────────
 
     @Transactional
@@ -221,7 +280,7 @@ public class AuthService {
 
         String name = StringUtils.hasText(profile.getNickname()) ? profile.getNickname() : "관리자";
         return new AuthResponse.Me(principal.getAuthUserId(), UserRole.admin, name, null,
-                center.getId(), center.getName(), profile.getNickname());
+                center.getId(), center.getName(), profile.getNickname(), null);
     }
 
     // ─── Private helpers ─────────────────────────────────────────────────────────

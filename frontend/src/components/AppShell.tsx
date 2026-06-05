@@ -55,6 +55,20 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation): Dr
     ]
   }
 
+  // 센터 담당자(admin)
+  if (me?.role === 'admin') {
+    return [
+      home,
+      { href: '/patients',      label: '이주민 관리',    inlineSvg: 'patients' },
+      { href: '/consultations', label: '보고서 조회',    inlineSvg: 'report' },
+      { href: '/members',       label: '회원 관리',      inlineSvg: 'members' },
+      { href: '/interpreters',  label: '통번역가',       inlineSvg: 'interpreters' },
+      { href: '/sheets',        label: '구글 시트',      inlineSvg: 'sheets' },
+      { href: '/chat',          label: '채팅',           inlineSvg: 'chat' },
+      mypage,
+    ]
+  }
+
   return [home, mypage]
 }
 
@@ -98,6 +112,27 @@ function DrawerIcon({ item }: { item: DrawerNavItem }) {
         <svg {...svgProps}>
           <path d="M20 21a8 8 0 0 0-16 0" />
           <circle cx="12" cy="7" r="4" />
+        </svg>
+      )
+    case 'patients':
+      return (
+        <svg {...svgProps}>
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+        </svg>
+      )
+    case 'report':
+      return (
+        <svg {...svgProps}>
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+      )
+    case 'chat':
+      return (
+        <svg {...svgProps}>
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
         </svg>
       )
     case 'calendar-plus':
@@ -220,8 +255,12 @@ export default function AppShell({ children, noPadding = false }: { children: Re
 
           {/* 프로필 */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#DEE2FF] flex items-center justify-center text-indigo-700 font-bold text-base shrink-0">
-              {me?.name?.charAt(0) ?? '?'}
+            <div className="w-10 h-10 rounded-full bg-[#DEE2FF] flex items-center justify-center text-indigo-700 font-bold text-base shrink-0 overflow-hidden">
+              {me?.avatarUrl ? (
+                <img src={me.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span>{me?.name?.charAt(0) ?? '?'}</span>
+              )}
             </div>
             <div className="min-w-0">
               <p className="text-base font-semibold text-[#161616] truncate">{me?.name ?? '이름 없음'}</p>

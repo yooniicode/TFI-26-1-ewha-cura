@@ -80,6 +80,7 @@ function ReportWriteInner() {
 
   async function parseWithClaude(rmText: string) {
     setAiParsing(true)
+    console.log(`[new:parse] 자동 파싱 시작 len=${rmText.length}`)
     try {
       const res = await fetch('/api/parse-rm', {
         method: 'POST',
@@ -87,10 +88,20 @@ function ReportWriteInner() {
         body: JSON.stringify({ rmText }),
       })
       if (res.ok) {
-        const data = await res.json() as { fields: Record<string, string> | null }
-        if (data.fields) applyParsedFields(data.fields)
+        const data = await res.json() as { fields: Record<string, string> | null; provider?: string }
+        if (data.fields) {
+          const filled = Object.entries(data.fields).filter(([, v]) => !!v).map(([k]) => k)
+          console.log(`[new:parse] 자동 파싱 완료 provider=${data.provider ?? '?'} filled=[${filled.join(',')}]`)
+          applyParsedFields(data.fields)
+        } else {
+          console.warn('[new:parse] 자동 파싱 결과 없음 (fields=null)')
+        }
+      } else {
+        console.warn(`[new:parse] 자동 파싱 HTTP 오류 status=${res.status}`)
       }
-    } catch { /* AI 실패 시 빈 칸으로 */ }
+    } catch (e) {
+      console.error('[new:parse] 자동 파싱 네트워크 오류:', e instanceof Error ? e.message : e)
+    }
     setAiParsing(false)
   }
 
@@ -118,8 +129,13 @@ function ReportWriteInner() {
     if (!raw) return
     sessionStorage.removeItem('rm_parsed_fields')
     try {
-      applyParsedFields(JSON.parse(raw) as Record<string, string>)
-    } catch { /* ignore */ }
+      const fields = JSON.parse(raw) as Record<string, string>
+      const filled = Object.entries(fields).filter(([, v]) => !!v).map(([k]) => k)
+      console.log(`[new:parse] sessionStorage 적용 filled=[${filled.join(',')}]`)
+      applyParsedFields(fields)
+    } catch (e) {
+      console.error('[new:parse] sessionStorage 파싱 실패:', e instanceof Error ? e.message : e)
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -201,7 +217,7 @@ function ReportWriteInner() {
     return (
       <AppShell noPadding>
         <PageHeader title="보고서 작성" />
-        <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
           <div className="w-16 h-16 rounded-full bg-[#f3f9ff] flex items-center justify-center mb-6">
             <svg width="32" height="24" viewBox="0 0 32 24" fill="none">
               <path d="M2 12L12 22L30 2" stroke="#2592FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
@@ -212,7 +228,7 @@ function ReportWriteInner() {
           </p>
           <p className="mt-2 text-base text-[#808080]">수고하셨습니다</p>
         </div>
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8">
+        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
           <button
             onClick={() => router.replace('/dashboard')}
             className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white"
@@ -244,14 +260,14 @@ function ReportWriteInner() {
       />
 
       {/* 타이틀 */}
-      <div className="bg-white px-6 pt-8 pb-0">
+      <div className="bg-white px-4 pt-8 pb-0">
         <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
           {title}
         </h2>
       </div>
 
       {/* 스텝 인디케이터 */}
-      <div className="bg-white px-6 pt-4 pb-5">
+      <div className="bg-white px-4 pt-4 pb-5">
         <div className="flex gap-2">
           {Array.from({ length: 6 }, (_, i) => i + 1).map(n => {
             const done = n < stepLabel
@@ -275,7 +291,7 @@ function ReportWriteInner() {
       </div>
 
       {/* 스텝별 컨텐츠 */}
-      <div className="bg-white px-6 pt-2 pb-36">
+      <div className="bg-white px-4 pt-2 pb-36">
         {!fromMemo && step === 1 && (
           <Step1Scratch
             workDescription={workDescription}
@@ -319,7 +335,7 @@ function ReportWriteInner() {
       </div>
 
       {/* 하단 네비게이션 */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8 flex gap-2.5">
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
         {step > 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
@@ -329,11 +345,19 @@ function ReportWriteInner() {
           </button>
         )}
         <button
-          onClick={step < TOTAL_STEPS ? () => setStep(s => s + 1) : handleSave}
-          disabled={submitting}
+          onClick={step < TOTAL_STEPS
+            ? () => {
+                // 처음부터 작성 step 1: 현재 workDescription으로 AI 파싱 트리거
+                if (!fromMemo && step === 1 && workDescription.trim()) {
+                  parseWithClaude(workDescription)
+                }
+                setStep(s => s + 1)
+              }
+            : handleSave}
+          disabled={submitting || aiParsing}
           className="flex-1 h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-60"
         >
-          {step < TOTAL_STEPS ? '다음으로' : submitting ? '저장 중...' : '저장하기'}
+          {aiParsing ? 'AI 분석 중...' : step < TOTAL_STEPS ? '다음으로' : submitting ? '저장 중...' : '저장하기'}
         </button>
       </div>
     </AppShell>
@@ -401,7 +425,7 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
             <span className="text-sm text-blue-600">AI가 실시간 메모를 분석하는 중...</span>
           </>
         ) : workDescription ? (
-          <span className="text-sm text-blue-600 font-medium">최근 실시간 메모를 불러왔어요. 수정 후 다음으로 넘어가세요.</span>
+          <span className="text-sm text-gray-400">처음부터 의사선생님이 말씀하시는 순서대로 적어주세요.</span>
         ) : (
           <span className="text-sm text-gray-400">전달받은 내용을 줄글로 작성해주세요.</span>
         )}
@@ -455,6 +479,8 @@ interface HospResult { name: string; address: string; phone: string; type: strin
 
 function HospitalSearchField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [query, setQuery] = useState('')
+  const [directInput, setDirectInput] = useState('')
+  const [mode, setMode] = useState<'search' | 'direct'>('search')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<HospResult[]>([])
   const [showPopup, setShowPopup] = useState(false)
@@ -486,11 +512,28 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
     setQuery('')
   }
 
+  function handleDirectConfirm() {
+    const v = directInput.trim()
+    if (!v) return
+    onChange(v)
+    setDirectInput('')
+    setMode('search')
+  }
+
+  function handleClear() {
+    onChange('')
+    setDirectInput('')
+    setMode('search')
+    setQuery('')
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <label className="text-base font-medium text-[#161616]">
         방문 병원
-        <span className="ml-1 text-xs text-[#A0A0A0] font-normal">HIRA 검색</span>
+        {mode === 'direct'
+          ? <span className="ml-1 text-xs text-[#2592FF] font-normal">직접 입력</span>
+          : <span className="ml-1 text-xs text-[#A0A0A0] font-normal">HIRA 검색</span>}
       </label>
 
       {/* 선택된 병원 */}
@@ -499,7 +542,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
           <span className="text-base text-[#161616] flex-1">{value}</span>
           <button
             type="button"
-            onClick={() => onChange('')}
+            onClick={handleClear}
             className="text-[#A0A0A0] hover:text-red-500 transition-colors shrink-0"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
@@ -509,8 +552,8 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
         </div>
       )}
 
-      {/* 검색 인풋 */}
-      {!value && (
+      {/* HIRA 검색 모드 */}
+      {!value && mode === 'search' && (
         <div className="flex gap-2">
           <input
             type="text"
@@ -536,14 +579,37 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
         </div>
       )}
 
-      {/* 직접 입력 링크 */}
+      {/* 직접 입력 모드 */}
+      {!value && mode === 'direct' && (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={directInput}
+            onChange={e => setDirectInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleDirectConfirm()}
+            placeholder="병원명을 직접 입력해주세요"
+            autoFocus
+            className="flex-1 px-4 py-3.5 rounded-lg text-base text-[#161616] outline-none border border-[#2592FF] bg-white placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-[#2592FF]/20"
+          />
+          <button
+            type="button"
+            onClick={handleDirectConfirm}
+            disabled={!directInput.trim()}
+            className="px-4 py-2 bg-[#2592FF] text-white text-sm font-semibold rounded-lg disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors shrink-0"
+          >
+            확인
+          </button>
+        </div>
+      )}
+
+      {/* 모드 전환 버튼 */}
       {!value && (
         <button
           type="button"
-          onClick={() => { onChange(query.trim() || '직접 입력'); setQuery('') }}
+          onClick={() => { setMode(m => m === 'search' ? 'direct' : 'search'); setSearchErr('') }}
           className="text-xs text-[#A0A0A0] hover:text-[#2592FF] text-left transition-colors"
         >
-          검색 없이 직접 입력하기 →
+          {mode === 'search' ? '검색 없이 직접 입력하기 →' : '← HIRA로 검색하기'}
         </button>
       )}
 

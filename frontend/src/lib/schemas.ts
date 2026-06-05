@@ -175,6 +175,7 @@ export const authMeSchema = z.object({
   centerId:   z.string().uuid().nullable().optional(),
   centerName: z.string().nullable().optional(),
   nickname:   z.string().nullable().optional(),
+  avatarUrl:  z.string().nullable().optional(),
 })
 
 export const emailExistsSchema = z.object({

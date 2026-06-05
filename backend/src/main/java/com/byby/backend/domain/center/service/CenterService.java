@@ -41,19 +41,21 @@ public class CenterService {
 
     @Transactional
     public CenterResponse.Summary create(CenterRequest.Upsert req, UserPrincipal principal) {
-        requireAdmin(principal);
+        // 권한 검증은 컨트롤러에서 처리 (admin JWT 또는 dev secret)
         Center center = getOrCreateByName(req.name());
-        center.update(center.getName(), trimToNull(req.address()), trimToNull(req.phone()), req.active());
+        center.update(center.getName(), trimToNull(req.address()), trimToNull(req.phone()),
+                req.active() != null ? req.active() : true);
         return CenterResponse.Summary.from(center);
     }
 
     @Transactional
     public CenterResponse.Summary update(UUID id, CenterRequest.Upsert req, UserPrincipal principal) {
-        requireAdmin(principal);
+        // 권한 검증은 컨트롤러에서 처리 (admin JWT 또는 dev secret)
         Center center = centerRepository.findById(id)
                 .orElseThrow(() -> new GeneralException(GeneralErrorCode.NOT_FOUND));
-        requireOwnCenterOrUnassigned(center, principal);
-        center.update(req.name().trim(), trimToNull(req.address()), trimToNull(req.phone()), req.active());
+        if (principal != null) requireOwnCenterOrUnassigned(center, principal);
+        center.update(req.name().trim(), trimToNull(req.address()), trimToNull(req.phone()),
+                req.active() != null ? req.active() : true);
         return CenterResponse.Summary.from(center);
     }
 
@@ -80,11 +82,6 @@ public class CenterService {
         if (!profile.getCenter().getId().equals(center.getId())) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
-    }
-
-    private void requireAdmin(UserPrincipal principal) {
-        if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
-        if (!principal.isAdmin()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }
 
     private String trimToNull(String value) {

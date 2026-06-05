@@ -20,11 +20,16 @@ public class UserCredential extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 320)
+    @Column(unique = true, length = 320)
     private String email;
 
-    @Column(nullable = false)
+    /** 이메일/비밀번호 로그인용 (OAuth 사용자는 null) */
+    @Column
     private String passwordHash;
+
+    /** Kakao OAuth2 사용자 ID */
+    @Column(unique = true, length = 50)
+    private String kakaoId;
 
     @Column(nullable = false, unique = true)
     private UUID authUserId;
@@ -32,4 +37,15 @@ public class UserCredential extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole requestedRole;
+
+    @Column(length = 1024)
+    private String avatarUrl;
+
+    public boolean isOAuthUser() {
+        return this.kakaoId != null;
+    }
+
+    public void updateAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
 }

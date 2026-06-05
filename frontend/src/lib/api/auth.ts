@@ -45,8 +45,11 @@ export interface TokenMe {
 export const authApi = {
   login:           (body: LoginRequest) => post<TokenMe>('/auth/login', body),
   signup:          (body: SignupRequest) => post<TokenMe>('/auth/signup', body),
+  kakaoLogin:      (code: string) => post<TokenMe>(`/auth/kakao?code=${encodeURIComponent(code)}`, {}),
   changePassword:  (body: { currentPassword: string; newPassword: string }) =>
     post<void>('/auth/change-password', body),
+  updateAvatar:    (avatarUrl: string) =>
+    patch<void>('/auth/me/avatar', { avatarUrl }),
   me:              () => get('/auth/me', schemas.authMe),
   emailExists:     (email: string) => get(`/auth/email-exists?email=${encodeURIComponent(email)}`, schemas.emailExists),
   completeSignup:  () => Promise.resolve({ payload: undefined, isSuccess: true, statusCode: 200, message: 'ok' }),

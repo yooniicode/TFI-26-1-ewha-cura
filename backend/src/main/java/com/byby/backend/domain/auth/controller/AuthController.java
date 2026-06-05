@@ -8,6 +8,7 @@ import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.auth.dto.AuthRequest;
 import com.byby.backend.domain.auth.dto.AuthResponse;
 import com.byby.backend.domain.auth.service.AuthService;
+import com.byby.backend.domain.auth.service.KakaoOAuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final KakaoOAuthService kakaoOAuthService;
 
     @PostMapping("/login")
     @Operation(summary = "이메일/비밀번호 로그인")
@@ -37,6 +39,27 @@ public class AuthController {
     public ResponseEntity<Response<AuthResponse.TokenMe>> signup(
             @Valid @RequestBody AuthRequest.Signup req) {
         return ResponseEntity.status(201).body(Response.success(SuccessCode.CREATED, authService.signup(req)));
+    }
+
+    @PostMapping("/kakao")
+    @Operation(
+        summary = "카카오 로그인",
+        description = "카카오 인가 코드(code)를 받아 우리 서비스 JWT를 발급합니다. " +
+                      "프론트엔드에서 카카오 리다이렉트 URL로 받은 code 값을 전달하세요."
+    )
+    public ResponseEntity<Response<AuthResponse.TokenMe>> kakaoLogin(
+            @RequestParam String code) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, kakaoOAuthService.loginWithCode(code)));
+    }
+
+    @PostMapping("/register-admin")
+    @Operation(
+        summary = "센터 담당자(admin) 계정 생성",
+        description = "UI 미노출 — API + secretCode 로만 가입 가능. 환경변수 ADMIN_BOOTSTRAP_CODE 와 일치해야 합니다."
+    )
+    public ResponseEntity<Response<AuthResponse.TokenMe>> registerAdmin(
+            @Valid @RequestBody AuthRequest.AdminSignup req) {
+        return ResponseEntity.status(201).body(Response.success(SuccessCode.CREATED, authService.registerAdmin(req)));
     }
 
     @GetMapping("/me")
@@ -102,6 +125,17 @@ public class AuthController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.updateMemberRole(authUserId, req, principal)));
     }
     */
+
+    @PatchMapping("/me/avatar")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "프로필 사진 URL 저장")
+    public ResponseEntity<Response<Void>> updateAvatar(
+            @Valid @RequestBody AuthRequest.UpdateAvatar req,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
+        authService.updateAvatar(principal.getAuthUserId(), req.avatarUrl());
+        return ResponseEntity.ok(Response.success(SuccessCode.OK));
+    }
 
     @DeleteMapping("/me")
     @PreAuthorize("isAuthenticated()")

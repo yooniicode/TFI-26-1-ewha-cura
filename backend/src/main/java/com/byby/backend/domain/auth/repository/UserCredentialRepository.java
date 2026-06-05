@@ -10,6 +10,7 @@ public interface UserCredentialRepository extends JpaRepository<UserCredential, 
     Optional<UserCredential> findByEmail(String email);
     boolean existsByEmail(String email);
     Optional<UserCredential> findByAuthUserId(UUID authUserId);
+    Optional<UserCredential> findByKakaoId(String kakaoId);
 
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query(

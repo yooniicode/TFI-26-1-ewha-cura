@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { scriptApi } from '@/lib/api'
 import type { MedicalScript } from '@/lib/types'
 import Spinner from '@/components/ui/Spinner'
+import { useTTS } from '@/hooks/useTTS'
 
 export default function ScriptPresentPage() {
   const { id } = useParams<{ id: string }>()
@@ -13,6 +14,7 @@ export default function ScriptPresentPage() {
   const [loading, setLoading] = useState(true)
   const [sentences, setSentences] = useState<string[]>([])
   const [current, setCurrent] = useState(0)
+  const { speak, speaking } = useTTS()
 
   useEffect(() => {
     scriptApi.get(id).then(r => {
@@ -24,6 +26,11 @@ export default function ScriptPresentPage() {
       setSentences(parts)
     }).finally(() => setLoading(false))
   }, [id])
+
+  // 문장 바뀔 때마다 자동 읽기
+  useEffect(() => {
+    if (sentences[current]) speak(sentences[current])
+  }, [current, sentences]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return (
     <div className="min-h-screen bg-black flex items-center justify-center">
@@ -72,6 +79,26 @@ export default function ScriptPresentPage() {
           className="flex-1 py-4 rounded-xl bg-gray-700 text-white text-lg font-bold disabled:opacity-30"
         >
           ←
+        </button>
+        {/* TTS 재생/정지 */}
+        <button
+          onClick={() => speak(sentences[current])}
+          className={`w-[64px] py-4 rounded-xl flex items-center justify-center transition-colors ${
+            speaking ? 'bg-[#2592FF]' : 'bg-gray-700 hover:bg-gray-600'
+          }`}
+          title="다시 듣기"
+        >
+          {speaking ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+              <rect x="6" y="4" width="4" height="16" rx="1" />
+              <rect x="14" y="4" width="4" height="16" rx="1" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              <path d="M15.54 8.46a5 5 0 010 7.07" />
+            </svg>
+          )}
         </button>
         <button
           onClick={() => setCurrent(c => Math.min(sentences.length - 1, c + 1))}

@@ -253,7 +253,7 @@ function PatientSelectInner() {
       </div>
 
       {/* 하단 바 */}
-      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-6 pt-4 pb-8">
+      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
         <button
           type="button"
           onClick={() => selectedId && router.push(`/consultations/new?patientId=${selectedId}`)}

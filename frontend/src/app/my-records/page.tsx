@@ -10,6 +10,10 @@ import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
+function getTodayKST() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
+}
+
 export default function MyRecordsPage() {
   const { data: me, isLoading: meLoading } = useMe()
   const { t } = useTranslation()
@@ -49,41 +53,63 @@ export default function MyRecordsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {records.map(c => (
-              <Link
-                key={c.id}
-                href={`/my-records/${c.id}`}
-                className="flex items-center bg-white rounded-2xl px-4 py-4 gap-4 hover:shadow-sm transition-shadow"
-              >
-                <div className="shrink-0 w-12 flex flex-col items-center">
-                  <span className="text-[10px] text-[#A0A0A0]">
-                    {new Date(c.consultationDate + 'T00:00:00').getFullYear()}
-                  </span>
-                  <span className="text-lg font-bold text-[#161616] leading-tight">
-                    {String(new Date(c.consultationDate + 'T00:00:00').getDate()).padStart(2, '0')}
-                  </span>
-                  <span className="text-xs text-[#808080]">
-                    {String(new Date(c.consultationDate + 'T00:00:00').getMonth() + 1).padStart(2, '0')}월
-                  </span>
-                </div>
-                <div className="w-px h-10 bg-[#EEEEEE] shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-semibold text-[#161616] truncate">
-                    {c.hospitalName ?? t.my_records.no_hospital}
-                    {c.department ? ` · ${c.department}` : ''}
-                  </p>
-                  <p className="text-sm text-[#808080] mt-0.5 truncate">
-                    {c.diagnosisNameCode || c.diagnosisContent || t.medical_record.no_records}
-                  </p>
-                  {c.nextAppointmentDate && (
-                    <p className="text-xs text-[#2592FF] mt-1">{t.medical_record.next_appointment}: {c.nextAppointmentDate}</p>
-                  )}
-                </div>
-                <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
-                  <path d="M1 1l6 6-6 6" stroke="#C7C7C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </Link>
-            ))}
+            {(() => {
+              const todayKST = getTodayKST()
+              const upcoming = records.filter(c => c.consultationDate >= todayKST)
+              const past = records.filter(c => c.consultationDate < todayKST)
+              const sorted = [
+                ...upcoming.sort((a, b) => a.consultationDate.localeCompare(b.consultationDate)),
+                ...past,
+              ]
+              return sorted.map(c => {
+                const isUpcoming = c.consultationDate >= todayKST
+                const hasContent = !!(c.diagnosisNameCode || c.diagnosisContent)
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/my-records/${c.id}`}
+                    className="flex items-center bg-white rounded-2xl px-4 py-4 gap-4 hover:shadow-sm transition-shadow"
+                  >
+                    <div className="shrink-0 w-12 flex flex-col items-center">
+                      <span className="text-[10px] text-[#A0A0A0]">
+                        {new Date(c.consultationDate + 'T00:00:00').getFullYear()}
+                      </span>
+                      <span className={`text-lg font-bold leading-tight ${isUpcoming ? 'text-[#2592FF]' : 'text-[#161616]'}`}>
+                        {String(new Date(c.consultationDate + 'T00:00:00').getDate()).padStart(2, '0')}
+                      </span>
+                      <span className="text-xs text-[#808080]">
+                        {String(new Date(c.consultationDate + 'T00:00:00').getMonth() + 1).padStart(2, '0')}월
+                      </span>
+                    </div>
+                    <div className="w-px h-10 bg-[#EEEEEE] shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-semibold text-[#161616] truncate">
+                          {c.hospitalName ?? t.my_records.no_hospital}
+                          {c.department ? ` · ${c.department}` : ''}
+                        </p>
+                        {isUpcoming && (
+                          <span className="shrink-0 text-[10px] font-semibold text-[#2592FF] bg-[#EAF4FF] rounded-full px-2 py-0.5">
+                            예약됨
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-[#808080] mt-0.5 truncate">
+                        {isUpcoming && !hasContent
+                          ? (c.interpreterName ? `통번역가: ${c.interpreterName}` : '예정된 진료')
+                          : (c.diagnosisNameCode || c.diagnosisContent || t.medical_record.no_records)}
+                      </p>
+                      {c.nextAppointmentDate && (
+                        <p className="text-xs text-[#2592FF] mt-1">{t.medical_record.next_appointment}: {c.nextAppointmentDate}</p>
+                      )}
+                    </div>
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
+                      <path d="M1 1l6 6-6 6" stroke="#C7C7C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </Link>
+                )
+              })
+            })()}
           </div>
         )}
       </div>

@@ -16,6 +16,10 @@ public class AuthRequest {
             @NotBlank String password
     ) {}
 
+    public record UpdateAvatar(
+            @NotBlank String avatarUrl
+    ) {}
+
     public record Signup(
             @NotBlank String email,
             @NotBlank String password,
@@ -67,5 +71,15 @@ public class AuthRequest {
     public record BootstrapAdmin(
             @NotBlank String secretCode,
             String centerName
+    ) {}
+
+    /** 센터 담당자(admin) 회원가입 — UI 미노출, API + secretCode로만 가입 가능 */
+    public record AdminSignup(
+            @NotBlank String email,
+            @NotBlank String password,
+            @NotBlank String name,
+            @NotBlank String secretCode,
+            String centerName,
+            UUID centerId
     ) {}
 }

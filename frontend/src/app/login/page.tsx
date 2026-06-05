@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api'
+import { ApiError } from '@/lib/api/client'
 import { setAccessToken } from '@/lib/auth-token'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
 import type { Gender, Nationality, VisaType } from '@/lib/types'
@@ -56,7 +57,11 @@ export default function LoginPage() {
         router.replace('/dashboard')
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '로그인에 실패했습니다')
+      if (e instanceof ApiError && e.isNotFound) {
+        setError(t.login.err_not_found)
+      } else {
+        setError(e instanceof Error ? e.message : t.login.err_invalid_credentials)
+      }
     } finally {
       setLoading(false)
     }
@@ -186,6 +191,16 @@ export default function LoginPage() {
               {loading ? '로그인 중...' : t.auth.login}
             </button>
 
+            {/* 소셜 로그인 구분선 */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-[#EEEEEE]" />
+              <span className="text-xs text-[#A0A0A0]">또는</span>
+              <div className="flex-1 h-px bg-[#EEEEEE]" />
+            </div>
+
+            {/* 카카오 로그인 */}
+            <KakaoLoginButton />
+
             <p className="text-center text-sm text-[#808080] pt-1">
               계정이 없으신가요?{' '}
               <button type="button" onClick={() => switchMode('signup')} className="text-[#2592FF] font-semibold hover:underline">
@@ -197,6 +212,18 @@ export default function LoginPage() {
 
         {/* ── 회원가입 ────────────────────────────────────────────────────────── */}
         {mode === 'signup' && (
+          <div className="space-y-3">
+
+            {/* 카카오 빠른 가입 */}
+            <KakaoSignupButton />
+
+            {/* 구분선 */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-[#EEEEEE]" />
+              <span className="text-xs text-[#A0A0A0]">또는 이메일로 직접 가입</span>
+              <div className="flex-1 h-px bg-[#EEEEEE]" />
+            </div>
+
           <form onSubmit={handleSignup} className="space-y-3">
 
             {/* 스텝 인디케이터 */}
@@ -397,6 +424,7 @@ export default function LoginPage() {
               </button>
             </p>
           </form>
+          </div>
         )}
       </div>
     </div>
@@ -410,4 +438,47 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
       {children}
     </div>
   )
+}
+
+// ─── 카카오 버튼 ─────────────────────────────────────────────────────────────
+
+function KakaoButton({ label }: { label: string }) {
+  const KAKAO_CLIENT_ID = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY
+  const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
+    ?? `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/kakao/callback`
+
+  if (!KAKAO_CLIENT_ID) return null
+
+  function handleKakao() {
+    const params = new URLSearchParams({
+      client_id: KAKAO_CLIENT_ID!,
+      redirect_uri: REDIRECT_URI,
+      response_type: 'code',
+    })
+    window.location.href = `https://kauth.kakao.com/oauth/authorize?${params.toString()}`
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleKakao}
+      className="w-full h-[56px] bg-[#FEE500] rounded-2xl text-[#3A1D1D] text-base font-bold flex items-center justify-center gap-2.5 hover:bg-[#f5dc00] active:bg-[#e8d000] transition-colors"
+    >
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path fillRule="evenodd" clipRule="evenodd"
+          d="M10 2C5.589 2 2 4.808 2 8.25c0 2.16 1.347 4.065 3.393 5.183l-.863 3.196c-.076.283.258.511.502.348l3.712-2.49A9.53 9.53 0 0010 14.5c4.411 0 8-2.808 8-6.25S14.411 2 10 2z"
+          fill="#3A1D1D"
+        />
+      </svg>
+      {label}
+    </button>
+  )
+}
+
+function KakaoLoginButton() {
+  return <KakaoButton label="카카오로 로그인" />
+}
+
+function KakaoSignupButton() {
+  return <KakaoButton label="카카오로 시작하기" />
 }

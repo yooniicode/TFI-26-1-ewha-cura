@@ -41,10 +41,10 @@ export default function DashboardPage() {
   const { data: me, isLoading: meLoading } = useMe()
   const { t } = useTranslation()
 
-  const adminFeaturesEnabled = false
-  const hasCenter = adminFeaturesEnabled && me?.role === 'admin' && !!(me.centerId || me.centerName)
+  const isAdmin = me?.role === 'admin'
+  const hasCenter = isAdmin && !!(me?.centerId || me?.centerName)
   const canViewConsultations = me?.role === 'interpreter'
-  const canLoadAnnouncements = me?.role === 'patient'
+  const canLoadAnnouncements = me?.role === 'patient' || isAdmin
   const isPatientWithEntity = me?.role === 'patient' && !!me.entityId
   const isInterpreter = me?.role === 'interpreter'
 
@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const { data: centerStats } = useQuery({
     queryKey: queryKeys.adminStats,
     queryFn: () => adminApi.stats().then(r => r.payload),
-    enabled: adminFeaturesEnabled && hasCenter,
+    enabled: hasCenter,
   })
 
   const { data: myMatch } = useQuery({
@@ -124,9 +124,22 @@ export default function DashboardPage() {
     return kst.toISOString().split('T')[0]
   })()
   const recentConsultations = (consultations ?? []).filter(c => c.consultationDate === todayStr)
-  const nextAppointment = (myRecords ?? []).find(r => r.nextAppointmentDate)?.nextAppointmentDate
+
+  // 통번역가가 등록한 미래 consultationDate 레코드를 우선으로 찾고,
+  // 없으면 과거 진료에 기록된 nextAppointmentDate를 폴백으로 사용
+  const upcomingScheduled = (myRecords ?? [])
+    .filter(r => r.consultationDate >= todayStr)
+    .sort((a, b) => a.consultationDate.localeCompare(b.consultationDate))
+  const nextScheduledRecord = upcomingScheduled[0] ?? null
+  const nextFromRecord = (myRecords ?? [])
+    .filter(r => r.consultationDate < todayStr)
+    .find(r => r.nextAppointmentDate)?.nextAppointmentDate ?? null
+  const nextAppointment = nextScheduledRecord?.consultationDate ?? nextFromRecord
+  const nextAppointmentContext = nextScheduledRecord
+    ? [nextScheduledRecord.hospitalName, nextScheduledRecord.department].filter(Boolean).join(' ') || null
+    : null
   const announcements = announcementResponse?.payload ?? []
-  const roleLabel = me?.role === 'admin' ? '센터장' : me?.role === 'interpreter' ? '통번역가' : '이주민'
+  const roleLabel = isAdmin ? '센터장' : me?.role === 'interpreter' ? '통번역가' : '이주민'
 
   const announcementCategoryLabels: Record<AnnouncementCategory, string> = {
     NOTICE: t.dashboard.announcement_category_notice,
@@ -217,8 +230,44 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 센터장 통계 (관리자 기능 비활성화) */}
-        {false && me?.role === 'admin' && hasCenter && (
+        {/* 센터장 퀵 액션 */}
+        {isAdmin && (
+          <div className="mt-5 grid grid-cols-2 gap-2.5">
+            <Link href="/patients"
+              className="flex flex-col items-center py-5 gap-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#494949" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 00-3-3.87" /><path d="M16 3.13a4 4 0 010 7.75" />
+              </svg>
+              <span className="text-xs font-medium text-neutral-700">이주민 관리</span>
+            </Link>
+            <Link href="/consultations"
+              className="flex flex-col items-center py-5 gap-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#494949" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+              <span className="text-xs font-medium text-neutral-700">보고서 조회</span>
+            </Link>
+            <Link href="/chat"
+              className="flex flex-col items-center py-5 gap-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#494949" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+              </svg>
+              <span className="text-xs font-medium text-neutral-700">채팅</span>
+            </Link>
+            <Link href="/mypage"
+              className="flex flex-col items-center py-5 gap-2 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#494949" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
+              </svg>
+              <span className="text-xs font-medium text-neutral-700">센터 설정</span>
+            </Link>
+          </div>
+        )}
+
+        {/* 센터장 통계 */}
+        {isAdmin && hasCenter && (
           <div className="mt-5 grid grid-cols-3 gap-2">
             {([
               { href: '/patients',     icon: 'P', label: t.nav.patients,    count: centerStats?.patientCount },
@@ -300,12 +349,19 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-400">{t.immigrant_home.no_interpreter}</p>
                 </div>
               )}
-              <div className="bg-gray-50 rounded-xl px-3 py-3">
+              <Link href="/my-records" className="bg-gray-50 rounded-xl px-3 py-3 block hover:bg-gray-100 transition-colors">
                 <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.next_appointment}</p>
-                {nextAppointment
-                  ? <p className="text-sm font-semibold text-neutral-900 truncate">{nextAppointment}</p>
-                  : <p className="text-xs text-gray-400">{t.immigrant_home.no_appointment}</p>}
-              </div>
+                {nextAppointment ? (
+                  <>
+                    <p className="text-sm font-semibold text-neutral-900 truncate">{nextAppointment}</p>
+                    {nextAppointmentContext && (
+                      <p className="text-[10px] text-gray-400 truncate mt-0.5">{nextAppointmentContext}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-400">{t.immigrant_home.no_appointment}</p>
+                )}
+              </Link>
             </div>
           </>
         )}
@@ -364,17 +420,17 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 센터장: 공지 관리 (관리자 기능 비활성화) */}
-        {false && me?.role === 'admin' && !hasCenter && (
-          <div className="rounded-xl bg-yellow-50 border border-yellow-100 px-4 py-5">
-            <p className="text-sm font-semibold text-yellow-900">{t.common.admin_center_required}</p>
-            <p className="mt-1 text-xs text-yellow-800">{t.common.admin_center_required_desc}</p>
-            <Link href="/mypage" className="mt-3 inline-block text-xs font-semibold text-primary-600">
+        {/* 센터장: 공지 관리 */}
+        {isAdmin && !hasCenter && (
+          <div className="rounded-xl bg-amber-50 border border-amber-100 px-4 py-5">
+            <p className="text-sm font-semibold text-amber-900">{t.common.admin_center_required}</p>
+            <p className="mt-1 text-xs text-amber-800">{t.common.admin_center_required_desc}</p>
+            <Link href="/mypage" className="mt-3 inline-block text-xs font-semibold text-[#2592FF]">
               {t.common.setup_center}
             </Link>
           </div>
         )}
-        {false && me?.role === 'admin' && hasCenter && (
+        {isAdmin && hasCenter && (
           <AdminAnnouncementSection
             announcements={announcements}
             category={announcementCategory}

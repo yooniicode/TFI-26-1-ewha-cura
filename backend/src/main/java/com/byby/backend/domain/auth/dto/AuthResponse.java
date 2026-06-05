@@ -14,10 +14,11 @@ public class AuthResponse {
             UUID entityId,
             UUID centerId,
             String centerName,
-            String nickname
+            String nickname,
+            String avatarUrl
     ) {
         public Me(UUID authUserId, UserRole role, String name, UUID entityId) {
-            this(authUserId, role, name, entityId, null, null, null);
+            this(authUserId, role, name, entityId, null, null, null, null);
         }
     }
 

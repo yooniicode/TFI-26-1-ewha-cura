@@ -38,13 +38,13 @@ export default function MyPage() {
   const { data: adminProfile, isLoading: adminProfileLoading } = useQuery({
     queryKey: queryKeys.adminProfile,
     queryFn: () => adminApi.profile().then(r => r.payload),
-    enabled: false,
+    enabled: me?.role === 'admin',
   })
 
   const { data: centers = [], isLoading: centersLoading } = useQuery({
     queryKey: queryKeys.centers,
     queryFn: () => centerApi.list().then(r => r.payload ?? []),
-    enabled: false,
+    enabled: me?.role === 'admin',
   })
 
   const [name, setName] = useState('')
@@ -160,12 +160,13 @@ export default function MyPage() {
       },
     })
 
-  // 프로필 사진
-  const AVATAR_KEY = `byby_avatar_${me?.authUserId ?? 'anon'}`
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(() =>
-    typeof window !== 'undefined' ? localStorage.getItem(`byby_avatar_${me?.authUserId ?? ''}`) : null
-  )
+  // 프로필 사진 — me.avatarUrl이 권위 소스, localStorage는 같은 세션 내 캐시
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+
+  useEffect(() => {
+    if (me?.avatarUrl) setAvatarUrl(me.avatarUrl)
+  }, [me?.avatarUrl])
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -174,13 +175,17 @@ export default function MyPage() {
     try {
       const supabase = createClient()
       const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `avatars/${me.authUserId}.${ext}`
+      const path = `${me.authUserId}.${ext}`
       const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
       if (error) throw error
       const { data } = supabase.storage.from('avatars').getPublicUrl(path)
       const url = `${data.publicUrl}?t=${Date.now()}`
+      // 백엔드에 저장 후 캐시에도 반영
+      await authApi.updateAvatar(url)
       setAvatarUrl(url)
-      localStorage.setItem(AVATAR_KEY, url)
+      queryClient.setQueryData(queryKeys.me, (old: typeof me) =>
+        old ? { ...old, avatarUrl: url } : old
+      )
     } catch (err) {
       console.error('아바타 업로드 실패:', err)
     } finally {

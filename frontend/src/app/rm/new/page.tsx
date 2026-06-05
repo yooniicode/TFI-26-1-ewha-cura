@@ -273,6 +273,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
 
       if (remark.trim()) {
         setAiStatus('loading')
+        console.log(`[rm:parse] 파싱 요청 len=${remark.length}`)
         try {
           const res = await fetch('/api/parse-rm', {
             method: 'POST',
@@ -280,17 +281,23 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
             body: JSON.stringify({ rmText: remark }),
           })
           if (res.ok) {
-            const data = await res.json() as { fields: Record<string, string> | null; error?: string }
+            const data = await res.json() as { fields: Record<string, string> | null; provider?: string; error?: string }
             if (data.fields) {
+              const filled = Object.entries(data.fields).filter(([, v]) => !!v).map(([k]) => k)
+              console.log(`[rm:parse] 완료 provider=${data.provider ?? '?'} filled=[${filled.join(',')}]`)
               sessionStorage.setItem('rm_parsed_fields', JSON.stringify(data.fields))
+              console.log('[rm:parse] sessionStorage 저장 완료')
               setAiStatus('ok')
             } else {
+              console.warn('[rm:parse] 파싱 결과 없음 (fields=null)', data.error ?? '')
               setAiStatus('fail')
             }
           } else {
+            console.warn(`[rm:parse] HTTP 오류 status=${res.status}`)
             setAiStatus('fail')
           }
-        } catch {
+        } catch (e) {
+          console.error('[rm:parse] 네트워크 오류:', e instanceof Error ? e.message : e)
           setAiStatus('fail')
         }
       }

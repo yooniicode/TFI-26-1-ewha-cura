@@ -6,6 +6,7 @@ import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import PageHeader from '@/components/interpreter/PageHeader'
 import { useTranslation } from '@/lib/i18n/I18nContext'
+import { useTTS } from '@/hooks/useTTS'
 
 // ─── 언어 코드 매핑 ────────────────────────────────────────────────────────────
 // 새 언어 추가 시 여기에 locale → lang 코드 한 줄 추가
@@ -149,6 +150,7 @@ export default function ScriptPage() {
   const [step, setStep] = useState<Step>('select-part')
   const [selectedPart, setSelectedPart] = useState<BodyPart | null>(null)
   const [selectedPhrase, setSelectedPhrase] = useState<Phrase | null>(null)
+  const { speak, speaking } = useTTS()
 
   // 현재 언어 번역 추출 (없으면 빈 문자열)
   function getTranslation(phrase: Phrase): string {
@@ -202,11 +204,31 @@ export default function ScriptPage() {
             >
               {t.medical_script_ui.other_script}
             </button>
+            {/* TTS 버튼 */}
+            <button
+              type="button"
+              onClick={() => speak(selectedPhrase.ko)}
+              className={`w-[56px] h-[56px] rounded-2xl flex items-center justify-center transition-colors shrink-0 ${
+                speaking
+                  ? 'bg-[#2592FF] text-white'
+                  : 'bg-[#F0F1F5] text-[#494949] hover:bg-[#e4e4e8]'
+              }`}
+              title="한국어로 듣기"
+            >
+              {speaking ? (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <img src="/icons/immigrant/medical-script/speak.svg" alt="듣기" width={22} height={22} />
+              )}
+            </button>
+            {/* 전체화면 */}
             <Link
               href={`/scripts/patient/${patientId}/present?ko=${encodeURIComponent(selectedPhrase.ko)}&tr=${encodeURIComponent(translation)}`}
-              className="flex-1 h-[56px] rounded-2xl bg-[#2592FF] text-white font-semibold text-base flex items-center justify-center gap-2 hover:bg-[#1a7ee6] transition-colors"
+              className="flex-1 h-[56px] rounded-2xl bg-[#2592FF] text-white font-semibold text-base flex items-center justify-center hover:bg-[#1a7ee6] transition-colors"
             >
-              <img src="/icons/immigrant/medical-script/speak.svg" alt="" width={22} height={22} />
               {t.medical_script_ui.fullscreen}
             </Link>
           </div>
@@ -311,7 +333,7 @@ export default function ScriptPage() {
               <path d="M12 20h9" />
               <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
-            직접 입력하기
+            {t.medical_script_ui.custom_write_btn}
           </Link>
         </div>
       </div>

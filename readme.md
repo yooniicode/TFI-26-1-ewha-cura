@@ -109,7 +109,7 @@
 | DB (운영) | PostgreSQL (Supabase, PgBouncer 트랜잭션 모드) | - |
 | DB (테스트) | H2 (in-memory) | - |
 | 테스트 | JUnit 5 + Spring Security Test | - |
-| AI | Claude API (claude-3-5-haiku) | - |
+| AI | Google Gemini API (gemini-2.0-flash) | - |
 
 ### 인프라 / 배포
 
@@ -181,8 +181,9 @@ cd backend
 핵심 변수:
 
 - DB: `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DB_PORT`
-- Backend: `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `ADMIN_BOOTSTRAP_CODE`, `CLAUDE_API_KEY`
-- Frontend: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- Backend: `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`, `ADMIN_BOOTSTRAP_CODE`, `GEMINI_API_KEY`
+- Frontend (빌드타임 공개): `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_KAKAO_REST_API_KEY`, `NEXT_PUBLIC_KAKAO_REDIRECT_URI`
+- Frontend (런타임 서버전용): `GEMINI_API_KEY`, `GROQ_API_KEY`(선택), `HIRA_API_KEY`
 - 공통: `FRONTEND_URL`, `BACKEND_PORT`, `FRONTEND_PORT`
 
 샘플은 `.env.example` 참고.
@@ -225,8 +226,13 @@ cd backend
 | `VERCEL_TOKEN` | Vercel 계정 API 토큰 |
 | `VERCEL_ORG_ID` | Vercel 조직/계정 ID |
 | `VERCEL_PROJECT_ID` | Vercel 프로젝트 ID |
+| `NEXT_PUBLIC_API_URL` | 프로덕션 백엔드 URL — Docker 이미지 빌드 시 번들에 포함 |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL — Docker 빌드용 |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon 키 — Docker 빌드용 |
+| `NEXT_PUBLIC_KAKAO_REST_API_KEY` | 카카오 REST API 키 — Docker 빌드용 |
+| `NEXT_PUBLIC_KAKAO_REDIRECT_URI` | 카카오 콜백 URI (프로덕션) — Docker 빌드용 |
 
-> `NEXT_PUBLIC_*` 환경변수는 GitHub Secrets가 아닌 **Vercel 프로젝트 대시보드**에, 백엔드 환경변수(`SUPABASE_URL` 등)는 **Railway 서비스 환경변수**에 등록합니다.
+> `NEXT_PUBLIC_*` 변수는 **GitHub Secrets**(Docker 이미지 빌드 시 번들 삽입)와 **Vercel 대시보드**(Vercel 배포 빌드) 양쪽에 모두 등록합니다. 백엔드 환경변수는 **Railway 서비스 환경변수**에 등록합니다.
 
 ### Railway 서비스 환경변수 필요 항목
 
@@ -240,6 +246,7 @@ cd backend
 | `SUPABASE_SERVICE_KEY` | Supabase service_role 키 |
 | `ADMIN_BOOTSTRAP_CODE` | 최초 센터 직원 등록용 인증 코드 |
 | `FRONTEND_URL` | Vercel 배포 URL (CORS 허용) |
+| `GEMINI_API_KEY` | Gemini API 키 (의료 대본 AI 생성) |
 
 ## 10) 디렉터리 구조
 
