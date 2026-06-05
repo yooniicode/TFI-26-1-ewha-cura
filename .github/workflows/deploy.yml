@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
@@ -11,13 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE: ${{ github.repository }}/backend
-  FRONTEND_IMAGE: ${{ github.repository }}/frontend
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ─── 백엔드 테스트 & 빌드 ───────────────────────────────
+  # ─── 백엔드 테스트 ────────────────────────────────────────
+  # Railway가 GitHub 소스에서 직접 Dockerfile 빌드 & 자동 배포
+  # CI 역할: 배포 전 테스트 통과 여부 확인 (Railway는 테스트 미실행)
   backend-ci:
     name: Backend CI
     runs-on: ubuntu-latest
@@ -33,26 +32,17 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          # cache: gradle
 
       - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Run tests
         run: ./gradlew test --no-daemon
-        # 테스트 설정은 backend/src/test/resources/application.yaml 에서 관리
+        # 테스트 설정: backend/src/test/resources/application.yaml
 
-      - name: Build JAR
-        run: ./gradlew clean build -x test --no-daemon
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-jar
-          path: backend/build/libs/*.jar
-          retention-days: 1
-
-  # ─── 프론트엔드 테스트 & 빌드 ──────────────────────────
+  # ─── 프론트엔드 린트 & 빌드 체크 ─────────────────────────
+  # Vercel이 main push마다 자동 배포
+  # CI 역할: PR 단계에서 lint 오류 및 빌드 실패 조기 감지
   frontend-ci:
     name: Frontend CI
     runs-on: ubuntu-latest
@@ -82,100 +72,3 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8080
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
-
-  # ─── Docker 이미지 빌드 & Push (main 브랜치만) ──────────
-  docker-push:
-    name: Build & Push Docker Images
-    needs: [backend-ci, frontend-ci]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set lowercase image names
-        run: |
-          echo "BACKEND_IMAGE=$(echo '${{ github.repository }}/backend' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE=$(echo '${{ github.repository }}/frontend' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build & push backend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-          # cache-from: type=gha 
-          # cache-to: type=gha,mode=max
-          no-cache: true 
-                    
-
-      - name: Build & push frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            NEXT_PUBLIC_KAKAO_REST_API_KEY=${{ secrets.NEXT_PUBLIC_KAKAO_REST_API_KEY }}
-            NEXT_PUBLIC_KAKAO_REDIRECT_URI=${{ secrets.NEXT_PUBLIC_KAKAO_REDIRECT_URI }}
-
-  # ─── 백엔드 배포 (Railway)
-  deploy-backend:
-    name: Deploy Backend to Railway
-    needs: docker-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-
-    steps:
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Redeploy Railway service
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-          RAILWAY_ENVIRONMENT: ${{ secrets.RAILWAY_ENV_ID }}
-        run: |
-          railway redeploy \
-            --service ${{ secrets.RAILWAY_SERVICE_ID }} \
-            --yes
-
-  # ─── 프론트엔드 배포 (Vercel) ─────────────────────────
-  deploy-frontend:
-    name: Deploy Frontend to Vercel
-    needs: frontend-ci
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to Vercel
-        working-directory: ./frontend
-        run: npx vercel@latest --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
