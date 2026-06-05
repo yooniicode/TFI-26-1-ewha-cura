@@ -40,15 +40,7 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test --no-daemon
-        env:
-          SPRING_PROFILES_ACTIVE: local
-          SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
-          SPRING_DATASOURCE_USERNAME: sa
-          SPRING_DATASOURCE_PASSWORD: ""
-          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
-          SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.H2Dialect
-          SPRING_FLYWAY_ENABLED: false
-          JWT_SECRET: test-secret-key-minimum-256-bits-long-for-testing-only!!
+        # 테스트 설정은 backend/src/test/resources/application.yaml 에서 관리
 
       - name: Build JAR
         run: ./gradlew clean build -x test --no-daemon

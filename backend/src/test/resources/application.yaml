@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+
+  flyway:
+    enabled: false
+
+byby:
+  security:
+    jwt:
+      secret: test-secret-key-minimum-256-bits-long-for-testing-only!!
+      expiration-ms: 86400000
+    swagger-secret: ""
+    cors:
+      allowed-origins:
+        - http://localhost:3000
+
+  supabase:
+    url: ""
+    anon-key: ""
+    service-key: ""
+
+  admin:
+    bootstrap-code: test-admin-code
+
+  center:
+    dev-secret: test-center-secret
+
+  kakao:
+    rest-api-key: ""
+    redirect-uri: http://localhost:3000/auth/kakao/callback
+
+  gemini:
+    api-key: ""
+    model: gemini-2.0-flash

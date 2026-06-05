@@ -21,8 +21,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         default_schema: public
-        jdbc:
-          time_zone: Asia/Seoul
 
   flyway:
     enabled: true
@@ -125,6 +123,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Seoul   # PostgreSQL 운영 환경 전용 — H2 테스트에서는 제외
 
 logging:
   level:

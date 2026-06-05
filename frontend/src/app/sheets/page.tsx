@@ -197,7 +197,7 @@ export default function SheetsPage() {
           {/* 안내 */}
           <div className="bg-[#FFF8E1] rounded-xl px-4 py-3 text-xs text-[#7B5E00] leading-relaxed">
             <p className="font-semibold mb-1">연결 전 확인사항</p>
-            <p>• Google 시트를 <strong>"링크가 있는 모든 사용자 — 뷰어"</strong>로 공유 설정해야 합니다.</p>
+            <p>• Google 시트를 <strong>&ldquo;링크가 있는 모든 사용자 — 뷰어&rdquo;</strong>로 공유 설정해야 합니다.</p>
             <p>• 서버에 <strong>GOOGLE_SHEETS_API_KEY</strong> 환경변수가 설정되어 있어야 합니다.</p>
             <p>• 데이터는 읽기 전용으로 표시되며 앱 내에서 수정할 수 없습니다.</p>
           </div>
