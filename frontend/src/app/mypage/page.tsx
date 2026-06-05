@@ -15,7 +15,6 @@ import Spinner from '@/components/ui/Spinner'
 import PasswordInput from '@/components/ui/PasswordInput'
 import { INTERPRETER_LANGUAGE_OPTIONS } from '@/lib/constants'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
-import { createClient } from '@/lib/supabase'
 
 export default function MyPage() {
   const queryClient = useQueryClient()
@@ -173,14 +172,15 @@ export default function MyPage() {
     if (!file || !me?.authUserId) return
     setAvatarUploading(true)
     try {
-      const supabase = createClient()
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${me.authUserId}.${ext}`
-      const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
-      if (error) throw error
-      const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-      const url = `${data.publicUrl}?t=${Date.now()}`
-      // 백엔드에 저장 후 캐시에도 반영
+      const form = new FormData()
+      form.append('file', file)
+      form.append('userId', me.authUserId)
+      const uploadRes = await fetch('/api/upload/avatar', { method: 'POST', body: form })
+      if (!uploadRes.ok) {
+        const { error } = await uploadRes.json() as { error?: string }
+        throw new Error(error ?? '업로드 실패')
+      }
+      const { url } = await uploadRes.json() as { url: string }
       await authApi.updateAvatar(url)
       setAvatarUrl(url)
       queryClient.setQueryData(queryKeys.me, (old: typeof me) =>
@@ -188,6 +188,7 @@ export default function MyPage() {
       )
     } catch (err) {
       console.error('아바타 업로드 실패:', err)
+      alert(err instanceof Error ? err.message : '프로필 사진 업로드에 실패했습니다.')
     } finally {
       setAvatarUploading(false)
       e.target.value = ''
