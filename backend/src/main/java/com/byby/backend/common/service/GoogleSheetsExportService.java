@@ -35,6 +35,8 @@ public class GoogleSheetsExportService {
 
     static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     static final String SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+    static final String DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+    static final String GOOGLE_API_SCOPES = SHEETS_SCOPE + " " + DRIVE_FILE_SCOPE;
     private static final String SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -97,7 +99,7 @@ public class GoogleSheetsExportService {
                 .issuer(clientEmail)
                 .subject(clientEmail)
                 .claim("aud", TOKEN_URL)
-                .claim("scope", SHEETS_SCOPE)
+                .claim("scope", GOOGLE_API_SCOPES)
                 .issuedAt(new Date(nowSec * 1000))
                 .expiration(new Date((nowSec + 3600) * 1000))
                 .signWith(privateKey, Jwts.SIG.RS256)

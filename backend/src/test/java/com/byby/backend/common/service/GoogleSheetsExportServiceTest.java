@@ -29,6 +29,8 @@ class GoogleSheetsExportServiceTest {
 
         assertThat(payload.path("aud").isTextual()).isTrue();
         assertThat(payload.path("aud").asText()).isEqualTo(GoogleSheetsExportService.TOKEN_URL);
-        assertThat(payload.path("scope").asText()).isEqualTo(GoogleSheetsExportService.SHEETS_SCOPE);
+        assertThat(payload.path("scope").asText())
+                .contains(GoogleSheetsExportService.SHEETS_SCOPE)
+                .contains(GoogleSheetsExportService.DRIVE_FILE_SCOPE);
     }
 }
