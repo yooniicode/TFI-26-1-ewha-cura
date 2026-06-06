@@ -16,6 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import org.springframework.data.domain.PageRequest;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
@@ -35,7 +37,9 @@ public class CenterService {
         String compactQuery = normalizedQuery == null
                 ? null
                 : normalizedQuery.toLowerCase(Locale.ROOT).replaceAll("[\\s-]+", "");
-        return centerRepository.searchActive(normalizedQuery, compactQuery, pageable)
+        // native query에 ORDER BY name ASC가 있으므로 Pageable sort 무시
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return centerRepository.searchActive(normalizedQuery, compactQuery, unsorted)
                 .map(CenterResponse.Summary::from);
     }
 
