@@ -5,6 +5,8 @@ import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.domain.hospital.dto.HospitalRequest;
 import com.byby.backend.domain.hospital.dto.HospitalResponse;
 import com.byby.backend.domain.hospital.service.HospitalService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/hospitals")
 @RequiredArgsConstructor
+@Tag(name = "Hospitals", description = "병원 API")
 public class HospitalController {
 
     private final HospitalService hospitalService;
@@ -33,6 +36,7 @@ public class HospitalController {
     // }
 
     @GetMapping
+    @Operation(summary = "병원 검색", description = "이름으로 병원을 검색합니다. name 파라미터 미입력 시 전체 목록을 반환합니다.")
     public ResponseEntity<Response<List<HospitalResponse.Summary>>> search(
             @RequestParam(required = false) String name,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -41,6 +45,7 @@ public class HospitalController {
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "병원 상세 조회")
     public ResponseEntity<Response<HospitalResponse.Summary>> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, hospitalService.getById(id)));
     }

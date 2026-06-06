@@ -24,6 +24,7 @@ import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,9 +70,10 @@ public class AdminService {
         requireAdmin(principal);
         LocalDate end = to != null ? to : LocalDate.now();
         LocalDate start = from != null ? from : end.minusDays(30);
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return adminWorkLogRepository
                 .findByAuthUserIdAndWorkDateBetweenOrderByWorkDateDescCreatedAtDesc(
-                        principal.getAuthUserId(), start, end, pageable)
+                        principal.getAuthUserId(), start, end, unsorted)
                 .map(AdminResponse.WorkLog::from);
     }
 
@@ -112,13 +114,14 @@ public class AdminService {
 
     public Page<AdminResponse.PatientMemo> getPatientMemos(UUID patientId, Pageable pageable, UserPrincipal principal) {
         requireStaffOrInterpreter(principal);
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         if (principal.isAdmin()) {
-            return centerPatientMemoRepository.findByPatientIdOrderByCreatedAtDesc(patientId, pageable)
+            return centerPatientMemoRepository.findByPatientIdOrderByCreatedAtDesc(patientId, unsorted)
                     .map(memo -> AdminResponse.PatientMemo.from(memo, true));
         }
         requireAssignedInterpreter(patientId, principal);
         return centerPatientMemoRepository
-                .findByPatientIdAndInterpreterVisibleTrueOrderByCreatedAtDesc(patientId, pageable)
+                .findByPatientIdAndInterpreterVisibleTrueOrderByCreatedAtDesc(patientId, unsorted)
                 .map(memo -> AdminResponse.PatientMemo.from(memo, false));
     }
 

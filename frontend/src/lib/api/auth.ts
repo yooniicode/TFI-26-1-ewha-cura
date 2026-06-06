@@ -45,7 +45,11 @@ export interface TokenMe {
 export const authApi = {
   login:           (body: LoginRequest) => post<TokenMe>('/auth/login', body),
   signup:          (body: SignupRequest) => post<TokenMe>('/auth/signup', body),
-  kakaoLogin:      (code: string) => post<TokenMe>(`/auth/kakao?code=${encodeURIComponent(code)}`, {}),
+  kakaoLogin:      (code: string, redirectUri?: string) => {
+    const params = new URLSearchParams({ code })
+    if (redirectUri) params.set('redirectUri', redirectUri)
+    return post<TokenMe>(`/auth/kakao?${params.toString()}`, {})
+  },
   changePassword:  (body: { currentPassword: string; newPassword: string }) =>
     post<void>('/auth/change-password', body),
   updateAvatar:    (avatarUrl: string) =>

@@ -45,16 +45,18 @@ public class KakaoOAuthService {
     /**
      * 카카오 인가 코드 → 우리 서비스 JWT 발급
      *
-     * @param code 카카오에서 받은 인가 코드 (code grant)
+     * @param code        카카오에서 받은 인가 코드 (code grant)
+     * @param clientRedirectUri 프론트엔드가 카카오에 전달한 redirect_uri (미입력 시 env 값 사용)
      */
     @Transactional
-    public AuthResponse.TokenMe loginWithCode(String code) {
+    public AuthResponse.TokenMe loginWithCode(String code, String clientRedirectUri) {
         if (!StringUtils.hasText(restApiKey)) {
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
                     "KAKAO_REST_API_KEY 가 설정되지 않았습니다");
         }
 
-        String kakaoAccessToken = fetchKakaoToken(code);
+        String effectiveRedirectUri = StringUtils.hasText(clientRedirectUri) ? clientRedirectUri : redirectUri;
+        String kakaoAccessToken = fetchKakaoToken(code, effectiveRedirectUri);
         KakaoUserInfo userInfo     = fetchKakaoUserInfo(kakaoAccessToken);
 
         // 기존 계정 조회 (kakaoId 기준)
@@ -69,11 +71,11 @@ public class KakaoOAuthService {
 
     // ─── 카카오 토큰 교환 ──────────────────────────────────────────────────────────
 
-    private String fetchKakaoToken(String code) {
+    private String fetchKakaoToken(String code, String effectiveRedirectUri) {
         try {
             String body = "grant_type=authorization_code"
                     + "&client_id=" + restApiKey
-                    + "&redirect_uri=" + java.net.URLEncoder.encode(redirectUri, StandardCharsets.UTF_8)
+                    + "&redirect_uri=" + java.net.URLEncoder.encode(effectiveRedirectUri, StandardCharsets.UTF_8)
                     + "&code=" + code;
 
             HttpRequest req = HttpRequest.newBuilder()

@@ -34,7 +34,8 @@ function KakaoCallbackInner() {
       return
     }
 
-    authApi.kakaoLogin(code)
+    const redirectUri = `${window.location.origin}/auth/kakao/callback`
+    authApi.kakaoLogin(code, redirectUri)
       .then(res => {
         if (res.payload?.token) {
           setAccessToken(res.payload.token)

@@ -20,6 +20,7 @@ import com.byby.backend.domain.patient.entity.Patient;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,7 +75,7 @@ public class HandoverService {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
             }
         }
-        return handoverRepository.findByPatientIdOrderByCreatedAtDesc(patientId, pageable)
+        return handoverRepository.findByPatientIdOrderByCreatedAtDesc(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
                 .map(HandoverResponse.Detail::from);
     }
 

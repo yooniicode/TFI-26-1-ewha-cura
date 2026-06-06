@@ -6,6 +6,8 @@ import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.announcement.dto.AnnouncementRequest;
 import com.byby.backend.domain.announcement.dto.AnnouncementResponse;
 import com.byby.backend.domain.announcement.service.AnnouncementService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -28,12 +30,14 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/announcements")
 @RequiredArgsConstructor
+@Tag(name = "Announcements", description = "공지사항 API")
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
 
     @GetMapping
     @PreAuthorize("hasRole('patient')")
+    @Operation(summary = "공지사항 목록 조회", description = "센터 관리자는 자기 센터 공지사항을, 이주민은 소속 센터 공지사항을 조회합니다.")
     public ResponseEntity<Response<List<AnnouncementResponse.Summary>>> list(
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {

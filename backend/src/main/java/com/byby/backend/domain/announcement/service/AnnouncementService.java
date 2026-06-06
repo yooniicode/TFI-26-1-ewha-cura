@@ -17,6 +17,7 @@ import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,9 +38,10 @@ public class AnnouncementService {
 
     public Page<AnnouncementResponse.Summary> list(Pageable pageable, UserPrincipal principal) {
         requireAuthenticated(principal);
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
-            return announcementRepository.findByCenter_IdOrderByPinnedDescCreatedAtDesc(center.getId(), pageable)
+            return announcementRepository.findByCenter_IdOrderByPinnedDescCreatedAtDesc(center.getId(), unsorted)
                     .map(AnnouncementResponse.Summary::from);
         }
         if (principal.isPatient()) {
@@ -50,7 +52,7 @@ public class AnnouncementService {
                     .map(Center::getId)
                     .toList();
             if (centerIds.isEmpty()) return Page.empty(pageable);
-            return announcementRepository.findByCenter_IdInOrderByPinnedDescCreatedAtDesc(centerIds, pageable)
+            return announcementRepository.findByCenter_IdInOrderByPinnedDescCreatedAtDesc(centerIds, unsorted)
                     .map(AnnouncementResponse.Summary::from);
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);

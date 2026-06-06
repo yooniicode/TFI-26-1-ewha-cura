@@ -21,6 +21,7 @@ import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,15 +85,16 @@ public class ConsultationService {
     }
 
     public Page<ConsultationResponse.Summary> getAll(Pageable pageable, UserPrincipal principal, String patientQuery) {
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
-            return consultationRepository.searchByCenter(center.getId(), patientQuery, pageable)
+            return consultationRepository.searchByCenter(center.getId(), patientQuery, unsorted)
                     .map(ConsultationResponse.Summary::from);
         }
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            return consultationRepository.searchByInterpreter(interpreter.getId(), patientQuery, pageable)
+            return consultationRepository.searchByInterpreter(interpreter.getId(), patientQuery, unsorted)
                     .map(ConsultationResponse.Summary::from);
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
@@ -166,11 +168,12 @@ public class ConsultationService {
         } else {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
-        return consultationRepository.findByPatientId(patientId, pageable)
+        return consultationRepository.findByPatientId(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
                 .map(ConsultationResponse.Summary::from);
     }
 
     public Page<ConsultationResponse.Summary> getByInterpreter(UUID interpreterId, Pageable pageable, UserPrincipal principal) {
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
             Interpreter interpreter = interpreterRepository.findById(interpreterId)
@@ -178,14 +181,14 @@ public class ConsultationService {
             if (interpreter.getCenter() == null || !interpreter.getCenter().getId().equals(center.getId())) {
                 throw new GeneralException(GeneralErrorCode.FORBIDDEN);
             }
-            return consultationRepository.findByInterpreterId(interpreterId, pageable)
+            return consultationRepository.findByInterpreterId(interpreterId, unsorted)
                     .map(ConsultationResponse.Summary::from);
         }
         if (principal.isInterpreter()) {
             Interpreter self = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
             if (!self.getId().equals(interpreterId)) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
-            return consultationRepository.findByInterpreterId(interpreterId, pageable)
+            return consultationRepository.findByInterpreterId(interpreterId, unsorted)
                     .map(ConsultationResponse.Summary::from);
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
@@ -205,7 +208,7 @@ public class ConsultationService {
         } else if (!principal.isAdmin()) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
-        return consultationRepository.findByPatientId(patientId, pageable)
+        return consultationRepository.findByPatientId(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
                 .map(ConsultationResponse.PatientView::from);
     }
 

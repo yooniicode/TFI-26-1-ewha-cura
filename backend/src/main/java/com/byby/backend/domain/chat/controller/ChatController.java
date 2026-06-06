@@ -6,6 +6,8 @@ import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.chat.dto.ChatRequest;
 import com.byby.backend.domain.chat.dto.ChatResponse;
 import com.byby.backend.domain.chat.service.ChatService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -21,18 +23,19 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/chat")
 @RequiredArgsConstructor
+@Tag(name = "Chat", description = "채팅 API")
 public class ChatController {
 
     private final ChatService chatService;
 
-    /** 내 채팅방 목록 */
+    @Operation(summary = "내 채팅방 목록 조회")
     @GetMapping("/rooms")
     public ResponseEntity<Response<List<ChatResponse.RoomSummary>>> getRooms(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, chatService.getRooms(principal)));
     }
 
-    /** 통번역가와 채팅방 생성/조회 (센터 직원 → 통번역가, 이주민 → 통번역가) */
+    @Operation(summary = "통번역가와 채팅방 생성/조회", description = "센터 직원 또는 이주민이 통번역가와의 채팅방을 생성하거나 기존 방을 조회합니다.")
     @PostMapping("/rooms/with-interpreter/{interpreterId}")
     public ResponseEntity<Response<ChatResponse.RoomSummary>> roomWithInterpreter(
             @PathVariable UUID interpreterId,
@@ -43,7 +46,7 @@ public class ChatController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, room));
     }
 
-    /** 이주민과 채팅방 생성/조회 (통번역가 → 이주민) */
+    @Operation(summary = "이주민과 채팅방 생성/조회", description = "통번역가가 담당 이주민과의 채팅방을 생성하거나 기존 방을 조회합니다.")
     @PostMapping("/rooms/with-patient/{patientId}")
     public ResponseEntity<Response<ChatResponse.RoomSummary>> roomWithPatient(
             @PathVariable UUID patientId,
@@ -52,7 +55,7 @@ public class ChatController {
                 chatService.getOrCreateRoomWithMatchedPatient(patientId, principal)));
     }
 
-    /** 메시지 목록 (오래된 순, 페이징) */
+    @Operation(summary = "메시지 목록 조회", description = "채팅방의 메시지를 오래된 순으로 페이징 조회합니다.")
     @GetMapping("/rooms/{roomId}/messages")
     public ResponseEntity<Response<List<ChatResponse.Message>>> getMessages(
             @PathVariable UUID roomId,
@@ -62,7 +65,7 @@ public class ChatController {
                 chatService.getMessages(roomId, pageable, principal)));
     }
 
-    /** 메시지 전송 */
+    @Operation(summary = "메시지 전송")
     @PostMapping("/rooms/{roomId}/messages")
     public ResponseEntity<Response<ChatResponse.Message>> sendMessage(
             @PathVariable UUID roomId,
@@ -72,7 +75,7 @@ public class ChatController {
                 chatService.sendMessage(roomId, req.content(), principal)));
     }
 
-    /** 읽음 처리 */
+    @Operation(summary = "채팅방 읽음 처리")
     @PutMapping("/rooms/{roomId}/read")
     public ResponseEntity<Response<Void>> markRead(
             @PathVariable UUID roomId,
@@ -81,7 +84,7 @@ public class ChatController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
 
-    /** 전체 미읽음 수 */
+    @Operation(summary = "전체 미읽음 메시지 수 조회")
     @GetMapping("/unread-count")
     public ResponseEntity<Response<ChatResponse.UnreadCount>> unreadCount(
             @AuthenticationPrincipal UserPrincipal principal) {

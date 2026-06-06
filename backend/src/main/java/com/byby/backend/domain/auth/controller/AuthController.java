@@ -45,11 +45,12 @@ public class AuthController {
     @Operation(
         summary = "카카오 로그인",
         description = "카카오 인가 코드(code)를 받아 우리 서비스 JWT를 발급합니다. " +
-                      "프론트엔드에서 카카오 리다이렉트 URL로 받은 code 값을 전달하세요."
+                      "redirectUri: 프론트엔드가 카카오에 전달한 redirect_uri 와 동일한 값을 함께 보내주세요."
     )
     public ResponseEntity<Response<AuthResponse.TokenMe>> kakaoLogin(
-            @RequestParam String code) {
-        return ResponseEntity.ok(Response.success(SuccessCode.OK, kakaoOAuthService.loginWithCode(code)));
+            @RequestParam String code,
+            @RequestParam(required = false) String redirectUri) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, kakaoOAuthService.loginWithCode(code, redirectUri)));
     }
 
     @PostMapping("/register-admin")

@@ -75,7 +75,7 @@ public class PatientController {
 
     @PostMapping("/me/centers/{centerId}")
     @PreAuthorize("hasRole('patient')")
-    @Operation(summary = "Add center to current patient")
+    @Operation(summary = "내 센터 추가")
     public ResponseEntity<Response<PatientResponse.Detail>> addMyCenter(
             @PathVariable UUID centerId,
             @AuthenticationPrincipal UserPrincipal principal) {
