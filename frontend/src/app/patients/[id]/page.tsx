@@ -363,11 +363,11 @@ function ConsultationCard({
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            c.confirmed ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-          }`}>
-            {c.confirmed ? t.common.confirmed : t.common.unconfirmed}
-          </span>
+          {c.confirmed && (
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-600">
+              {t.common.confirmed}
+            </span>
+          )}
           <svg
             width="16" height="16" viewBox="0 0 24 24" fill="none"
             stroke="#A0A0A0" strokeWidth={2} strokeLinecap="round"

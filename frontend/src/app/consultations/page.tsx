@@ -395,9 +395,7 @@ function ReportList({
                   {c.createdAt && ` / ${t.consultation.written_at}: ${formatDateTime(c.createdAt, locale)}`}
                 </p>
               </div>
-              {c.confirmed
-                ? <Badge variant="green">{t.common.confirmed}</Badge>
-                : <Badge variant="yellow">{t.common.unconfirmed}</Badge>}
+              {c.confirmed && <Badge variant="green">{t.common.confirmed}</Badge>}
             </div>
             {c.nextAppointmentDate && (
               <p className="text-xs text-[#2592FF] mt-2">

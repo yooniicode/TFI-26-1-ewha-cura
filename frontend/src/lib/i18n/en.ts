@@ -363,7 +363,7 @@ export const en: AppTranslation = {
     err_patient: 'Please select a patient.',
     err_save: 'Failed to save report.',
     err_update: 'Failed to update report.',
-    detail_title: 'Work log report',
+    detail_title: 'Report',
     patient_report_title: 'Hospital visit report',
     first_author: 'Author',
     created_at: 'Created',

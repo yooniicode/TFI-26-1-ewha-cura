@@ -197,9 +197,7 @@ export default function ConsultationDetailPage() {
       <div className="bg-white px-4 py-3 border-b border-[#F6F6F6] flex items-center gap-3">
         <button onClick={() => router.back()} className="text-[#808080] text-xl leading-none w-6">←</button>
         <h1 className="flex-1 text-center text-base font-semibold text-[#424242]">{t.consultation.detail_title}</h1>
-        {data.confirmed
-          ? <Badge variant="green">{t.common.confirmed}</Badge>
-          : <Badge variant="yellow">{t.common.unconfirmed}</Badge>}
+        {data.confirmed && <Badge variant="green">{t.common.confirmed}</Badge>}
       </div>
 
       {/* 내용 */}

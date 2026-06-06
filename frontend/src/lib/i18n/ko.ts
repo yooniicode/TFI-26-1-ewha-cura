@@ -361,7 +361,7 @@
     err_patient: '이주민을 선택해주세요.',
     err_save: '보고서 저장에 실패했습니다.',
     err_update: '보고서 수정에 실패했습니다.',
-    detail_title: '근무 일지 보고서',
+    detail_title: '보고서',
     patient_report_title: '병원 방문 보고서',
     first_author: '최초 작성자',
     created_at: '작성 시간',

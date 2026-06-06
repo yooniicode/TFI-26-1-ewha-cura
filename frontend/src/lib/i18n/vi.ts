@@ -363,7 +363,7 @@ export const vi: AppTranslation = {
     err_patient: 'Vui lòng chọn người di cư.',
     err_save: 'Lưu báo cáo thất bại.',
     err_update: 'Cập nhật báo cáo thất bại.',
-    detail_title: 'Báo cáo nhật ký làm việc',
+    detail_title: 'Báo cáo',
     patient_report_title: 'Báo cáo khám bệnh viện',
     first_author: 'Người viết',
     created_at: 'Ngày tạo',
