@@ -25,12 +25,13 @@ public class PatientResponse {
             boolean assignedToMe,
             UUID activeInterpreterId,
             String activeInterpreterName,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            String avatarUrl
     ) {
         public static Summary from(Patient p) {
             return new Summary(p.getId(), p.getName(), p.getNationality(),
                     p.getGender(), p.getVisaType(), p.getRegion(),
-                    p.getAuthUserId() != null, false, null, null, p.getCreatedAt());
+                    p.getAuthUserId() != null, false, null, null, p.getCreatedAt(), null);
         }
 
         public static Summary from(Patient p, PatientMatch activeMatch, UUID currentInterpreterId) {
@@ -42,7 +43,19 @@ public class PatientResponse {
                     activeInterpreterId != null && activeInterpreterId.equals(currentInterpreterId),
                     activeInterpreterId,
                     activeInterpreterName,
-                    p.getCreatedAt());
+                    p.getCreatedAt(), null);
+        }
+
+        public static Summary from(Patient p, PatientMatch activeMatch, UUID currentInterpreterId, String avatarUrl) {
+            UUID activeInterpreterId = activeMatch != null ? activeMatch.getInterpreter().getId() : null;
+            String activeInterpreterName = activeMatch != null ? activeMatch.getInterpreter().getName() : null;
+            return new Summary(p.getId(), p.getName(), p.getNationality(),
+                    p.getGender(), p.getVisaType(), p.getRegion(),
+                    p.getAuthUserId() != null,
+                    activeInterpreterId != null && activeInterpreterId.equals(currentInterpreterId),
+                    activeInterpreterId,
+                    activeInterpreterName,
+                    p.getCreatedAt(), avatarUrl);
         }
     }
 
@@ -59,16 +72,21 @@ public class PatientResponse {
             List<CenterResponse.Summary> centers,
             boolean accountLinked,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            String avatarUrl
     ) {
         public static Detail from(Patient p) {
+            return from(p, null);
+        }
+
+        public static Detail from(Patient p, String avatarUrl) {
             List<CenterResponse.Summary> centerList = p.getPatientCenters().stream()
                     .map(pc -> CenterResponse.Summary.from(pc.getCenter()))
                     .toList();
             return new Detail(p.getId(), p.getName(), p.getNationality(), p.getGender(),
                     p.getVisaType(), p.getVisaNote(), p.getBirthDate(), p.getPhone(),
                     p.getRegion(), centerList, p.getAuthUserId() != null,
-                    p.getCreatedAt(), p.getUpdatedAt());
+                    p.getCreatedAt(), p.getUpdatedAt(), avatarUrl);
         }
     }
 }

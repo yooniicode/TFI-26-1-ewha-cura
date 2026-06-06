@@ -1,15 +1,14 @@
 'use client'
 
-import { Suspense, useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
-import PatientInfoBar, { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
 import StepIndicator from '@/components/interpreter/StepIndicator'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
-import { useEnumLabels } from '@/lib/i18n/enumLabels'
 
 function calcAge(birthDate?: string | null): string {
   if (!birthDate) return ''
@@ -19,6 +18,17 @@ function calcAge(birthDate?: string | null): string {
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
   return `${age}세`
+}
+
+function formatCreatedAt(dateStr?: string | null): string {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  const hh = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  return `작성일 ${mm}.${dd} ${hh}:${min}`
 }
 
 export default function RmMemoEditPage() {
@@ -35,16 +45,10 @@ function RmMemoEditInner() {
   const cid = searchParams.get('cid') ?? ''
   const patientId = searchParams.get('patientId') ?? ''
 
-  const labels = useEnumLabels()
-
   const [patient, setPatient] = useState<Patient | null>(null)
   const [consultation, setConsultation] = useState<Consultation | null>(null)
-  const [memo, setMemo] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle')
-
-  const memoRef = useRef(memo)
-  memoRef.current = memo
 
   useEffect(() => {
     if (patientId) {
@@ -52,142 +56,118 @@ function RmMemoEditInner() {
     }
     if (cid) {
       consultationApi.get(cid).then(r => {
-        const c = r.payload ?? null
-        setConsultation(c)
-        if (c?.workDescription) setMemo(c.workDescription)
+        setConsultation(r.payload ?? null)
       }).catch(() => {})
     }
   }, [patientId, cid])
 
   async function handleNext() {
     if (!cid || !patientId) return
+    const memo = consultation?.workDescription ?? ''
     setSubmitting(true)
-    try {
-      // 메모 내용이 수정되었으면 저장
-      if (memo.trim() !== (consultation?.workDescription ?? '').trim()) {
-        await consultationApi.update(cid, {
-          consultationDate: consultation?.consultationDate ?? new Date().toISOString().split('T')[0],
-          patientId: consultation?.patientId ?? patientId,
-          hospitalId: consultation?.hospitalId ?? null,
-          department: consultation?.department ?? '',
-          doctorName: consultation?.doctorName ?? '',
-          issueType: consultation?.issueType ?? 'MEDICAL',
-          method: consultation?.method ?? null,
-          processing: consultation?.processing ?? 'INTERPRETATION',
-          patientComment: consultation?.patientComment ?? '',
-          treatmentResult: consultation?.treatmentResult ?? '',
-          diagnosisContent: consultation?.diagnosisContent ?? '',
-          diagnosisNameCode: consultation?.diagnosisNameCode ?? '',
-          medicationInstruction: consultation?.medicationInstruction ?? '',
-          nextAppointmentDate: consultation?.nextAppointmentDate ?? null,
-          counselorName: consultation?.counselorName ?? '',
-          durationHours: consultation?.durationHours ?? null,
-          fee: consultation?.fee ?? null,
-          workDescription: memo,
-          doctorConfirmationSignature: consultation?.doctorConfirmationSignature ?? '',
-          memo: consultation?.memo ?? '',
-        })
-      }
 
-      // Claude 파싱
-      if (memo.trim()) {
-        setAiStatus('loading')
-        try {
-          const res = await fetch('/api/parse-rm', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rmText: memo }),
-          })
-          if (res.ok) {
-            const data = await res.json() as { fields: Record<string, string> | null }
-            if (data.fields) {
-              sessionStorage.setItem('rm_parsed_fields', JSON.stringify(data.fields))
-              setAiStatus('ok')
-            } else {
-              setAiStatus('fail')
-            }
+    if (memo.trim()) {
+      setAiStatus('loading')
+      try {
+        const res = await fetch('/api/parse-rm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rmText: memo }),
+        })
+        if (res.ok) {
+          const data = await res.json() as { fields: Record<string, string> | null }
+          if (data.fields) {
+            sessionStorage.setItem('rm_parsed_fields', JSON.stringify(data.fields))
+            setAiStatus('ok')
           } else {
             setAiStatus('fail')
           }
-        } catch {
+        } else {
           setAiStatus('fail')
         }
+      } catch {
+        setAiStatus('fail')
       }
-
-      router.push(`/consultations/new?patientId=${patientId}&cid=${cid}`)
-    } catch {
-      setSubmitting(false)
     }
+
+    router.push(`/consultations/new?patientId=${patientId}&cid=${cid}`)
   }
 
   const patientName = patient?.name ?? consultation?.patientName ?? ''
   const ageStr = calcAge(patient?.birthDate)
-  const demographics = patient
-    ? [labels.nationality[patient.nationality], labels.gender[patient.gender], ageStr].filter(Boolean).join(' | ')
-    : ''
-  const flagSrc = patient ? getFlagSrc(patient.nationality) : undefined
+  const gender = patient?.gender ?? consultation?.patientGender
+  const genderIcon = gender === 'FEMALE'
+    ? '/icons/common/gender/small-여성-배경o.svg'
+    : '/icons/common/gender/small-남성-배경o.svg'
+  const createdAtStr = formatCreatedAt(consultation?.createdAt)
 
   return (
     <AppShell noPadding>
       <PageHeader title="보고서 작성" showClose />
 
-      {/* 환자 정보 바 */}
-      <PatientInfoBar
-        patientId={patientId || null}
-        patientName={patientName}
-        subtitle={demographics}
-        flagSrc={flagSrc}
-      />
-
-      <div className="bg-white px-4 pt-7 pb-6">
+      <div className="bg-white px-4 pt-7 pb-4">
         <div className="mb-6">
-          <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4]">
-            메모를 살짝<br />수정할 수 있어요
+          <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4]">
+            보고서로 작성할<br />진료 메모를 선택합니다
           </h2>
-          <p className="mt-2 text-base font-medium text-[#808080]">
-            수정이 완료되면 다음으로 넘어가세요
-          </p>
+          {createdAtStr && (
+            <p className="mt-2 text-[16px] text-[#808080]">{createdAtStr}</p>
+          )}
         </div>
 
-        {/* 스텝 인디케이터 — 3단계 */}
         <div className="mb-7">
           <StepIndicator current={3} total={6} />
         </div>
+      </div>
 
-        {/* 메모 편집 */}
-        <div className="bg-[#F3F9FF] rounded-xl border border-[#D1E8FF] px-4 py-5 min-h-[280px] flex flex-col">
-          <p className="text-xs font-semibold text-[#2592FF] mb-3">불러온 메모</p>
-          <textarea
-            value={memo}
-            onChange={e => setMemo(e.target.value)}
-            className="flex-1 w-full min-h-[200px] bg-transparent text-[#161616] text-base leading-relaxed resize-none outline-none placeholder:text-[#808080]"
-            placeholder="메모 내용이 없습니다."
-          />
+      {/* 환자 정보 row */}
+      <div className="bg-white border-t border-b border-[#eee] px-4 py-3">
+        <Link
+          href={`/patients/${patientId}`}
+          className="flex items-center gap-2"
+        >
+          <img src={genderIcon} alt="" width={24} height={24} />
+          <span className="text-[18px] font-medium text-[#161616]">{patientName}</span>
+          {ageStr && <span className="text-[18px] text-[#494949]">{ageStr}</span>}
+          <img src="/icons/common/arrows/right.svg" alt="" width={20} height={20} className="ml-auto" />
+        </Link>
+      </div>
+
+      {/* 메모 텍스트 (읽기 전용) */}
+      <div className="bg-[#f7f7f7] px-4 py-4 pb-36 min-h-screen">
+        <div className="bg-white border border-[#eee] rounded-[8px] p-4">
+          {consultation ? (
+            <p className="text-[18px] text-[#494949] leading-relaxed whitespace-pre-wrap min-h-[200px]">
+              {consultation.workDescription || '메모 내용이 없습니다.'}
+            </p>
+          ) : (
+            <div className="flex justify-center py-8"><Spinner /></div>
+          )}
         </div>
 
-        {/* AI 상태 */}
-        {aiStatus !== 'idle' && (
-          <div className={`mt-3 text-center text-xs py-1.5 rounded-lg ${
-            aiStatus === 'loading' ? 'bg-blue-50 text-[#2592FF]' :
-            aiStatus === 'ok' ? 'bg-green-50 text-green-600' :
-            'bg-red-50 text-red-400'
-          }`}>
-            {aiStatus === 'loading' && 'AI가 메모를 분석하는 중...'}
-            {aiStatus === 'ok' && 'AI 분석 완료 — 보고서 칸에 자동 입력됩니다'}
-            {aiStatus === 'fail' && 'AI 분석 실패 — 직접 입력해주세요'}
+        {aiStatus === 'loading' && (
+          <div className="mt-3 text-center text-xs py-1.5 rounded-lg bg-blue-50 text-[#2592FF]">
+            AI가 메모를 분석하는 중...
           </div>
         )}
       </div>
 
-      {/* 하단 바 */}
-      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
+      {/* 하단 버튼 */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white px-4 pb-8 pt-3 flex gap-2.5 z-10">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="w-[111px] h-[60px] bg-[#f0f1f5] rounded-[8px] text-[18px] font-medium text-[#494949]"
+        >
+          이전
+        </button>
         <button
           type="button"
           onClick={handleNext}
-          disabled={submitting || aiStatus === 'loading'}
-          className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-40 transition-opacity"
+          disabled={submitting || aiStatus === 'loading' || !consultation}
+          className="flex-1 h-[60px] bg-[#2592FF] rounded-[8px] text-[18px] font-semibold text-white disabled:opacity-50"
         >
-          {aiStatus === 'loading' ? 'AI 분석 중...' : submitting ? '저장 중...' : '보고서 작성하기'}
+          {aiStatus === 'loading' ? 'AI 분석 중...' : submitting ? '저장 중...' : '다음으로'}
         </button>
       </div>
     </AppShell>

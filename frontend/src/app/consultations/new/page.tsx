@@ -45,7 +45,7 @@ function ReportWriteInner() {
   // Step 1 (처음부터 작성하기 전용)
   const [workDescription, setWorkDescription] = useState('')
   // Step 2
-  const [consultationDate, setConsultationDate] = useState(new Date().toISOString().split('T')[0])
+  const [consultationDate, setConsultationDate] = useState(new Date().toISOString().slice(0, 16))
   const [hospitalName, setHospitalName] = useState('')
   const [department, setDepartment] = useState('')
   // Step 3
@@ -119,7 +119,10 @@ function ReportWriteInner() {
       if (c?.workDescription) setWorkDescription(c.workDescription)
       if (c?.hospitalName) setHospitalName(c.hospitalName)
       if (c?.department) setDepartment(c.department)
-      if (c?.consultationDate) setConsultationDate(c.consultationDate)
+      if (c?.consultationDate) {
+        const dt = c.consultationDate.length === 10 ? `${c.consultationDate}T00:00` : c.consultationDate.slice(0, 16)
+        setConsultationDate(dt)
+      }
     }).catch(() => {})
   }, [rmCid])
 
@@ -240,10 +243,10 @@ function ReportWriteInner() {
     )
   }
 
-  // 스텝 제목
+  const FILL_TITLE = '비어있는 부분을\n빠짐없이 작성합니다'
   const stepTitles: Record<number, string> = fromMemo
-    ? { 1: '진료 정보를\n입력합니다', 2: '진료 내용을\n기록합니다', 3: '투약 및\n다음 일정입니다' }
-    : { 1: '진료 내용을\n기록합니다', 2: '진료 정보를\n입력합니다', 3: '진료 내용을\n기록합니다', 4: '투약 및\n다음 일정입니다' }
+    ? { 1: FILL_TITLE, 2: FILL_TITLE, 3: FILL_TITLE }
+    : { 1: '진료 메모를\n작성해주세요', 2: FILL_TITLE, 3: FILL_TITLE, 4: FILL_TITLE }
 
   const title = stepTitles[step] ?? ''
 
@@ -414,34 +417,22 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
   workDescription: string; onChange: (v: string) => void; aiParsing: boolean
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-blue-50 rounded-lg border border-blue-100 min-h-[52px]">
-        {aiParsing ? (
-          <>
-            <svg className="animate-spin w-4 h-4 text-blue-500 shrink-0" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            <span className="text-sm text-blue-600">AI가 실시간 메모를 분석하는 중...</span>
-          </>
-        ) : workDescription ? (
-          <span className="text-sm text-gray-400">처음부터 의사선생님이 말씀하시는 순서대로 적어주세요.</span>
-        ) : (
-          <span className="text-sm text-gray-400">전달받은 내용을 줄글로 작성해주세요.</span>
-        )}
-      </div>
-
-      <div className={`rounded-xl border px-4 py-5 min-h-[280px] flex flex-col gap-2 ${
-        workDescription ? 'border-[#D1E8FF] bg-[#F3F9FF]' : 'border-[#EEEEEE] bg-[#F7F7F7]'
-      }`}>
-        {!workDescription && (
-          <span className="text-sm font-medium text-[#A0A0A0]">작성 예시</span>
-        )}
+    <div className="flex flex-col gap-3">
+      {aiParsing && (
+        <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 rounded-[8px] border border-blue-100">
+          <svg className="animate-spin w-4 h-4 text-blue-500 shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          <span className="text-sm text-blue-600">AI가 메모를 분석하는 중...</span>
+        </div>
+      )}
+      <div className="bg-white border border-[#eee] rounded-[8px] p-4">
         <textarea
           value={workDescription}
           onChange={e => onChange(e.target.value)}
           placeholder="예) 얼굴에 1도 화상으로 내원함. 처방받은 연고를 하루 3회 도포하도록 안내함. 피부 자극을 줄이기 위해 뜨거운 물 세안은 피하도록 설명함."
-          className="flex-1 w-full min-h-[220px] bg-transparent text-lg text-[#161616] leading-relaxed resize-none outline-none placeholder:text-[#A0A0A0]"
+          className="w-full min-h-[394px] resize-none outline-none text-[18px] text-[#161616] leading-relaxed placeholder:text-[#a1a1a1]"
           autoFocus
         />
       </div>
@@ -456,9 +447,9 @@ function StepDate({ consultationDate, hospitalName, department, onDateChange, on
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <label className="text-base font-medium text-[#161616]">진료 날짜</label>
+        <label className="text-base font-medium text-[#161616]">진료 날짜·시간</label>
         <input
-          type="date"
+          type="datetime-local"
           value={consultationDate}
           onChange={e => onDateChange(e.target.value)}
           className="w-full px-4 py-4 rounded-lg text-lg text-[#161616] border border-[#A1A1A1] outline-none"
@@ -874,15 +865,122 @@ function StepMedication({ medicationInstruction, nextAppointmentDate, fromMemo,
         placeholder="약 복용 방법을 입력해주세요" fromMemo={fromMemo} />
       <div className="flex flex-col gap-2">
         <label className="text-base font-medium text-[#161616]">다음 일정</label>
-        <input
-          type="date"
-          value={nextAppointmentDate}
-          onChange={e => onNextDateChange(e.target.value)}
-          className={`w-full px-4 py-4 rounded-lg text-lg text-[#161616] border outline-none ${
-            nextAppointmentDate ? 'border-[#A1A1A1]' : 'border-[#EEEEEE] bg-[#F7F7F7]'
-          } placeholder:text-[#A0A0A0]`}
-        />
+        <CalendarPicker value={nextAppointmentDate} onChange={onNextDateChange} />
       </div>
+    </div>
+  )
+}
+
+function CalendarPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const today = new Date()
+  const [viewYear, setViewYear] = useState(() =>
+    value ? parseInt(value.split('-')[0]) : today.getFullYear()
+  )
+  const [viewMonth, setViewMonth] = useState(() =>
+    value ? parseInt(value.split('-')[1]) - 1 : today.getMonth()
+  )
+
+  const selectedDate = value ? new Date(value + 'T00:00:00') : null
+
+  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay()
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
+  const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate()
+
+  const cells: Array<{ date: Date; current: boolean }> = []
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    cells.push({ date: new Date(viewYear, viewMonth - 1, prevMonthDays - i), current: false })
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ date: new Date(viewYear, viewMonth, d), current: true })
+  }
+  const remaining = cells.length % 7 === 0 ? 0 : 7 - (cells.length % 7)
+  for (let d = 1; d <= remaining; d++) {
+    cells.push({ date: new Date(viewYear, viewMonth + 1, d), current: false })
+  }
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
+    else setViewMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
+    else setViewMonth(m => m + 1)
+  }
+
+  function handleSelect(d: Date) {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    onChange(`${y}-${m}-${day}`)
+  }
+
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토']
+
+  return (
+    <div className="bg-white border border-[#eee] rounded-[20px] p-6">
+      {/* 월 헤더 */}
+      <div className="flex items-center justify-between mb-4">
+        <button type="button" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
+            <path d="M7 1L1 7L7 13" stroke="#494949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <span className="text-[16px] font-semibold text-[#161616]">{viewYear}년 {viewMonth + 1}월</span>
+        <button type="button" onClick={nextMonth} className="w-8 h-8 flex items-center justify-center">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
+            <path d="M1 1L7 7L1 13" stroke="#494949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 요일 헤더 */}
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS.map(d => (
+          <div key={d} className="text-center text-[12px] text-[#808080] py-1">{d}</div>
+        ))}
+      </div>
+
+      {/* 날짜 그리드 */}
+      <div className="grid grid-cols-7">
+        {cells.map(({ date, current }, idx) => {
+          const isSelected = selectedDate &&
+            date.getFullYear() === selectedDate.getFullYear() &&
+            date.getMonth() === selectedDate.getMonth() &&
+            date.getDate() === selectedDate.getDate()
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSelect(date)}
+              className="flex items-center justify-center py-1"
+            >
+              <span className={`w-[30px] h-[30px] flex items-center justify-center rounded-full text-[14px] ${
+                isSelected
+                  ? 'bg-[#f3f9ff] text-[#2592ff] font-medium'
+                  : !current
+                  ? 'text-[#808080]'
+                  : 'text-[#494949]'
+              }`}>
+                {date.getDate()}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* 선택된 날짜 표시 */}
+      {value && (
+        <div className="mt-3 pt-3 border-t border-[#eee] text-center">
+          <span className="text-[14px] text-[#2592ff] font-medium">
+            {(() => {
+              const d = new Date(value + 'T00:00:00')
+              const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+              return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} (${dow})`
+            })()}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

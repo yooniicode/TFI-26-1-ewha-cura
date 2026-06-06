@@ -216,14 +216,24 @@ function PatientCard({
 
   return (
     <article className="bg-white rounded-2xl px-4 py-4 flex items-center gap-3">
-      {/* 성별 아이콘 */}
+      {/* 프로필 (아바타 or 성별 아이콘) */}
       <div className="relative shrink-0">
-        <img
-          src={patient.gender === 'FEMALE' ? '/icons/common/gender/small-여성-배경o.svg' : '/icons/common/gender/small-남성-배경o.svg'}
-          alt={labels.gender[patient.gender]}
-          width={36}
-          height={36}
-        />
+        {patient.avatarUrl ? (
+          <img
+            src={patient.avatarUrl}
+            alt=""
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-full object-cover"
+          />
+        ) : (
+          <img
+            src={patient.gender === 'FEMALE' ? '/icons/common/gender/small-여성-배경o.svg' : '/icons/common/gender/small-남성-배경o.svg'}
+            alt={labels.gender[patient.gender]}
+            width={36}
+            height={36}
+          />
+        )}
         {flagSrc && (
           <img src={flagSrc} alt={labels.nationality[patient.nationality]} width={14} height={14} className="absolute -bottom-0.5 -right-0.5" />
         )}

@@ -10,6 +10,7 @@ import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.center.repository.CenterRepository;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
+import com.byby.backend.domain.auth.repository.UserCredentialRepository;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.dto.PatientRequest;
 import com.byby.backend.domain.patient.dto.PatientResponse;
@@ -36,6 +37,7 @@ public class PatientService {
     private final PatientMatchRepository patientMatchRepository;
     private final CenterRepository centerRepository;
     private final AdminService adminService;
+    private final UserCredentialRepository userCredentialRepository;
 
     @Transactional
     public PatientResponse.Detail create(PatientRequest.Create req, UserPrincipal principal) {
@@ -96,7 +98,8 @@ public class PatientService {
                     .map(patient -> PatientResponse.Summary.from(
                             patient,
                             patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId()).orElse(null),
-                            interpreter.getId()));
+                            interpreter.getId(),
+                            resolveAvatarUrl(patient)));
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }
@@ -104,7 +107,7 @@ public class PatientService {
     public PatientResponse.Detail getById(UUID id, UserPrincipal principal) {
         Patient patient = findPatient(id);
         checkPatientAccess(patient, principal);
-        return PatientResponse.Detail.from(patient);
+        return PatientResponse.Detail.from(patient, resolveAvatarUrl(patient));
     }
 
     @Transactional
@@ -157,6 +160,13 @@ public class PatientService {
         patientCenterRepository.findByPatientIdAndCenterId(patientId, centerId)
                 .ifPresent(patientCenterRepository::delete);
         return PatientResponse.Detail.from(findPatient(patientId));
+    }
+
+    private String resolveAvatarUrl(Patient patient) {
+        if (patient.getAuthUserId() == null) return null;
+        return userCredentialRepository.findByAuthUserId(patient.getAuthUserId())
+                .map(cred -> cred.getAvatarUrl())
+                .orElse(null);
     }
 
     private Patient findPatient(UUID id) {

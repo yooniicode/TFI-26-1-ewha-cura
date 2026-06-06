@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
-import PatientInfoBar, { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
+import Link from 'next/link'
+import { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -44,6 +45,15 @@ function formatStartedAt(date: Date) {
   const day = String(date.getDate()).padStart(2, '0')
   const dow = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
   return `${month}.${day} (${dow}) ${formatTime(date)}`
+}
+
+function formatAutoSaveDate(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mm = String(date.getMinutes()).padStart(2, '0')
+  return `${y}/${m}/${d} ${hh}:${mm}`
 }
 
 export default function RmNewPage() {
@@ -329,104 +339,95 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
     : ''
 
   const patientRequest = consultation?.patientComment?.trim()
-  const patientFirstName = patientName.split(' ')[0]
-  const flagSrc = patient ? getFlagSrc(patient.nationality) : undefined
+  const genderIcon = patient
+    ? (patient.gender === 'FEMALE'
+        ? '/icons/common/gender/small-여성-배경o.svg'
+        : '/icons/common/gender/small-남성-배경o.svg')
+    : (consultation?.patientGender === 'FEMALE'
+        ? '/icons/common/gender/small-여성-배경o.svg'
+        : '/icons/common/gender/small-남성-배경o.svg')
 
   return (
     <AppShell noPadding>
       <PageHeader title={t.realtime_memo.title} showClose onClose={() => router.back()} />
 
-      {/* 환자 정보 바 — 클릭 시 환자 프로필로 이동 */}
-      <PatientInfoBar
-        patientId={patientId || null}
-        patientName={patientName}
-        subtitle={demographics}
-        flagSrc={flagSrc}
-      />
+      {/* 이번진료 */}
+      <div className="bg-white px-4 py-4 border-b border-[#eee]">
+        <p className="text-[16px] text-[#808080] mb-1">이번진료</p>
+        <p className="text-[18px] font-medium text-[#161616]">{contextDate}</p>
+        {contextLocation && (
+          <p className="text-[18px] font-medium text-[#161616]">{contextLocation}</p>
+        )}
+      </div>
 
-      {/* 메인 */}
-      <div className="bg-neutral-100 px-4 py-4 min-h-screen">
-        <div className="bg-white rounded-xl px-4 py-5 flex flex-col gap-4">
-
-          {/* 이번 진료 + 작성 시작 */}
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[#161616] text-base font-medium">{t.realtime_memo.this_consultation}</span>
-              <span className="text-[#5D5D5D] text-base">{contextDate}</span>
-              {contextLocation && (
-                <span className="text-[#5D5D5D] text-sm max-w-[180px]">{contextLocation}</span>
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-0.5">
-              <span className="text-[#A0A0A0] text-xs">{t.realtime_memo.started_at}</span>
-              <span className="text-[#5D5D5D] text-sm font-medium">{formatStartedAt(startedAt)}</span>
-            </div>
+      {/* 환자 정보 */}
+      <div className="bg-white border-b border-[#eee] px-4 py-3 flex flex-col gap-3">
+        <Link
+          href={`/patients/${patientId}`}
+          className="flex items-center gap-2 active:opacity-70 transition-opacity"
+        >
+          <img src={genderIcon} alt="" width={24} height={24} />
+          <span className="text-[18px] font-medium text-[#161616]">{patientName}</span>
+          {ageStr && <span className="text-[18px] text-[#494949]">{ageStr}</span>}
+          <img src="/icons/common/arrows/right.svg" alt="" width={20} height={20} className="ml-auto" />
+        </Link>
+        {patientRequest && (
+          <div className="bg-[#f7f7f7] rounded-bl-[20px] rounded-br-[20px] rounded-tr-[20px] px-4 py-3">
+            <p className="text-[14px] font-medium text-[#494949] leading-relaxed">{patientRequest}</p>
           </div>
+        )}
+      </div>
 
-          {/* 환자 사전 요청사항 */}
-          {patientRequest && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-amber-700 tracking-wide">
-                {patientFirstName ? t.realtime_memo.patient_request_prefix(patientFirstName) : t.realtime_memo.patient_request_default}
-              </span>
-              <p className="text-sm text-[#424242] leading-relaxed whitespace-pre-wrap">{patientRequest}</p>
-            </div>
-          )}
-
-          {/* 메모 입력 */}
+      {/* 메모 입력 영역 */}
+      <div className="bg-[#f7f7f7] px-4 py-4 pb-28 min-h-screen">
+        <div className="bg-white border border-[#eee] rounded-[8px] p-4 flex flex-col gap-3">
           <textarea
-            className="w-full min-h-[300px] px-4 py-6 bg-[#F3F9FF] rounded-lg border border-[#D1E8FF] text-[#161616] text-base leading-relaxed resize-none focus:outline-none focus:border-blue-400 placeholder:text-[#808080]"
+            className="w-full min-h-[394px] resize-none focus:outline-none text-[18px] text-[#161616] leading-relaxed placeholder:text-[#808080]"
             value={remark}
             onChange={e => setRemark(e.target.value)}
             placeholder={t.realtime_memo.placeholder}
             autoFocus
           />
 
-          {error && <p className="text-red-500 text-xs">{error}</p>}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          {/* 저장 상태 */}
-          <div className="flex items-center justify-between">
-            <div className="h-4">
-              {autoSaving ? (
-                <span className="text-xs text-gray-400">{t.realtime_memo.saving}</span>
-              ) : lastSavedAt ? (
-                <span className="text-xs text-gray-400">{t.realtime_memo.saved(formatTime(lastSavedAt))}</span>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              onClick={() => autoSaveRef.current()}
-              disabled={autoSaving || !remark.trim()}
-              className="text-xs text-[#2592FF] font-medium disabled:opacity-40 hover:underline"
-            >
-              {t.realtime_memo.save_now}
-            </button>
-          </div>
-
-          {/* AI 상태 */}
-          {aiStatus !== 'idle' && (
-            <div className={`text-center text-xs py-1 rounded ${
-              aiStatus === 'loading' ? 'text-[#2592FF]' :
-              aiStatus === 'ok' ? 'text-green-600' :
-              'text-red-400'
-            }`}>
-              {aiStatus === 'loading' && t.realtime_memo.ai_analyzing}
-              {aiStatus === 'ok' && t.realtime_memo.ai_done}
-              {aiStatus === 'fail' && t.realtime_memo.ai_fail}
+          {/* 자동저장 표시 */}
+          {lastSavedAt && (
+            <div className="flex justify-end items-center gap-1">
+              <span className="text-[14px] text-[#808080]">{formatAutoSaveDate(lastSavedAt)}</span>
+              <span className="text-[14px] text-[#2592ff]">자동저장 되었습니다</span>
             </div>
           )}
-
-          {/* 보고서 쓰기 */}
-          <button
-            type="button"
-            className="w-full h-[54px] bg-[#2592FF] rounded-lg text-base font-semibold text-white disabled:opacity-40 transition-opacity"
-            onClick={handleGoToReport}
-            disabled={submitting || aiStatus === 'loading'}
-          >
-            {submitting ? t.realtime_memo.saving_btn : aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : t.realtime_memo.write_report}
-          </button>
-
         </div>
+
+        {/* AI 상태 */}
+        {aiStatus !== 'idle' && (
+          <div className={`text-center text-sm py-2 mt-2 ${
+            aiStatus === 'loading' ? 'text-[#2592FF]' :
+            aiStatus === 'ok' ? 'text-green-600' :
+            'text-red-400'
+          }`}>
+            {aiStatus === 'loading' && t.realtime_memo.ai_analyzing}
+            {aiStatus === 'ok' && t.realtime_memo.ai_done}
+            {aiStatus === 'fail' && t.realtime_memo.ai_fail}
+          </div>
+        )}
+      </div>
+
+      {/* 하단 고정 버튼 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white px-4 pb-8 pt-3 z-10">
+        <button
+          type="button"
+          className={`w-full h-[60px] rounded-[8px] text-[18px] font-semibold transition-colors ${
+            remark.trim()
+              ? 'bg-[#2592FF] text-white'
+              : 'bg-[#f0f1f5] text-[#a1a1a1]'
+          }`}
+          onClick={handleGoToReport}
+          disabled={submitting || aiStatus === 'loading'}
+        >
+          {submitting ? t.realtime_memo.saving_btn : aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : '작성 완료'}
+        </button>
       </div>
     </AppShell>
   )

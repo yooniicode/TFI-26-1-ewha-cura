@@ -347,20 +347,11 @@ export default function MyPage() {
                     <Input value={intPhone} onChange={e => setIntPhone(e.target.value)} placeholder="010-0000-0000" />
                   </Field>
                   <Field label={t.mypage.languages}>
-                    <div className="grid grid-cols-2 gap-2">
-                      {INTERPRETER_LANGUAGE_OPTIONS.map(lang => {
-                        const sel = interpreterLanguages.includes(lang)
-                        return (
-                          <button
-                            key={lang} type="button"
-                            onClick={() => setInterpreterLanguages(prev => sel ? prev.filter(l => l !== lang) : [...prev, lang])}
-                            className={`rounded-xl border-2 px-3 py-2.5 text-sm font-medium transition-colors ${sel ? 'border-[#2592FF] bg-[#f3f9ff] text-[#2592FF]' : 'border-[#EEEEEE] text-[#494949] bg-[#F5F5F5]'}`}
-                          >
-                            {lang}
-                          </button>
-                        )
-                      })}
-                    </div>
+                    <LanguageToggleList
+                      selected={interpreterLanguages}
+                      options={INTERPRETER_LANGUAGE_OPTIONS}
+                      onChange={setInterpreterLanguages}
+                    />
                   </Field>
                   <Field label={t.mypage.availability}>
                     <textarea
@@ -527,5 +518,109 @@ function ActionButton({
     >
       {children}
     </button>
+  )
+}
+
+// ─── 언어 토글 리스트 ──────────────────────────────────────────────────────────
+
+function LanguageToggleList({
+  selected, options, onChange,
+}: {
+  selected: string[]
+  options: string[]
+  onChange: (langs: string[]) => void
+}) {
+  // 선택된 언어가 없으면 빈 슬롯 1개로 시작
+  const rows = selected.length > 0 ? selected : ['']
+
+  function handleChange(idx: number, value: string) {
+    const next = [...rows]
+    next[idx] = value
+    // 빈 값 제거 후 저장
+    onChange(next.filter(Boolean))
+  }
+
+  function handleRemove(idx: number) {
+    const next = rows.filter((_, i) => i !== idx)
+    onChange(next.filter(Boolean))
+  }
+
+  function handleAdd() {
+    // 아직 선택 안 된 첫 번째 언어 자동 선택
+    const available = options.filter(o => !rows.includes(o))
+    if (available.length === 0) return
+    onChange([...rows.filter(Boolean), available[0]])
+  }
+
+  const canAdd = options.filter(o => !rows.includes(o)).length > 0
+
+  return (
+    <div className="flex flex-col gap-2">
+      {rows.map((lang, idx) => {
+        // 이 슬롯에서 선택 가능한 옵션: 현재 값 + 다른 슬롯에서 선택되지 않은 것
+        const available = options.filter(o => o === lang || !rows.includes(o))
+        return (
+          <div key={idx} className="flex items-center gap-2">
+            <div className={`flex-1 flex items-center gap-2 px-4 h-[52px] rounded-xl border ${
+              lang ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-[#EEEEEE] bg-[#F5F5F5]'
+            }`}>
+              {/* 언어 아이콘 */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={lang ? '#2592FF' : '#808080'} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
+              </svg>
+              <select
+                value={lang}
+                onChange={e => handleChange(idx, e.target.value)}
+                className={`flex-1 bg-transparent text-[15px] font-medium outline-none appearance-none cursor-pointer ${
+                  lang ? 'text-[#2592FF]' : 'text-[#808080]'
+                }`}
+              >
+                {!lang && <option value="">언어 선택</option>}
+                {available.map(o => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              {/* 체크 또는 드롭다운 화살표 */}
+              {lang ? (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 8L6.5 11.5L13 5" stroke="#2592FF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M3 5L7 9L11 5" stroke="#808080" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            {/* 삭제 버튼 (슬롯이 2개 이상이거나 값이 있을 때) */}
+            {(rows.length > 1 || lang) && (
+              <button
+                type="button"
+                onClick={() => handleRemove(idx)}
+                className="w-10 h-10 rounded-full bg-[#F0F1F5] flex items-center justify-center shrink-0 hover:bg-[#e4e4e8] transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 2L12 12M12 2L2 12" stroke="#808080" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )
+      })}
+
+      {/* 추가 버튼 */}
+      {canAdd && (
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="flex items-center gap-2 px-4 h-[44px] rounded-xl border border-dashed border-[#CCCCCC] text-[#808080] text-[14px] font-medium hover:border-[#2592FF] hover:text-[#2592FF] hover:bg-[#f3f9ff] transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+          언어 추가
+        </button>
+      )}
+    </div>
   )
 }

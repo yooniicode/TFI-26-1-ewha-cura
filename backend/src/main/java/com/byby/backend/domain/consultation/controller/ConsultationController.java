@@ -31,6 +31,16 @@ public class ConsultationController {
     private final ConsultationService consultationService;
     private final GoogleSheetsExportService googleSheetsExportService;
 
+    @PostMapping("/request")
+    @PreAuthorize("hasRole('patient')")
+    @Operation(summary = "이주민 통번역 의뢰 제출")
+    public ResponseEntity<Response<ConsultationResponse.Detail>> createRequest(
+            @Valid @RequestBody ConsultationRequest.Create req,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.status(201)
+                .body(Response.success(SuccessCode.CREATED, consultationService.createByPatient(req, principal)));
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "상담/통역 보고서 생성")

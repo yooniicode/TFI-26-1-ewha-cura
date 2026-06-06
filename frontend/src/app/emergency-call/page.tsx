@@ -19,6 +19,7 @@ export default function EmergencyCallPage() {
     { labelKey: 'medical_info' as const, descKey: 'medical_info_desc' as const, number: '1339', hours: '24시간' },
     { labelKey: 'danuri' as const, descKey: 'danuri_desc' as const, number: '1577-1366', hours: '24시간' },
     { labelKey: 'immigration' as const, descKey: 'immigration_desc' as const, number: '1345', hours: '평일 09:00~22:00' },
+    { labelKey: 'nhis' as const, descKey: 'nhis_desc' as const, number: '033-811-2000', hours: '평일 09:00~18:00', url: 'https://www.nhis.or.kr/vietnamese/index.do' },
   ]
 
   return (
@@ -27,31 +28,44 @@ export default function EmergencyCallPage() {
 
       <div className="bg-white px-4 pt-2">
         {EMERGENCY_NUMBERS.map((item, index) => (
-          <a
+          <div
             key={item.number}
-            href={`tel:${item.number.replace(/-/g, '')}`}
-            className={`flex items-center justify-between py-4 active:opacity-60 transition-opacity${
-              index < EMERGENCY_NUMBERS.length - 1 ? ' border-b border-[#eee]' : ''
-            }`}
+            className={`py-4${index < EMERGENCY_NUMBERS.length - 1 ? ' border-b border-[#eee]' : ''}`}
           >
-            <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-4">
-              <p className="text-[18px] font-semibold text-[#161616] leading-[1.4]">
-                {t.emergency[item.labelKey]}
-              </p>
-              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">
-                {t.emergency[item.descKey]}
-              </p>
-              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">
-                {item.hours}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <p className="text-[20px] font-semibold text-[#2592ff]">{item.number}</p>
-              <div className="w-8 h-8 rounded-full bg-[#f0f1f5] flex items-center justify-center shrink-0">
-                <PhoneIcon />
+            <a
+              href={`tel:${item.number.replace(/-/g, '')}`}
+              className="flex items-center justify-between active:opacity-60 transition-opacity"
+            >
+              <div className="flex flex-col gap-0.5 flex-1 min-w-0 pr-4">
+                <p className="text-[18px] font-semibold text-[#161616] leading-[1.4]">
+                  {t.emergency[item.labelKey]}
+                </p>
+                <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">
+                  {t.emergency[item.descKey]}
+                </p>
+                <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">
+                  {item.hours}
+                </p>
               </div>
-            </div>
-          </a>
+              <div className="flex items-center gap-2 shrink-0">
+                <p className="text-[20px] font-semibold text-[#2592ff]">{item.number}</p>
+                <div className="w-8 h-8 rounded-full bg-[#f0f1f5] flex items-center justify-center shrink-0">
+                  <PhoneIcon />
+                </div>
+              </div>
+            </a>
+            {'url' in item && (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-block text-[13px] font-medium text-[#2592ff] underline underline-offset-2 active:opacity-60 transition-opacity"
+                onClick={e => e.stopPropagation()}
+              >
+                웹사이트 바로가기 →
+              </a>
+            )}
+          </div>
         ))}
       </div>
     </AppShell>

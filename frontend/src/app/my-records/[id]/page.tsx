@@ -9,11 +9,13 @@ import { patientApi, chatApi } from '@/lib/api'
 import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
+import { getBodyPartImage, getDiseaseShortName, getIcdCode } from '@/lib/bodyPartUtils'
 
-function consultDateKo(dateStr: string, locale: string) {
+function consultDateKo(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00')
   if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
+  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${dow})`
 }
 
 export default function MyRecordDetailPage() {
@@ -67,136 +69,121 @@ export default function MyRecordDetailPage() {
     )
   }
 
+  const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
+  const icdCode = getIcdCode(record.diagnosisNameCode)
+  const bodyImage = getBodyPartImage(record)
+  const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
+
   return (
     <AppShell noPadding>
       <PageHeader title={t.medical_record.detail_title} />
 
-      <div className="bg-[#F5F5F5] px-4 py-4 pb-10 space-y-3 min-h-screen">
-        {/* 날짜 + 병원 */}
-        <div className="bg-white rounded-2xl px-5 py-5">
-          <p className="text-sm text-[#A0A0A0]">{consultDateKo(record.consultationDate, t.locale)}</p>
-          <h2 className="text-xl font-bold text-[#161616] mt-1">
-            {record.hospitalName ?? t.my_records.no_hospital}
-          </h2>
-          {record.department && <p className="text-base text-[#808080] mt-0.5">{record.department}</p>}
-          {record.doctorName && <p className="text-sm text-[#A0A0A0] mt-0.5">{record.doctorName}</p>}
+      <div className="bg-white px-4 py-4 pb-10 min-h-screen">
+        <div className="bg-white border border-[#eee] rounded-[20px] overflow-hidden flex flex-col gap-4 px-4 py-6">
+
+          {/* 신체 부위 이미지 */}
+          <div className="w-full rounded-[20px] overflow-hidden bg-[#f0f1f5]" style={{ aspectRatio: '300/219' }}>
+            <img src={bodyImage} alt="" className="w-full h-full object-cover" />
+          </div>
+
+          {/* 병명 + ICD 코드 */}
+          <div className="flex items-center justify-between">
+            <span className="text-[20px] font-semibold text-[#2592ff] leading-[1.4]">
+              {diseaseName || hospitalDisplay || '-'}
+            </span>
+            {icdCode && (
+              <div className="bg-[#f0f1f5] rounded-full px-3 h-8 flex items-center shrink-0">
+                <span className="text-[16px] font-medium text-[#808080] leading-[1.4]">{icdCode}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 구분선 */}
+          <div className="border-t border-[#eee]" />
+
+          {/* 내용 섹션 */}
+          <div className="flex flex-col gap-4">
+            {record.treatmentResult && (
+              <div className="bg-[#f3f9ff] rounded-[16px] px-3 py-2">
+                <p className="text-[16px] font-medium text-[#2592ff] leading-[1.4]">
+                  {record.treatmentResult}
+                </p>
+              </div>
+            )}
+            {record.patientComment && (
+              <div className="flex flex-col gap-0.5">
+                <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">증상</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.patientComment}</p>
+              </div>
+            )}
+            {record.diagnosisContent && (
+              <div className="flex flex-col gap-0.5">
+                <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">진단</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.diagnosisContent}</p>
+              </div>
+            )}
+            {record.medicationInstruction && (
+              <div className="flex flex-col gap-0.5">
+                <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">약 처방</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.medicationInstruction}</p>
+              </div>
+            )}
+          </div>
+
+          {/* 구분선 */}
+          <div className="border-t border-[#eee]" />
+
+          {/* 날짜 + 병원 */}
+          <div className="flex gap-4">
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">날짜</p>
+              <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">
+                {consultDateKo(record.consultationDate)}
+              </p>
+            </div>
+            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">병원</p>
+              <p className="text-[16px] font-medium text-[#494949] leading-[1.4] truncate">
+                {hospitalDisplay || '-'}
+              </p>
+            </div>
+          </div>
+
+          {/* 통번역가 */}
           {record.interpreterName && (
-            <p className="text-sm text-[#2592FF] mt-1">
-              담당 통번역가: {record.interpreterName}
-            </p>
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">통번역가</p>
+              <div className="flex items-center gap-1">
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">
+                  {record.interpreterName}님
+                </p>
+                {record.interpreterId && (
+                  <button
+                    type="button"
+                    onClick={handleOpenChat}
+                    disabled={chatLoading}
+                    className="w-6 h-6 rounded-full bg-[#f0f1f5] flex items-center justify-center shrink-0 disabled:opacity-50"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#808080" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 13.6a19.79 19.79 0 01-3.07-8.67A2 2 0 012 2.84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 10.91a16 16 0 006.72 6.72l1.25-1.25a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 18.92v-2z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
           )}
 
-          {record.interpreterId && (
-            <button
-              type="button"
-              onClick={handleOpenChat}
-              disabled={chatLoading}
-              className="mt-4 w-full h-11 rounded-xl bg-[#EAF4FF] text-[#2592FF] text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#dceeff] transition-colors disabled:opacity-60"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-              </svg>
-              {chatLoading ? t.medical_record.connecting : t.medical_record.ask_interpreter}
-            </button>
+          {/* 다음 예약 */}
+          {record.nextAppointmentDate && (
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">다음 예약</p>
+              <p className="text-[16px] font-semibold text-[#2592ff] leading-[1.4]">
+                {record.nextAppointmentDate}
+              </p>
+            </div>
           )}
         </div>
-
-        {(record.diagnosisNameCode || record.diagnosisContent) && (
-          <Section title={t.medical_record.diagnosis}>
-            {record.diagnosisNameCode && (
-              <DiseaseNameDisplay code={record.diagnosisNameCode} />
-            )}
-            {record.diagnosisContent && <p className="text-sm text-[#494949] mt-2 leading-relaxed whitespace-pre-wrap">{record.diagnosisContent}</p>}
-          </Section>
-        )}
-
-        {record.patientComment && (
-          <Section title={t.medical_record.symptoms}>
-            <p className="text-sm text-[#494949] leading-relaxed whitespace-pre-wrap">{record.patientComment}</p>
-          </Section>
-        )}
-
-        {record.treatmentResult && (
-          <Section title={t.medical_record.caution}>
-            <p className="text-sm text-[#494949] leading-relaxed whitespace-pre-wrap">{record.treatmentResult}</p>
-          </Section>
-        )}
-
-        {record.medicationInstruction && (
-          <Section title={t.medical_record.medication}>
-            <p className="text-sm text-[#494949] leading-relaxed whitespace-pre-wrap">{record.medicationInstruction}</p>
-          </Section>
-        )}
-
-        {record.nextAppointmentDate && (
-          <Section title={t.medical_record.next_appointment}>
-            <p className="text-base font-semibold text-[#2592FF]">{record.nextAppointmentDate}</p>
-          </Section>
-        )}
       </div>
     </AppShell>
   )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white rounded-2xl px-5 py-4">
-      <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">{title}</p>
-      {children}
-    </div>
-  )
-}
-
-// ─── HIRA 질병정보 표시 ──────────────────────────────────────────────────────
-
-interface DiseaseResult { code: string; name: string }
-
-function DiseaseNameDisplay({ code }: { code: string }) {
-  const [enriched, setEnriched] = useState<DiseaseResult | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!code) return
-    // 저장된 값에서 ICD 코드 추출 (예: "급성비인두염 (J00)" → "J00")
-    const icdMatch = code.match(/\(([A-Z][0-9]+(?:\.[0-9]+)?)\)/)
-    const searchQuery = icdMatch ? icdMatch[1] : code
-
-    setLoading(true)
-    fetch(`/api/disease-search?q=${encodeURIComponent(searchQuery)}`)
-      .then(r => r.json())
-      .then((data: { results: DiseaseResult[] }) => {
-        if (data.results.length > 0) setEnriched(data.results[0])
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [code])
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2">
-        <svg className="animate-spin w-3.5 h-3.5 text-[#2592FF]" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-        <span className="text-sm text-[#A0A0A0]">병명 조회 중...</span>
-      </div>
-    )
-  }
-
-  if (enriched) {
-    return (
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <p className="text-base font-bold text-[#161616]">{enriched.name}</p>
-          <span className="text-xs font-semibold text-[#2592FF] bg-[#EAF4FF] px-2 py-0.5 rounded-full">
-            {enriched.code}
-          </span>
-        </div>
-        <p className="text-[10px] text-[#A0A0A0]">출처: 건강보험심사평가원 질병정보</p>
-      </div>
-    )
-  }
-
-  // API 조회 실패 또는 미사용 → 저장된 값 그대로 표시
-  return <p className="text-base font-semibold text-[#161616]">{code}</p>
 }

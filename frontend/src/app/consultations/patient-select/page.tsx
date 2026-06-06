@@ -116,7 +116,7 @@ function PatientSelectInner() {
         seen.add(c.patientId)
         return true
       })
-      .slice(0, 6)
+      .slice(0, 2)
       .map(c => ({
         id: c.patientId,
         name: c.patientName,
@@ -177,9 +177,9 @@ function PatientSelectInner() {
           <div className="space-y-7 pb-6">
             {/* 최근 진료 */}
             {recentPatients.length > 0 && (
-              <div>
-                <p className="text-base font-medium text-[#161616] px-4 mb-3">최근 진료</p>
-                <div className="flex gap-4 overflow-x-auto px-4 pb-1 scrollbar-hide">
+              <div className="px-4">
+                <p className="text-[16px] font-medium text-[#161616] mb-3">최근 진료</p>
+                <div className="grid grid-cols-2 gap-3">
                   {recentPatients.map(p => {
                     const isSelected = selectedId === p.id
                     const age = calcAge(p.birthDate)
@@ -188,20 +188,15 @@ function PatientSelectInner() {
                         key={p.id}
                         type="button"
                         onClick={() => setSelectedId(isSelected ? null : p.id)}
-                        className={`flex-shrink-0 w-[177px] rounded-2xl p-4 flex flex-col gap-2 border-2 transition-all text-left ${
-                          isSelected ? 'border-[#2592ff] bg-[#f3f9ff]' : 'border-[#F0F0F0] bg-white'
+                        className={`rounded-[8px] p-4 flex flex-col gap-2 border transition-all text-left ${
+                          isSelected ? 'border-[#2592ff] bg-[#f3f9ff]' : 'border-[#eee] bg-white'
                         }`}
                       >
-                        <div className="relative w-[63px] h-[52px]">
-                          <GenderAvatar gender={p.gender} />
-                          <div className="absolute bottom-0 right-0">
-                            <FlagBadge nationality={p.nationality} />
-                          </div>
-                        </div>
-                        <p className="text-lg font-medium text-[#161616] truncate w-full">{p.name}</p>
-                        {age && <p className="text-sm text-[#494949]">{age}</p>}
-                        <div className="bg-[#f7f7f7] rounded-lg px-3 py-[7px] self-start mt-auto">
-                          <span className="text-sm font-medium text-[#494949]">{getDateLabel(p.consultationDate)}</span>
+                        <GenderAvatar gender={p.gender} />
+                        <p className="text-[18px] font-medium text-[#161616] truncate w-full">{p.name}</p>
+                        {age && <p className="text-[16px] text-[#494949]">{age}</p>}
+                        <div className="bg-[#f7f7f7] rounded-[8px] px-3 py-1.5 self-start">
+                          <span className="text-[14px] font-medium text-[#494949]">{getDateLabel(p.consultationDate)}</span>
                         </div>
                       </button>
                     )
@@ -213,29 +208,23 @@ function PatientSelectInner() {
             {/* 전체 */}
             {patientsData.length > 0 && (
               <div className="px-4">
-                <p className="text-base font-medium text-[#161616] mb-3">전체</p>
-                <div className="grid grid-cols-2 gap-4">
+                <p className="text-[16px] font-medium text-[#161616] mb-3">전체</p>
+                <div className="grid grid-cols-2 gap-3">
                   {patientsData.map(p => {
                     const isSelected = selectedId === p.id
-                    const birth = formatBirth(p.birthDate)
                     const age = calcAge(p.birthDate)
                     return (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => setSelectedId(isSelected ? null : p.id)}
-                        className={`rounded-2xl p-4 flex flex-col gap-2 border-2 transition-all text-left ${
-                          isSelected ? 'border-[#2592ff] bg-[#f3f9ff]' : 'border-[#F0F0F0] bg-white'
+                        className={`rounded-[8px] p-4 flex flex-col gap-2 border transition-all text-left ${
+                          isSelected ? 'border-[#2592ff] bg-[#f3f9ff]' : 'border-[#eee] bg-white'
                         }`}
                       >
-                        <div className="relative w-[63px] h-[52px]">
-                          <GenderAvatar gender={p.gender} />
-                          <div className="absolute bottom-0 right-0">
-                            <FlagBadge nationality={p.nationality} />
-                          </div>
-                        </div>
-                        <p className="text-lg font-medium text-[#161616] truncate w-full">{p.name}</p>
-                        <p className="text-sm text-[#494949]">{birth || age || ''}</p>
+                        <GenderAvatar gender={p.gender} />
+                        <p className="text-[18px] font-medium text-[#161616] truncate w-full">{p.name}</p>
+                        {age && <p className="text-[16px] text-[#494949]">{age}</p>}
                       </button>
                     )
                   })}

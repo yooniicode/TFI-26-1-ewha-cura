@@ -6,13 +6,13 @@ import com.byby.backend.common.enums.ProcessingType;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ConsultationRequest {
 
     public record Create(
-            @NotNull LocalDate consultationDate,
+            @NotNull LocalDateTime consultationDate,
             @NotNull UUID patientId,
             UUID hospitalId,
             String hospitalName,
@@ -36,7 +36,7 @@ public class ConsultationRequest {
     ) {}
 
     public record Update(
-            LocalDate consultationDate,
+            LocalDateTime consultationDate,
             UUID hospitalId,
             String hospitalName,
             IssueType issueType,

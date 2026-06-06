@@ -159,9 +159,6 @@ function PatientDetailInner() {
   const isInterpreter = me?.role === 'interpreter'
   const flagSrc = getFlagSrc(patient.nationality)
   const ageStr = calcAge(patient.birthDate)
-  const genderIconSrc = patient.gender === 'FEMALE'
-    ? '/icons/common/gender/big-여성-배경o.svg'
-    : '/icons/common/gender/big-남성-배경o.svg'
 
   return (
     <AppShell noPadding>
@@ -169,11 +166,11 @@ function PatientDetailInner() {
 
       {/* 오늘 진료 배너 */}
       {highlightedConsultation && (
-        <div className="bg-green-50 px-5 py-4 flex flex-col gap-1.5">
-          <p className="text-base font-semibold text-lime-600">{tp.today_consultation}</p>
-          <p className="text-sm text-zinc-600">{consultDateKo(highlightedConsultation.consultationDate)}</p>
+        <div className="bg-[#f6fff3] px-5 py-4 flex flex-col gap-1">
+          <p className="text-[18px] font-semibold text-[#30c100]">{tp.today_consultation}</p>
+          <p className="text-[16px] text-[#5d5d5d]">{consultDateKo(highlightedConsultation.consultationDate)}</p>
           {(highlightedConsultation.hospitalName || highlightedConsultation.department) && (
-            <p className="text-sm text-zinc-600">
+            <p className="text-[16px] text-[#5d5d5d]">
               {[highlightedConsultation.hospitalName, highlightedConsultation.department].filter(Boolean).join(' ')}
             </p>
           )}
@@ -181,69 +178,102 @@ function PatientDetailInner() {
       )}
 
       {/* 메인 컨텐츠 */}
-      <div className="bg-neutral-100 px-4 py-4 pb-10 space-y-3 min-h-screen">
+      <div className="bg-[#f7f7f7] px-4 py-4 pb-10 flex flex-col gap-4 min-h-screen">
 
         {/* 기본 정보 카드 */}
-        <div className="bg-white rounded-xl px-4 py-6 flex flex-col gap-5">
-          {/* 환자 헤더: 성별 아이콘 + 이름 + 국기 */}
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <img src={genderIconSrc} alt={labels.gender[patient.gender]} width={49} height={49} />
-              {flagSrc && (
+        <div className="bg-white rounded-[8px] px-4 py-6 flex flex-col gap-5">
+          {/* 프로필 사진 + 이름 */}
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full overflow-hidden shrink-0">
+              {patient.avatarUrl ? (
+                <img src={patient.avatarUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
                 <img
-                  src={flagSrc}
-                  alt={labels.nationality[patient.nationality]}
-                  width={20}
-                  height={20}
-                  className="absolute -bottom-1 -right-1"
+                  src={patient.gender === 'FEMALE'
+                    ? '/icons/common/gender/big-여성-배경o.svg'
+                    : '/icons/common/gender/big-남성-배경o.svg'}
+                  alt="" className="w-full h-full object-cover"
                 />
               )}
             </div>
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <h2 className="text-2xl font-semibold text-neutral-900">{patient.name}</h2>
-              {(ageStr || patient.birthDate) && (
-                <p className="text-sm text-zinc-500">
-                  {[patient.birthDate, ageStr].filter(Boolean).join(' · ')}
-                </p>
-              )}
-            </div>
+            <h2 className="text-[26px] font-semibold text-[#161616]">{patient.name}</h2>
           </div>
 
           {/* 기본 정보 rows */}
-          <div className="flex flex-col gap-3">
-            <InfoRow label="성별" value={labels.gender[patient.gender]} />
-            <InfoRow label="국적" value={labels.nationality[patient.nationality]} />
-            {patient.visaType && <InfoRow label="비자" value={labels.visa[patient.visaType]} />}
-            {patient.region && <InfoRow label="거주지" value={patient.region} />}
-            {patient.phone && <InfoRow label="연락처" value={patient.phone} />}
+          <div className="flex flex-col gap-4">
+            {patient.birthDate && (
+              <div className="flex items-center gap-[10px]">
+                <span className="text-[18px] text-[#494949] w-20 shrink-0">생년월일</span>
+                <span className="text-[18px] font-medium text-[#161616]">
+                  {patient.birthDate.replace(/-/g, '.')}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-[10px]">
+              <span className="text-[18px] text-[#494949] w-20 shrink-0">성별</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[18px] font-medium text-[#161616]">{labels.gender[patient.gender]}</span>
+                <img
+                  src={patient.gender === 'FEMALE'
+                    ? '/icons/common/gender/small-여성-배경x.svg'
+                    : '/icons/common/gender/small-남성-배경x.svg'}
+                  alt="" width={24} height={24}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-[10px]">
+              <span className="text-[18px] text-[#494949] w-20 shrink-0">국적</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[18px] font-medium text-[#161616]">{labels.nationality[patient.nationality]}</span>
+                {flagSrc && <img src={flagSrc} alt="" width={24} height={24} />}
+              </div>
+            </div>
           </div>
 
           {/* 액션 버튼 3개 */}
           <div className="flex gap-2">
             <Link
               href={`/rm/new?patientId=${id}${highlightCid ? `&cid=${highlightCid}` : ''}`}
-              className="flex-1 px-3 py-4 bg-[#F5F5F5] rounded-xl flex flex-col items-center gap-2 hover:bg-gray-200 transition-colors"
+              className="flex-1 px-3 py-4 bg-[#f0f1f5] rounded-[8px] flex flex-col items-center gap-2 active:opacity-70 transition-opacity"
             >
               <img src="/icons/interpreter/patient-profile/실시간메모.svg" alt="" width={24} height={24} />
-              <span className="text-sm font-medium text-neutral-900">{tp.realtime_memo}</span>
+              <span className="text-[16px] font-medium text-[#161616]">{tp.realtime_memo}</span>
             </Link>
             <Link
               href={`/consultations/start?patientId=${id}`}
-              className="flex-1 px-3 py-4 bg-[#F5F5F5] rounded-xl flex flex-col items-center gap-2 hover:bg-gray-200 transition-colors"
+              className="flex-1 px-3 py-4 bg-[#f0f1f5] rounded-[8px] flex flex-col items-center gap-2 active:opacity-70 transition-opacity"
             >
               <img src="/icons/interpreter/patient-profile/보고서.svg" alt="" width={24} height={24} />
-              <span className="text-sm font-medium text-neutral-900">{tp.report}</span>
+              <span className="text-[16px] font-medium text-[#161616]">{tp.report}</span>
             </Link>
             <a
               href={patient.phone ? `tel:${patient.phone}` : undefined}
               onClick={!patient.phone ? e => e.preventDefault() : undefined}
-              className={`flex-1 px-3 py-4 bg-[#F5F5F5] rounded-xl flex flex-col items-center gap-2 hover:bg-gray-200 transition-colors ${!patient.phone ? 'opacity-40' : ''}`}
+              className={`flex-1 px-3 py-4 bg-[#f0f1f5] rounded-[8px] flex flex-col items-center gap-2 active:opacity-70 transition-opacity ${!patient.phone ? 'opacity-40' : ''}`}
             >
               <img src="/icons/interpreter/patient-profile/전화.svg" alt="" width={24} height={24} />
-              <span className="text-sm font-medium text-neutral-900">{tp.call}</span>
+              <span className="text-[16px] font-medium text-[#161616]">{tp.call}</span>
             </a>
           </div>
         </div>
+
+        {/* 추가 정보 카드 (비자 / 거주지) */}
+        {(patient.visaType || patient.region) && (
+          <div className="bg-white rounded-[8px] px-4 py-5 flex flex-col gap-4">
+            {patient.visaType && (
+              <div className="flex items-center gap-[10px]">
+                <span className="text-[18px] text-[#494949] w-20 shrink-0">비자</span>
+                <span className="text-[18px] font-medium text-[#161616]">{labels.visa[patient.visaType]}</span>
+              </div>
+            )}
+            {patient.region && (
+              <div className="flex items-center gap-[10px]">
+                <span className="text-[18px] text-[#494949] w-20 shrink-0">거주지</span>
+                <span className="text-[18px] font-medium text-[#161616]">{patient.region}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 센터 메모 (통번역가) */}
         {isInterpreter && (
@@ -277,16 +307,16 @@ function PatientDetailInner() {
         )}
 
         {/* 이전 진료 내역 */}
-        <h3 className="text-base font-semibold text-neutral-900 pt-2">{tp.consultation_history}</h3>
+        <h3 className="text-[20px] font-semibold text-[#161616] pt-1">{tp.consultation_history}</h3>
 
         {historyError ? (
           <p className="text-sm text-red-500 text-center py-4">{historyError}</p>
         ) : history.length === 0 ? (
-          <div className="bg-white rounded-xl px-5 py-8 text-center">
+          <div className="bg-white rounded-[8px] px-5 py-8 text-center">
             <p className="text-sm text-gray-400">{t.patient.no_consultation}</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-4">
             {history.map(c => (
               <ConsultationCard key={c.id} c={c} t={t} />
             ))}
@@ -349,18 +379,27 @@ function ConsultationCard({
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="bg-white rounded-xl overflow-hidden">
+    <div className="bg-white rounded-[8px] overflow-hidden">
       {/* 헤더 */}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-4 active:bg-gray-50 transition-colors"
       >
-        <div className="flex flex-col gap-0.5 text-left min-w-0 flex-1 pr-3">
-          <span className="text-base font-semibold text-neutral-900">{consultDateKo(c.consultationDate)}</span>
-          <span className="text-sm text-zinc-500 truncate">
-            {[c.hospitalName, c.department].filter(Boolean).join(' ') || '-'}
-          </span>
+        <div className="flex flex-col gap-2 text-left min-w-0 flex-1 pr-3">
+          <span className="text-[20px] font-semibold text-[#161616]">{consultDateKo(c.consultationDate)}</span>
+          <div className="flex flex-col gap-0.5">
+            {(c.diagnosisNameCode || c.diagnosisContent) && (
+              <span className="text-[20px] font-medium text-[#161616] truncate">
+                {c.diagnosisNameCode?.replace(/\s*\([^)]+\)\s*$/, '').trim() || c.diagnosisContent}
+              </span>
+            )}
+            {(c.hospitalName || c.department) && (
+              <span className="text-[18px] text-[#494949] truncate">
+                {[c.hospitalName, c.department].filter(Boolean).join(' ')}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {c.confirmed && (

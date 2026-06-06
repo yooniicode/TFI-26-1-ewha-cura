@@ -57,41 +57,31 @@ function ConsultationStartInner() {
 
         {/* 옵션 카드 */}
         <div className="flex gap-3">
-          {/* 처음부터 작성하기 */}
-          <button
-            type="button"
-            onClick={() => setSelected('scratch')}
-            className={`flex-1 h-[200px] rounded-2xl border-2 flex flex-col items-center justify-center gap-4 transition-all relative ${
-              selected === 'scratch' ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-[#F0F0F0] bg-white'
-            }`}
-          >
-            {selected === 'scratch' && (
-              <div className="absolute top-3 right-3">
-                <img src="/icons/interpreter/report/check.svg" alt="" width={18} height={18} />
-              </div>
-            )}
-            <img src="/icons/interpreter/report/처음부터작성하기.svg" alt="" width={40} height={40} />
-            <span className={`text-base font-medium ${selected === 'scratch' ? 'text-[#2592FF]' : 'text-[#494949]'}`}>
-              {t.report_flow.from_scratch}
-            </span>
-          </button>
-
           {/* 진료 메모 불러오기 */}
           <button
             type="button"
             onClick={() => setSelected('rm')}
-            className={`flex-1 h-[200px] rounded-2xl border-2 flex flex-col items-center justify-center gap-4 transition-all relative ${
-              selected === 'rm' ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-[#F0F0F0] bg-white'
+            className={`flex-1 h-[200px] rounded-[16px] border flex flex-col items-center justify-center gap-4 transition-all ${
+              selected === 'rm' ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-[#eee] bg-white'
             }`}
           >
-            {selected === 'rm' && (
-              <div className="absolute top-3 right-3">
-                <img src="/icons/interpreter/report/check.svg" alt="" width={18} height={18} />
-              </div>
-            )}
             <img src="/icons/interpreter/report/진료메모불러오기.svg" alt="" width={40} height={40} />
             <span className={`text-base font-medium ${selected === 'rm' ? 'text-[#2592FF]' : 'text-[#494949]'}`}>
               {t.report_flow.from_memo}
+            </span>
+          </button>
+
+          {/* 처음부터 작성하기 */}
+          <button
+            type="button"
+            onClick={() => setSelected('scratch')}
+            className={`flex-1 h-[200px] rounded-[16px] border flex flex-col items-center justify-center gap-4 transition-all ${
+              selected === 'scratch' ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-[#eee] bg-white'
+            }`}
+          >
+            <img src="/icons/interpreter/report/처음부터작성하기.svg" alt="" width={40} height={40} />
+            <span className={`text-base font-medium ${selected === 'scratch' ? 'text-[#2592FF]' : 'text-[#494949]'}`}>
+              {t.report_flow.from_scratch}
             </span>
           </button>
         </div>

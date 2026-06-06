@@ -36,7 +36,7 @@ function ScheduleInner() {
   const { t } = useTranslation()
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 16))
   const [hospitalName, setHospitalName] = useState('')
   const [department, setDepartment] = useState('')
   const [saving, setSaving] = useState(false)
@@ -162,11 +162,11 @@ function ScheduleInner() {
           <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
             <div className="bg-white rounded-2xl px-5 py-5 space-y-4">
 
-              {/* 날짜 */}
+              {/* 날짜·시간 */}
               <div>
                 <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.schedule.visit_date}</label>
                 <input
-                  type="date"
+                  type="datetime-local"
                   value={date}
                   onChange={e => setDate(e.target.value)}
                   className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none border border-[#A1A1A1]"

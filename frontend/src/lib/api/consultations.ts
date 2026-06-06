@@ -27,6 +27,7 @@ export const consultationApi = {
   get:       (id: string) => get(`/consultations/${id}`, schemas.consultation),
   getPatientReport: (id: string) => get(`/consultations/${id}`, schemas.patientReport),
   create:    (body: unknown) => post('/consultations', body, schemas.consultation),
+  request:   (body: unknown) => post('/consultations/request', body, schemas.consultation),
   update:    (id: string, body: unknown) => put(`/consultations/${id}`, body, schemas.consultation),
   confirm:   (id: string, body: unknown) => patch(`/consultations/${id}/confirm`, body, schemas.consultation),
   byPatient: (patientId: string, page = 0) =>

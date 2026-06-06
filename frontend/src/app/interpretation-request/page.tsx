@@ -56,7 +56,7 @@ export default function InterpretationRequestPage() {
         note.trim() ? `[요청사항] ${note.trim()}` : '',
       ].filter(Boolean).join('\n')
 
-      await consultationApi.create({
+      await consultationApi.request({
         patientId: me.entityId,
         consultationDate: preferredDate,
         issueType: 'MEDICAL',

@@ -617,6 +617,8 @@ export const en: AppTranslation = {
     danuri_desc: '24/7 support for migrant women (Korean, Vietnamese, etc.)',
     immigration: 'Immigration Info',
     immigration_desc: 'Immigration agency info for visas and residence',
+    nhis: 'NHIS Foreign Language Consultation',
+    nhis_desc: '1 English · 2 Chinese · 3 Vietnamese',
     warning_title: '⚠ Call 119 immediately when life is in danger',
     warning_desc: 'Call 119 immediately if unconscious, not breathing, bleeding severely, or having chest pain.',
   },

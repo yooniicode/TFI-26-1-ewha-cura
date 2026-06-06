@@ -75,6 +75,7 @@ export interface Patient {
   activeInterpreterName?: string | null
   createdAt: string
   updatedAt: string
+  avatarUrl?: string | null
 }
 
 export interface Interpreter {

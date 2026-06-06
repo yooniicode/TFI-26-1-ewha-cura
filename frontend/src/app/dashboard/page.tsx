@@ -340,6 +340,129 @@ export default function DashboardPage() {
     )
   }
 
+  // 통번역가 홈 — Figma 679:917
+  if (me?.role === 'interpreter') {
+    return (
+      <AppShell noPadding>
+        {/* 파란 헤더 */}
+        <div className="bg-[#2592FF] rounded-b-[20px] px-4 pt-6 pb-6">
+          <h1 className="text-[24px] font-semibold text-white leading-[1.4] mb-[26px]">
+            안녕하세요,<br />{me.name ?? ''} 통번역가님
+          </h1>
+
+          {/* 퀵 액션 카드 3개 */}
+          <div className="flex gap-[11px]">
+            <Link href="/consultations/start"
+              className="bg-white flex-1 h-[84px] flex flex-col items-center justify-center gap-1 rounded-[16px] overflow-hidden active:opacity-70 transition-opacity">
+              <img src="/icons/interpreter/home/보고서.svg" alt="" width={24} height={24} />
+              <span className="text-[14px] font-medium text-[#494949]">보고서</span>
+            </Link>
+            <Link href="/patients"
+              className="bg-white flex-1 h-[84px] flex flex-col items-center justify-center gap-1 rounded-[16px] overflow-hidden relative active:opacity-70 transition-opacity">
+              <img src="/icons/interpreter/home/담당환자.svg" alt="" width={24} height={24} />
+              <span className="text-[14px] font-medium text-[#494949]">담당 환자</span>
+              {myAssignedCount !== undefined && myAssignedCount.count > 0 && (
+                <span className="absolute top-2 right-2 w-[18px] h-[18px] bg-[#2592FF] rounded-full text-white text-[9px] font-bold flex items-center justify-center">
+                  {myAssignedCount.count}
+                </span>
+              )}
+            </Link>
+            <Link href="/consultations"
+              className="bg-white flex-1 h-[84px] flex flex-col items-center justify-center gap-1 rounded-[16px] overflow-hidden active:opacity-70 transition-opacity">
+              <img src="/icons/interpreter/home/나의활동.svg" alt="" width={24} height={24} />
+              <span className="text-[14px] font-medium text-[#494949]">나의 활동</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* 일정 섹션 */}
+        <div className="px-4 pt-4 pb-10">
+          {/* 날짜 헤더 + 통역 일정 추가 버튼 (기존 유지) */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[20px] font-semibold text-[#161616]">{today}</p>
+              <p className="text-[16px] text-[#454545]">통역 일정</p>
+            </div>
+            <Link
+              href="/consultations/schedule"
+              className="flex items-center justify-center w-9 h-9 bg-[#2592FF] rounded-xl shrink-0 active:bg-[#1568c7] transition-colors"
+              title={t.interpreter_home.add_schedule}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </Link>
+          </div>
+
+          {listLoading && <p className="text-sm text-gray-400 py-4">{t.interpreter_home.loading}</p>}
+
+          {!listLoading && recentConsultations.length === 0 && (
+            <div className="bg-white rounded-lg px-5 py-8 text-center">
+              <p className="text-sm text-gray-400">{t.interpreter_home.no_schedule}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-4">
+            {recentConsultations.map((c, idx) => {
+              const genderIcon = c.patientGender === 'FEMALE'
+                ? '/icons/common/gender/small-여성-배경o.svg'
+                : '/icons/common/gender/small-남성-배경o.svg'
+              const location = [c.hospitalName, c.department].filter(Boolean).join(' ') || '-'
+
+              if (idx === 0) {
+                return (
+                  <div key={c.id} className="flex items-start">
+                    <div className="w-16 shrink-0" />
+                    <div className="flex-1 bg-[#f3f9ff] rounded-[8px] flex flex-col gap-[15px] p-5">
+                      <Link href={`/patients/${c.patientId}?cid=${c.id}`}
+                        className="flex items-center justify-between active:opacity-70 transition-opacity">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[18px] font-semibold text-[#161616]">{c.patientName}</span>
+                            <img src={genderIcon} alt="" width={20} height={20} />
+                          </div>
+                          <span className="text-[16px] text-[#494949]">{location}</span>
+                        </div>
+                        <img src="/icons/common/arrows/right.svg" alt="" width={24} height={24} />
+                      </Link>
+                      <Link
+                        href={`/rm/new?patientId=${c.patientId}&cid=${c.id}`}
+                        className="bg-white rounded-[8px] px-5 py-4 flex items-center justify-center gap-1 active:opacity-70 transition-opacity"
+                      >
+                        <img src="/icons/interpreter/home/실시간메모작성.svg" alt="" width={20} height={20} />
+                        <span className="text-[14px] font-medium text-[#2592ff]">실시간 메모 작성</span>
+                      </Link>
+                    </div>
+                  </div>
+                )
+              }
+
+              return (
+                <div key={c.id} className="flex items-center">
+                  <div className="w-16 shrink-0" />
+                  <Link
+                    href={`/patients/${c.patientId}?cid=${c.id}`}
+                    className="flex-1 bg-[#f7f7f7] border border-[#eee] rounded-[16px] px-4 py-5 flex items-center justify-between active:opacity-70 transition-opacity"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[18px] font-semibold text-[#808080]">{c.patientName}</span>
+                        <img src={genderIcon} alt="" width={20} height={20} />
+                      </div>
+                      <span className="text-[16px] text-[#808080]">{location}</span>
+                    </div>
+                    <img src="/icons/common/arrows/right.svg" alt="" width={24} height={24} />
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell noPadding>
       {/* 히어로 - 흰색 */}
@@ -351,66 +474,6 @@ export default function DashboardPage() {
         <p className="mt-1 text-sm text-zinc-500">
           {roleLabel}{me?.centerName ? ` · ${me.centerName}` : ''}
         </p>
-
-        {/* 통번역가 퀵 액션 */}
-        {me?.role === 'interpreter' && (
-          <div className="mt-5 space-y-2.5">
-            {/* 실시간 메모 작성 — 주요 액션 */}
-            <Link
-              href="/rm/new"
-              className="flex items-center gap-4 px-5 py-4 bg-[#2592FF] rounded-2xl hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
-            >
-              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
-                <img
-                  src="/icons/interpreter/home/실시간메모작성.svg"
-                  alt=""
-                  width={20}
-                  height={20}
-                  style={{ filter: 'brightness(0) invert(1)' }}
-                />
-              </div>
-              <div className="min-w-0">
-                <p className="text-base font-semibold text-white">{t.interpreter_home.realtime_memo}</p>
-                <p className="text-xs text-white/70 mt-0.5">{t.interpreter_home.realtime_memo_desc}</p>
-              </div>
-              <svg className="ml-auto shrink-0" width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </Link>
-
-            {/* 3칸 그리드 */}
-            <div className="grid grid-cols-3 gap-2">
-              <Link
-                href="/consultations/start"
-                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <img src="/icons/interpreter/home/보고서.svg" alt="" width={24} height={24} />
-                <span className="text-xs font-medium text-neutral-700">{t.interpreter_home.report}</span>
-              </Link>
-              <Link
-                href="/patients"
-                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <div className="relative">
-                  <img src="/icons/interpreter/home/담당환자.svg" alt="" width={24} height={24} />
-                  {myAssignedCount !== undefined && myAssignedCount.count > 0 && (
-                    <span className="absolute -top-2 -right-3 rounded-full bg-[#2592FF] px-1.5 py-0.5 text-[9px] font-bold text-white leading-none">
-                      {myAssignedCount.count}
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-medium text-neutral-700">{t.interpreter_home.my_patients}</span>
-              </Link>
-              <Link
-                href="/consultations"
-                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <img src="/icons/interpreter/home/나의활동.svg" alt="" width={24} height={24} />
-                <span className="text-xs font-medium text-neutral-700">{t.interpreter_home.my_activity}</span>
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* 센터장 퀵 액션 */}
         {isAdmin && (
@@ -471,56 +534,6 @@ export default function DashboardPage() {
 
       {/* 컨텐츠 - 회색 배경 */}
       <section className="bg-neutral-100 px-4 pt-5 pb-8 min-h-[calc(100vh-18rem)]">
-
-        {/* 통번역가: 오늘 통역 일정 */}
-        {me?.role === 'interpreter' && (
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between mb-1">
-              <div>
-                <p className="text-sm text-zinc-500">{today}</p>
-                <p className="text-base font-semibold text-zinc-700">{t.interpreter_home.today_schedule}</p>
-              </div>
-              <Link
-                href="/consultations/schedule"
-                className="flex items-center justify-center w-9 h-9 bg-[#2592FF] rounded-xl hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors shrink-0"
-                title={t.interpreter_home.add_schedule}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </Link>
-            </div>
-            {listLoading && <p className="text-sm text-gray-400 py-4">{t.interpreter_home.loading}</p>}
-            {!listLoading && recentConsultations.length === 0 && (
-              <div className="bg-white rounded-lg px-5 py-8 text-center">
-                <p className="text-sm text-gray-400">{t.interpreter_home.no_schedule}</p>
-              </div>
-            )}
-            {recentConsultations.map(c => (
-              <Link key={c.id} href={`/patients/${c.patientId}?cid=${c.id}`}
-                className="flex justify-between items-center bg-white rounded-lg px-5 py-5 hover:shadow-sm transition-shadow">
-                <div className="flex flex-col gap-1 min-w-0 flex-1 pr-3">
-                  <span className="text-xl font-semibold text-neutral-900">{c.patientName}</span>
-                  <span className="text-base text-zinc-500">{consultDateKo(c.consultationDate)}</span>
-                  {(c.hospitalName || c.department) && (
-                    <span className="text-base text-zinc-500 truncate">
-                      {[c.hospitalName, c.department].filter(Boolean).join(' ')}
-                    </span>
-                  )}
-                </div>
-                <div className="size-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                  <div className="w-4 h-5 border-2 border-blue-500 rounded-sm" />
-                </div>
-              </Link>
-            ))}
-            {recentConsultations.length > 0 && (
-              <Link href="/consultations" className="block text-center text-sm text-primary-600 py-2">
-                {t.interpreter_home.view_all}
-              </Link>
-            )}
-          </div>
-        )}
 
         {/* 센터장: 공지 관리 */}
         {isAdmin && !hasCenter && (

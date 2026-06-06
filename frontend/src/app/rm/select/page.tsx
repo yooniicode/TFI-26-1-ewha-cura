@@ -67,28 +67,17 @@ function RmSelectInner() {
   })
 
   const rmList = useMemo(
-    () => consultations.filter(c => !!c.workDescription?.trim()),
+    () => consultations
+      .filter(c => !!c.workDescription?.trim())
+      .sort((a, b) => b.consultationDate.localeCompare(a.consultationDate)),
     [consultations],
   )
-
-  const groups = useMemo(() => {
-    const map = new Map<string, Consultation[]>()
-    rmList.forEach(c => {
-      const arr = map.get(c.consultationDate) ?? []
-      arr.push(c)
-      map.set(c.consultationDate, arr)
-    })
-    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a))
-  }, [rmList])
 
   const selected = rmList.find(c => c.id === selectedId)
 
   function handleNext() {
     if (!selected) return
-    // 809-1871: 메모 편집 화면으로 이동
-    router.push(
-      `/rm/memo-edit?cid=${selected.id}&patientId=${selected.patientId}`
-    )
+    router.push(`/rm/memo-edit?cid=${selected.id}&patientId=${selected.patientId}`)
   }
 
   return (
@@ -113,64 +102,58 @@ function RmSelectInner() {
         {/* 목록 */}
         {isLoading ? (
           <div className="py-16 flex justify-center"><Spinner /></div>
-        ) : groups.length === 0 ? (
+        ) : rmList.length === 0 ? (
           <div className="py-16 text-center text-sm text-[#808080]">
             작성된 진료 메모가 없어요
           </div>
         ) : (
-          <div className="flex flex-col gap-5">
-            {groups.map(([date, items]) => (
-              <div key={date}>
-                <p className="text-base font-medium text-[#494949] mb-2">{getDateLabel(date)}</p>
-                <div className="rounded-2xl overflow-hidden border border-[#F0F0F0]">
-                  {items.map((c, idx) => {
-                    const isSelected = selectedId === c.id
-                    const location = [c.hospitalName, c.department].filter(Boolean).join(' ')
-                    const timeStr = formatTime(c.createdAt)
-                    const locationLine = [timeStr, location].filter(Boolean).join(' | ')
-                    return (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setSelectedId(isSelected ? null : c.id)}
-                        className={`w-full text-left transition-colors ${
-                          idx > 0 ? 'border-t border-[#F0F0F0]' : ''
-                        } ${isSelected ? 'bg-[#f3f9ff]' : 'bg-white hover:bg-gray-50'}`}
-                      >
-                        <div className="flex items-center justify-between px-5 py-4">
-                          <div className="flex flex-col gap-1 flex-1 min-w-0 pr-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-semibold text-[#161616]">{c.patientName}</span>
-                              <GenderBadge gender={c.patientGender} />
-                            </div>
-                            {locationLine && (
-                              <span className="text-base text-[#494949] truncate">{locationLine}</span>
-                            )}
-                          </div>
-                          {isSelected ? (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                              <path d="M6 15L12 9L18 15" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          ) : (
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
-                              <path d="M9 6L15 12L9 18" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          )}
-                        </div>
-                        {/* 메모 미리보기 */}
-                        {isSelected && (
-                          <div className="mx-5 mb-4 bg-white rounded-xl px-4 py-4">
-                            <p className="text-sm text-[#494949] leading-relaxed line-clamp-3">
-                              {c.workDescription}
-                            </p>
-                          </div>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col gap-3">
+            {rmList.map(c => {
+              const isSelected = selectedId === c.id
+              const location = [c.hospitalName, c.department].filter(Boolean).join(' ')
+              const timeStr = formatTime(c.createdAt)
+              const locationLine = [timeStr, location].filter(Boolean).join(' | ')
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedId(isSelected ? null : c.id)}
+                  className={`w-full text-left rounded-[8px] border transition-colors ${
+                    isSelected
+                      ? 'bg-[#f3f9ff] border-[#2592ff]'
+                      : 'bg-white border-[#eee]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between px-4 py-4">
+                    <div className="flex flex-col gap-1 flex-1 min-w-0 pr-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[18px] font-medium text-[#161616]">{c.patientName}</span>
+                        <GenderBadge gender={c.patientGender} />
+                      </div>
+                      {locationLine && (
+                        <span className="text-[14px] text-[#808080] truncate">{locationLine}</span>
+                      )}
+                    </div>
+                    {isSelected ? (
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="shrink-0">
+                        <path d="M6 15L12 9L18 15" stroke="#494949" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
+                        <path d="M1 1L7 7L1 13" stroke="#494949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <div className="mx-4 mb-4 bg-white rounded-[8px] border border-[#eee] px-4 py-4">
+                      <p className="text-[16px] text-[#494949] leading-relaxed line-clamp-3">
+                        {c.workDescription}
+                      </p>
+                    </div>
+                  )}
+                </button>
+              )
+            })}
           </div>
         )}
       </div>

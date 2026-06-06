@@ -617,6 +617,8 @@ export const vi: AppTranslation = {
     danuri_desc: 'Hỗ trợ 24/7 cho phụ nữ di cư (tiếng Hàn, tiếng Việt...)',
     immigration: 'Thông tin xuất nhập cảnh',
     immigration_desc: 'Cục quản lý xuất nhập cảnh về visa và cư trú',
+    nhis: 'Tư vấn ngoại ngữ NHIS',
+    nhis_desc: '1 Tiếng Anh · 2 Tiếng Trung · 3 Tiếng Việt',
     warning_title: '⚠ Gọi 119 ngay khi nguy hiểm tính mạng',
     warning_desc: 'Gọi 119 ngay nếu mất ý thức, ngừng thở, chảy máu nhiều hoặc đau ngực.',
   },

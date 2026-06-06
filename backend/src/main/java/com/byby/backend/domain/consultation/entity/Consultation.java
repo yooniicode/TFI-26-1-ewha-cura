@@ -11,7 +11,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -25,7 +25,7 @@ public class Consultation extends BaseEntity {
     private UUID id;
 
     @Column(nullable = false)
-    private LocalDate consultationDate;
+    private LocalDateTime consultationDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id", nullable = false)
@@ -110,7 +110,7 @@ public class Consultation extends BaseEntity {
     }
 
     @Builder
-    public Consultation(LocalDate consultationDate, Patient patient, Interpreter interpreter,
+    public Consultation(LocalDateTime consultationDate, Patient patient, Interpreter interpreter,
                         Hospital hospital, String hospitalName, String department, IssueType issueType,
                         ConsultationMethod method, ProcessingType processing, String memo,
                         String doctorName, String patientComment, String treatmentResult,
@@ -148,7 +148,7 @@ public class Consultation extends BaseEntity {
         this.confirmedByPhone = confirmedByPhone;
     }
 
-    public void update(LocalDate consultationDate, Hospital hospital, String hospitalName,
+    public void update(LocalDateTime consultationDate, Hospital hospital, String hospitalName,
                        IssueType issueType,
                        ConsultationMethod method, ProcessingType processing,
                        String memo, LocalDate nextAppointmentDate, String department,

@@ -43,6 +43,23 @@ public class ConsultationService {
     private final PatientCenterRepository patientCenterRepository;
 
     @Transactional
+    public ConsultationResponse.Detail createByPatient(ConsultationRequest.Create req, UserPrincipal principal) {
+        Patient patient = patientRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
+        if (!patient.getId().equals(req.patientId())) {
+            throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
+        }
+        Consultation consultation = Consultation.builder()
+                .consultationDate(req.consultationDate())
+                .patient(patient)
+                .issueType(req.issueType())
+                .processing(req.processing())
+                .patientComment(req.patientComment())
+                .build();
+        return ConsultationResponse.Detail.from(consultationRepository.save(consultation));
+    }
+
+    @Transactional
     public ConsultationResponse.Detail create(ConsultationRequest.Create req, UserPrincipal principal) {
         if (!principal.isInterpreter()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
 

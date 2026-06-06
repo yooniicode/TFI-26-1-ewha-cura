@@ -17,7 +17,7 @@ public class ConsultationResponse {
 
     public record Summary(
             UUID id,
-            LocalDate consultationDate,
+            LocalDateTime consultationDate,
             UUID patientId,
             String patientName,
             UUID interpreterId,
@@ -42,7 +42,7 @@ public class ConsultationResponse {
 
     public record Detail(
             UUID id,
-            LocalDate consultationDate,
+            LocalDateTime consultationDate,
             UUID patientId,
             String patientName,
             LocalDate patientBirthDate,
@@ -109,7 +109,7 @@ public class ConsultationResponse {
     // 이주민용 간소화 뷰 — 운영 정보(통역비, 확인자 등) 제외
     public record PatientView(
             UUID id,
-            LocalDate consultationDate,
+            LocalDateTime consultationDate,
             UUID interpreterId,
             String interpreterName,
             String hospitalName,

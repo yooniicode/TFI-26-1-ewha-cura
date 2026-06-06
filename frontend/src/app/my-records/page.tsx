@@ -9,9 +9,20 @@ import { patientApi } from '@/lib/api'
 import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
+import { getBodyPartImage, getDiseaseShortName } from '@/lib/bodyPartUtils'
 
 function getTodayKST() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
+}
+
+function formatDateGroup(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  if (isNaN(d.getTime())) return dateStr
+  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}.${mm}.${dd} (${dow})`
 }
 
 export default function MyRecordsPage() {
@@ -39,77 +50,87 @@ export default function MyRecordsPage() {
     )
   }
 
+  const todayKST = getTodayKST()
+  const upcoming = records.filter(c => c.consultationDate >= todayKST)
+  const past = records.filter(c => c.consultationDate < todayKST)
+  const sorted = [
+    ...upcoming.sort((a, b) => a.consultationDate.localeCompare(b.consultationDate)),
+    ...past.sort((a, b) => b.consultationDate.localeCompare(a.consultationDate)),
+  ]
+
+  // 날짜별 그룹핑 (순서 유지)
+  const groups: { date: string; items: PatientReport[] }[] = []
+  for (const r of sorted) {
+    const last = groups[groups.length - 1]
+    if (last && last.date === r.consultationDate) {
+      last.items.push(r)
+    } else {
+      groups.push({ date: r.consultationDate, items: [r] })
+    }
+  }
+
   return (
     <AppShell noPadding>
       <PageHeader title={t.medical_record.title} />
 
-      <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
-        {records.length === 0 ? (
-          <div className="flex flex-col items-center justify-center pt-20 gap-3">
-            <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+      <div className="bg-white px-4 pb-10 min-h-screen">
+        <p className="text-[14px] text-[#808080] leading-[1.4] py-3 text-center">
+          클릭하면 더욱 자세한 정보를 확인할 수 있어요
+        </p>
+
+        {sorted.length === 0 ? (
+          <div className="flex flex-col items-center justify-center pt-16 gap-3">
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center">
               <img src="/icons/immigrant/home/진료기록.svg" alt="" width={28} height={28} />
             </div>
             <p className="text-sm text-[#A0A0A0] text-center">{t.medical_record.no_records}</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {(() => {
-              const todayKST = getTodayKST()
-              const upcoming = records.filter(c => c.consultationDate >= todayKST)
-              const past = records.filter(c => c.consultationDate < todayKST)
-              const sorted = [
-                ...upcoming.sort((a, b) => a.consultationDate.localeCompare(b.consultationDate)),
-                ...past,
-              ]
-              return sorted.map(c => {
-                const isUpcoming = c.consultationDate >= todayKST
-                const hasContent = !!(c.diagnosisNameCode || c.diagnosisContent)
-                return (
-                  <Link
-                    key={c.id}
-                    href={`/my-records/${c.id}`}
-                    className="flex items-center bg-white rounded-2xl px-4 py-4 gap-4 hover:shadow-sm transition-shadow"
-                  >
-                    <div className="shrink-0 w-12 flex flex-col items-center">
-                      <span className="text-[10px] text-[#A0A0A0]">
-                        {new Date(c.consultationDate + 'T00:00:00').getFullYear()}
-                      </span>
-                      <span className={`text-lg font-bold leading-tight ${isUpcoming ? 'text-[#2592FF]' : 'text-[#161616]'}`}>
-                        {String(new Date(c.consultationDate + 'T00:00:00').getDate()).padStart(2, '0')}
-                      </span>
-                      <span className="text-xs text-[#808080]">
-                        {String(new Date(c.consultationDate + 'T00:00:00').getMonth() + 1).padStart(2, '0')}월
-                      </span>
-                    </div>
-                    <div className="w-px h-10 bg-[#EEEEEE] shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-base font-semibold text-[#161616] truncate">
-                          {c.hospitalName ?? t.my_records.no_hospital}
-                          {c.department ? ` · ${c.department}` : ''}
-                        </p>
-                        {isUpcoming && (
-                          <span className="shrink-0 text-[10px] font-semibold text-[#2592FF] bg-[#EAF4FF] rounded-full px-2 py-0.5">
-                            예약됨
-                          </span>
-                        )}
+          <div className="flex flex-col gap-8">
+            {groups.map(({ date, items }) => (
+              <div key={date} className="flex flex-col">
+                <div className="py-1">
+                  <p className="text-[16px] font-medium text-[#494949]">{formatDateGroup(date)}</p>
+                </div>
+                {items.map(record => {
+                  const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
+                  const bodyImage = getBodyPartImage(record)
+                  const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
+                  return (
+                    <Link
+                      key={record.id}
+                      href={`/my-records/${record.id}`}
+                      className="flex items-start gap-4 py-4 border-b border-[#eee] active:opacity-70 transition-opacity"
+                    >
+                      <div className="shrink-0 w-[100px] h-[103px] rounded-[8px] bg-[#f0f1f5] overflow-hidden">
+                        <img src={bodyImage} alt="" className="w-full h-full object-cover" />
                       </div>
-                      <p className="text-sm text-[#808080] mt-0.5 truncate">
-                        {isUpcoming && !hasContent
-                          ? (c.interpreterName ? `통번역가: ${c.interpreterName}` : '예정된 진료')
-                          : (c.diagnosisNameCode || c.diagnosisContent || t.medical_record.no_records)}
-                      </p>
-                      {c.nextAppointmentDate && (
-                        <p className="text-xs text-[#2592FF] mt-1">{t.medical_record.next_appointment}: {c.nextAppointmentDate}</p>
-                      )}
-                    </div>
-                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
-                      <path d="M1 1l6 6-6 6" stroke="#C7C7C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </Link>
-                )
-              })
-            })()}
+                      <div className="flex flex-col justify-between self-stretch flex-1 min-w-0 py-0.5">
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-[20px] font-semibold text-[#2592ff] leading-[1.4]">
+                            {diseaseName || hospitalDisplay || '-'}
+                          </p>
+                          {record.diagnosisContent && (
+                            <p className="text-[16px] font-medium text-[#161616] leading-[1.4] line-clamp-1">
+                              {record.diagnosisContent}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5 mt-1">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#808080" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            <polyline points="9 22 9 12 15 12 15 22" />
+                          </svg>
+                          <p className="text-[16px] text-[#808080] leading-[1.4] truncate ml-0.5">
+                            {hospitalDisplay || t.my_records.no_hospital}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         )}
       </div>
