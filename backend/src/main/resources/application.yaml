@@ -55,6 +55,9 @@ springdoc:
     display-request-duration: true
 
 byby:
+  server:
+    url: ${SERVER_URL:}
+
   security:
     jwt:
       secret: ${JWT_SECRET:local-dev-secret-key-change-in-production-minimum-256-bits-long!!}
