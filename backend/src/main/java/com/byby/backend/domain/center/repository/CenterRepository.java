@@ -17,27 +17,27 @@ public interface CenterRepository extends JpaRepository<Center, UUID> {
     Optional<Center> findByNameIgnoreCaseAndActiveTrue(String name);
     List<Center> findByActiveTrue();
 
-    @Query("""
-            SELECT c FROM Center c
-            WHERE c.active = true
+    @Query(value = """
+            SELECT * FROM center
+            WHERE active = true
               AND (
-                  :query IS NULL
-                  OR :query = ''
-                  OR LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%'))
-                  OR LOWER(COALESCE(c.address, '')) LIKE LOWER(CONCAT('%', :query, '%'))
-                  OR LOWER(COALESCE(c.phone, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+                  :query IS NULL OR :query = ''
+                  OR LOWER(name)            LIKE LOWER(CONCAT('%', :query, '%'))
+                  OR LOWER(COALESCE(address,'')) LIKE LOWER(CONCAT('%', :query, '%'))
+                  OR LOWER(COALESCE(phone,  '')) LIKE LOWER(CONCAT('%', :query, '%'))
                   OR (
-                      :compactQuery IS NOT NULL
-                      AND :compactQuery <> ''
+                      :compactQuery IS NOT NULL AND :compactQuery <> ''
                       AND (
-                          REPLACE(LOWER(c.name), ' ', '') LIKE CONCAT('%', :compactQuery, '%')
-                          OR REPLACE(LOWER(COALESCE(c.address, '')), ' ', '') LIKE CONCAT('%', :compactQuery, '%')
-                          OR REPLACE(REPLACE(LOWER(COALESCE(c.phone, '')), '-', ''), ' ', '') LIKE CONCAT('%', :compactQuery, '%')
+                          REPLACE(LOWER(name), ' ', '')                        LIKE CONCAT('%', :compactQuery, '%')
+                          OR REPLACE(LOWER(COALESCE(address,'')), ' ', '')     LIKE CONCAT('%', :compactQuery, '%')
+                          OR REPLACE(REPLACE(LOWER(COALESCE(phone,'')),'-',''),' ','') LIKE CONCAT('%', :compactQuery, '%')
                       )
                   )
               )
-            ORDER BY c.name ASC
-            """)
+            ORDER BY name ASC
+            """,
+            countQuery = "SELECT count(*) FROM center WHERE active = true",
+            nativeQuery = true)
     Page<Center> searchActive(@Param("query") String query,
                               @Param("compactQuery") String compactQuery,
                               Pageable pageable);
