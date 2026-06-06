@@ -33,8 +33,8 @@ public class GoogleSheetsExportService {
     @Value("${byby.google.service-account-json:}")
     private String serviceAccountJson;
 
-    private static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
-    private static final String SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+    static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
+    static final String SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
     private static final String SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -66,15 +66,7 @@ public class GoogleSheetsExportService {
                     .generatePrivate(new PKCS8EncodedKeySpec(keyBytes));
 
             long nowSec = System.currentTimeMillis() / 1000;
-            String jwt = Jwts.builder()
-                    .issuer(clientEmail)
-                    .subject(clientEmail)
-                    .audience().add(TOKEN_URL).and()
-                    .claim("scope", SHEETS_SCOPE)
-                    .issuedAt(new Date(nowSec * 1000))
-                    .expiration(new Date((nowSec + 3600) * 1000))
-                    .signWith(privateKey, Jwts.SIG.RS256)
-                    .compact();
+            String jwt = buildServiceAccountJwt(clientEmail, privateKey, nowSec);
 
             String body = "grant_type=" + URLEncoder.encode("urn:ietf:params:oauth:grant-type:jwt-bearer", StandardCharsets.UTF_8)
                     + "&assertion=" + jwt;
@@ -98,6 +90,18 @@ public class GoogleSheetsExportService {
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
                     "Google 토큰 발급 실패: " + e.getMessage());
         }
+    }
+
+    String buildServiceAccountJwt(String clientEmail, PrivateKey privateKey, long nowSec) {
+        return Jwts.builder()
+                .issuer(clientEmail)
+                .subject(clientEmail)
+                .claim("aud", TOKEN_URL)
+                .claim("scope", SHEETS_SCOPE)
+                .issuedAt(new Date(nowSec * 1000))
+                .expiration(new Date((nowSec + 3600) * 1000))
+                .signWith(privateKey, Jwts.SIG.RS256)
+                .compact();
     }
 
     private String createSpreadsheet(String accessToken, String title) {

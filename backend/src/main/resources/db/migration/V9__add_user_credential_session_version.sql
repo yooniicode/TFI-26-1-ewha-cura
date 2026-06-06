@@ -1,0 +1,2 @@
+ALTER TABLE user_credentials
+    ADD COLUMN IF NOT EXISTS session_version BIGINT NOT NULL DEFAULT 0;

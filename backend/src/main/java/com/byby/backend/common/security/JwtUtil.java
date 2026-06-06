@@ -19,6 +19,8 @@ import java.util.*;
 @Component
 public class JwtUtil {
 
+    public static final String SESSION_VERSION_CLAIM = "session_version";
+
     private final SecretKey signingKey;
     private final List<SecretKey> verificationKeys;
     private final long expirationMs;
@@ -31,14 +33,19 @@ public class JwtUtil {
         this.expirationMs = expirationMs;
     }
 
-    public String generate(UUID authUserId, UserRole role) {
+    public String generate(UUID authUserId, UserRole role, long sessionVersion) {
         return Jwts.builder()
                 .subject(authUserId.toString())
                 .claim("app_role", role.name())
+                .claim(SESSION_VERSION_CLAIM, sessionVersion)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(signingKey)
                 .compact();
+    }
+
+    public String generate(UUID authUserId, UserRole role) {
+        return generate(authUserId, role, 0L);
     }
 
     public Claims parse(String token) {
@@ -55,7 +62,10 @@ public class JwtUtil {
     }
 
     public UserPrincipal toPrincipal(String token) {
-        Claims claims = parse(token);
+        return toPrincipal(parse(token));
+    }
+
+    public UserPrincipal toPrincipal(Claims claims) {
         UUID authUserId = UUID.fromString(claims.getSubject());
         UserRole role = resolveRole(resolveRoleFromClaims(claims));
         return new UserPrincipal(authUserId, role);

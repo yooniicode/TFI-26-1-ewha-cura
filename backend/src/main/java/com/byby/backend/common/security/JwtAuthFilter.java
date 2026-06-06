@@ -1,5 +1,6 @@
 package com.byby.backend.common.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final AuthRoleResolver authRoleResolver;
+    private final JwtSessionValidator jwtSessionValidator;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -26,7 +28,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = extractToken(request);
         if (StringUtils.hasText(token)) {
             try {
-                UserPrincipal principal = authRoleResolver.resolve(jwtUtil.toPrincipal(token));
+                Claims claims = jwtUtil.parse(token);
+                jwtSessionValidator.validate(claims);
+                UserPrincipal principal = authRoleResolver.resolve(jwtUtil.toPrincipal(claims));
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);

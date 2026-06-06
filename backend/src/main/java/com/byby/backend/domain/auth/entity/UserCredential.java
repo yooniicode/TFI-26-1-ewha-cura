@@ -41,6 +41,10 @@ public class UserCredential extends BaseEntity {
     @Column(length = 1024)
     private String avatarUrl;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private long sessionVersion = 0L;
+
     public boolean isOAuthUser() {
         return this.kakaoId != null;
     }

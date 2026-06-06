@@ -66,7 +66,8 @@ public class KakaoOAuthService {
         UserCredential cred = credentialRepository.findByKakaoId(userInfo.id())
                 .orElseGet(() -> createKakaoUser(userInfo));
 
-        String token = jwtUtil.generate(cred.getAuthUserId(), cred.getRequestedRole());
+        long sessionVersion = authService.rotateSessionVersion(cred.getAuthUserId());
+        String token = jwtUtil.generate(cred.getAuthUserId(), cred.getRequestedRole(), sessionVersion);
         AuthResponse.Me me = authService.getMe(
                 new com.byby.backend.common.security.UserPrincipal(cred.getAuthUserId(), cred.getRequestedRole()));
         return new AuthResponse.TokenMe(token, me);

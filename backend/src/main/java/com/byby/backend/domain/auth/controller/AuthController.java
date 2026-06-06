@@ -53,6 +53,16 @@ public class AuthController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, kakaoOAuthService.loginWithCode(code, redirectUri)));
     }
 
+    @PostMapping("/logout")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "로그아웃", description = "현재 계정의 기존 JWT 세션을 모두 만료시킵니다.")
+    public ResponseEntity<Response<Void>> logout(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
+        authService.logout(principal.getAuthUserId());
+        return ResponseEntity.ok(Response.success(SuccessCode.OK));
+    }
+
     @PostMapping("/register-admin")
     @Operation(
         summary = "센터 담당자(admin) 계정 생성",

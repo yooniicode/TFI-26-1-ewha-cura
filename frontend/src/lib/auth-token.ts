@@ -7,6 +7,7 @@ export function getAccessToken(): string | null {
 }
 
 export function setAccessToken(token: string): void {
+  clearAccessToken()
   localStorage.setItem(TOKEN_KEY, token)
   // 쿠키는 미들웨어가 인증 여부를 확인하는 데 사용 (실제 토큰은 localStorage에만)
   const maxAge = 7 * 24 * 60 * 60

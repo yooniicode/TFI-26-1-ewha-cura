@@ -64,8 +64,9 @@ public class AuthService {
             throw new GeneralException(GeneralErrorCode.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다");
         }
 
+        long sessionVersion = rotateSessionVersion(cred.getAuthUserId());
         UserPrincipal principal = new UserPrincipal(cred.getAuthUserId(), cred.getRequestedRole());
-        String token = jwtUtil.generate(cred.getAuthUserId(), cred.getRequestedRole());
+        String token = jwtUtil.generate(cred.getAuthUserId(), cred.getRequestedRole(), sessionVersion);
         AuthResponse.Me me = getMe(principal);
         return new AuthResponse.TokenMe(token, me);
     }
@@ -105,7 +106,7 @@ public class AuthService {
         );
         registerProfile(profileReq, principal);
 
-        String token = jwtUtil.generate(authUserId, role);
+        String token = jwtUtil.generate(authUserId, role, cred.getSessionVersion());
         AuthResponse.Me me = getMe(principal);
         return new AuthResponse.TokenMe(token, me);
     }
@@ -147,6 +148,21 @@ public class AuthService {
 
         return new AuthResponse.Me(principal.getAuthUserId(), principal.getRole(), null, null,
                 null, null, null, avatarUrl);
+    }
+
+    @Transactional
+    public void logout(UUID authUserId) {
+        rotateSessionVersion(authUserId);
+    }
+
+    @Transactional
+    public long rotateSessionVersion(UUID authUserId) {
+        int updated = userCredentialRepository.incrementSessionVersion(authUserId);
+        if (updated == 0) {
+            throw new BusinessException(BusinessErrorCode.USER_NOT_FOUND);
+        }
+        return userCredentialRepository.findSessionVersionByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
     }
 
     @Transactional
@@ -253,7 +269,7 @@ public class AuthService {
         // 이름 저장 (AdminProfile nickname)
         adminService.getOrCreateProfile(authUserId);
 
-        String token = jwtUtil.generate(authUserId, UserRole.admin);
+        String token = jwtUtil.generate(authUserId, UserRole.admin, cred.getSessionVersion());
         AuthResponse.Me me = getMe(principal);
         return new AuthResponse.TokenMe(token, me);
     }

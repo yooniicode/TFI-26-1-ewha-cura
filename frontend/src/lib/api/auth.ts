@@ -45,6 +45,7 @@ export interface TokenMe {
 export const authApi = {
   login:           (body: LoginRequest) => post<TokenMe>('/auth/login', body),
   signup:          (body: SignupRequest) => post<TokenMe>('/auth/signup', body),
+  logout:          () => post<void>('/auth/logout', {}),
   kakaoLogin:      (code: string, redirectUri?: string) => {
     const params = new URLSearchParams({ code })
     if (redirectUri) params.set('redirectUri', redirectUri)

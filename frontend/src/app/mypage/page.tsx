@@ -229,9 +229,16 @@ export default function MyPage() {
     } catch { alert(t.mypage.delete_error) }
   }
 
-  function handleLogout() {
-    clearAccessToken()
-    window.location.href = '/login'
+  async function handleLogout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // 토큰이 이미 만료된 경우에도 클라이언트 세션은 정리한다.
+    } finally {
+      clearAccessToken()
+      queryClient.clear()
+      window.location.href = '/login'
+    }
   }
 
   const loading = meLoading || patientLoading || interpreterLoading || adminProfileLoading || centersLoading

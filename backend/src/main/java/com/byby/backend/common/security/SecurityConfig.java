@@ -29,6 +29,7 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final AuthRoleResolver authRoleResolver;
+    private final JwtSessionValidator jwtSessionValidator;
 
     @Value("${byby.security.cors.allowed-origins:http://localhost:3000}")
     private List<String> allowedOrigins;
@@ -51,7 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/centers/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(new JwtAuthFilter(jwtUtil, authRoleResolver), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthFilter(jwtUtil, authRoleResolver, jwtSessionValidator), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

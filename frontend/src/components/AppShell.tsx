@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import clsx from 'clsx'
 import AppHeader from '@/components/layout/AppHeader'
 import AuthGateOverlays from '@/components/layout/AuthGateOverlays'
@@ -11,7 +11,7 @@ import { DesktopSidebar, DesktopTopNav } from '@/components/layout/AppNavigation
 import { getNavItems } from '@/components/layout/navItems'
 import { useLayoutMode } from '@/hooks/useLayoutMode'
 import { useMe } from '@/hooks/useMe'
-import { chatApi } from '@/lib/api'
+import { authApi, chatApi } from '@/lib/api'
 import { clearAccessToken } from '@/lib/auth-token'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
@@ -159,6 +159,7 @@ function DrawerIcon({ item }: { item: DrawerNavItem }) {
 export default function AppShell({ children, noPadding = false }: { children: React.ReactNode; noPadding?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data: me } = useMe()
   const { layoutMode, setLayoutMode } = useLayoutMode()
   const { t } = useTranslation()
@@ -186,9 +187,17 @@ export default function AppShell({ children, noPadding = false }: { children: Re
 
   const drawerItems = getDrawerNavItems(me, t, unreadChatCount)
 
-  function handleLogout() {
-    clearAccessToken()
-    router.replace('/login')
+  async function handleLogout() {
+    try {
+      await authApi.logout()
+    } catch {
+      // 토큰이 이미 만료된 경우에도 클라이언트 세션은 정리한다.
+    } finally {
+      clearAccessToken()
+      queryClient.clear()
+      router.replace('/login')
+      router.refresh()
+    }
   }
 
   const roleLabel = me?.role === 'interpreter' ? '통번역가'
