@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       _type: 'json',       // JSON 응답 요청 (비공식 지원, 실패 시 XML 분기)
     })
 
-    const url = `https://apis.data.go.kr/B551182/diseaseInfoService/getDissNameCodeList?${params.toString()}`
+    const url = `https://apis.data.go.kr/B551182/diseaseInfoService1/getDissNameCodeList1?${params.toString()}`
     console.log(`[disease-search] query="${query}" url=${url.split('ServiceKey')[0]}ServiceKey=***`)
 
     const res = await fetch(url, {
