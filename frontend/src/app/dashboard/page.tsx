@@ -158,6 +158,188 @@ export default function DashboardPage() {
     deleteAnnouncement.mutate(id)
   }
 
+  // 이주민 홈 - 피그마 신디자인
+  if (me?.role === 'patient') {
+    const msPerDay = 1000 * 60 * 60 * 24
+    const appointmentVariant: 'today_before' | 'next' | 'none' =
+      nextScheduledRecord?.consultationDate === todayStr ? 'today_before' :
+      nextScheduledRecord ? 'next' :
+      'none'
+    const daysUntil = nextScheduledRecord && nextScheduledRecord.consultationDate > todayStr
+      ? Math.ceil(
+          (new Date(nextScheduledRecord.consultationDate + 'T00:00:00').getTime()
+            - new Date(todayStr + 'T00:00:00').getTime())
+          / msPerDay
+        )
+      : 0
+    const appointmentDate = nextScheduledRecord
+      ? consultDateKo(nextScheduledRecord.consultationDate)
+      : ''
+    const appointmentHospital = nextScheduledRecord
+      ? [nextScheduledRecord.hospitalName, nextScheduledRecord.department].filter(Boolean).join(' ')
+      : ''
+    const interpreterName = myMatch?.interpreterName ?? null
+
+    return (
+      <AppShell noPadding>
+        {/* 파란 헤더 */}
+        <div className="bg-[#2592FF] rounded-b-[20px] px-[22px] pb-6 pt-6">
+          <h1 className="text-[24px] font-semibold text-white leading-[1.4] mb-4">
+            안녕하세요,<br />{me.name ?? ''}님
+          </h1>
+
+          {appointmentVariant === 'none' ? (
+            <div className="bg-[#1b85ee] rounded-[16px] h-[195px] flex items-center justify-center px-4">
+              <p className="text-white text-[16px] font-medium text-center">예정된 진료가 없어요</p>
+            </div>
+          ) : (
+            <div className="bg-white border border-[#eee] rounded-[16px] p-4 flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                {appointmentVariant === 'today_before' ? (
+                  <div className="bg-[#f6fff3] rounded-full px-[10px] py-[4px]">
+                    <span className="text-[#30c100] text-[18px] font-semibold leading-[1.4]">오늘 진료가 있어요</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="text-[#161616] text-[18px] font-semibold leading-[1.4]">다음 진료까지</span>
+                    <div className="bg-[#f6fff3] rounded-full px-[10px] py-[4px]">
+                      <span className="text-[#30c100] text-[18px] font-semibold leading-[1.4]">D-{daysUntil}</span>
+                    </div>
+                  </div>
+                )}
+                <div className="bg-[#f0f1f5] rounded-full px-3 h-[33px] flex items-center shrink-0">
+                  <span className="text-[#808080] text-[14px] font-medium leading-[1.4]">캘린더에 추가</span>
+                </div>
+              </div>
+
+              <div className="flex gap-4 text-[16px] font-medium leading-[1.4]">
+                <div className="flex flex-col gap-1 flex-1">
+                  <p className="text-[#808080]">날짜</p>
+                  <p className="text-[#161616]">{appointmentDate}</p>
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <p className="text-[#808080]">병원</p>
+                  <p className="text-[#161616] truncate">{appointmentHospital || '-'}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <p className="text-[#808080] text-[16px] font-medium leading-[1.4]">통번역가</p>
+                <div className="flex items-center gap-1">
+                  <p className="text-[#161616] text-[16px] font-medium leading-[1.4]">
+                    {interpreterName ? `${interpreterName}님` : '-'}
+                  </p>
+                  {interpreterName && myMatch?.interpreterId && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const res = await chatApi.roomWithInterpreter(myMatch.interpreterId)
+                          if (res.payload) router.push(`/chat/${res.payload.id}`)
+                        } catch { /* ignore */ }
+                      }}
+                      className="w-[24px] h-[24px] rounded-full bg-[#f0f1f5] flex items-center justify-center shrink-0"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#808080" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 13.6a19.79 19.79 0 01-3.07-8.67A2 2 0 012 2.84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 10.91a16 16 0 006.72 6.72l1.25-1.25a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 18.92v-2z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 퀵 액션 그리드 */}
+        <div className="bg-white px-4 pt-4 pb-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href="/interpretation-request"
+              className="bg-white border border-[#eee] rounded-[16px] px-3 py-4 flex flex-col justify-between h-[120px] hover:bg-gray-50 transition-colors active:opacity-80"
+            >
+              <div className="flex items-center gap-1">
+                <img src="/icons/immigrant/home/의료통번역.svg" alt="" width={24} height={24} />
+                <span className="text-[#161616] text-[18px] font-medium">{t.immigrant_home.medical_translation}</span>
+              </div>
+              <div className="text-[#161616] text-[14px] font-medium leading-[1.4]">
+                <p>병원 진료의</p>
+                <p>통번역을 신청해요</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/emergency-call"
+              className="bg-white border border-[#eee] rounded-[16px] px-3 py-4 flex flex-col justify-between h-[120px] hover:bg-gray-50 transition-colors active:opacity-80"
+            >
+              <div className="flex items-center gap-1">
+                <img src="/icons/immigrant/home/긴급전화.svg" alt="" width={24} height={24} />
+                <span className="text-[#161616] text-[18px] font-medium">{t.immigrant_home.emergency_call}</span>
+              </div>
+              <div className="text-[#161616] text-[14px] font-medium leading-[1.4]">
+                <p>급할 때 필요한</p>
+                <p>전화번호를 모았어요</p>
+              </div>
+            </Link>
+
+            <Link
+              href="/my-records"
+              className="bg-white border border-[#eee] rounded-[16px] px-3 py-4 flex flex-col justify-between h-[120px] hover:bg-gray-50 transition-colors active:opacity-80"
+            >
+              <div className="flex items-center gap-1">
+                <img src="/icons/immigrant/home/진료기록.svg" alt="" width={24} height={24} />
+                <span className="text-[#161616] text-[18px] font-medium">{t.immigrant_home.medical_records}</span>
+              </div>
+              <div className="text-[#161616] text-[14px] font-medium leading-[1.4]">
+                <p>내가 받은</p>
+                <p>진료 내용을 확인해요</p>
+              </div>
+            </Link>
+
+            {me.entityId ? (
+              <Link
+                href={`/scripts/patient/${me.entityId}`}
+                className="bg-white border border-[#eee] rounded-[16px] px-3 py-4 flex flex-col justify-between h-[120px] hover:bg-gray-50 transition-colors active:opacity-80"
+              >
+                <div className="flex items-center gap-1">
+                  <img src="/icons/immigrant/home/의료대본.svg" alt="" width={24} height={24} />
+                  <span className="text-[#161616] text-[18px] font-medium">{t.immigrant_home.medical_script}</span>
+                </div>
+                <div className="text-[#161616] text-[14px] font-medium leading-[1.4]">
+                  <p>의료 상황에서</p>
+                  <p>필요한 표현을 확인해요</p>
+                </div>
+              </Link>
+            ) : (
+              <div className="bg-white border border-[#eee] rounded-[16px] px-3 py-4 flex flex-col justify-between h-[120px] opacity-40">
+                <div className="flex items-center gap-1">
+                  <img src="/icons/immigrant/home/의료대본.svg" alt="" width={24} height={24} />
+                  <span className="text-[#161616] text-[18px] font-medium">{t.immigrant_home.medical_script}</span>
+                </div>
+                <div className="text-[#161616] text-[14px] font-medium leading-[1.4]">
+                  <p>의료 상황에서</p>
+                  <p>필요한 표현을 확인해요</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 공지 피드 */}
+        <section className="bg-neutral-100 px-4 pt-5 pb-8 min-h-[calc(100vh-18rem)]">
+          <AnnouncementFeedSection
+            announcements={announcements}
+            categoryLabels={announcementCategoryLabels}
+            loading={announcementsLoading}
+            error={announcementsError}
+            locale={t.locale}
+            t={t}
+          />
+        </section>
+      </AppShell>
+    )
+  }
+
   return (
     <AppShell noPadding>
       {/* 히어로 - 흰색 */}
@@ -285,86 +467,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 이주민 퀵 액션 */}
-        {me?.role === 'patient' && (
-          <>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <Link
-                href="/interpretation-request"
-                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <img src="/icons/immigrant/home/의료통번역.svg" alt="" width={24} height={24} />
-                <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_translation}</span>
-              </Link>
-              <Link
-                href="/emergency-call"
-                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <img src="/icons/immigrant/home/긴급전화.svg" alt="" width={24} height={24} />
-                <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.emergency_call}</span>
-              </Link>
-              <Link
-                href="/my-records"
-                className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <img src="/icons/immigrant/home/진료기록.svg" alt="" width={24} height={24} />
-                <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_records}</span>
-              </Link>
-              {me.entityId ? (
-                <Link
-                  href={`/scripts/patient/${me.entityId}`}
-                  className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                >
-                  <img src="/icons/immigrant/home/의료대본.svg" alt="" width={24} height={24} />
-                  <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_script}</span>
-                </Link>
-              ) : (
-                <div className="flex flex-col items-center py-5 gap-2.5 bg-gray-50 rounded-xl opacity-40">
-                  <img src="/icons/immigrant/home/의료대본.svg" alt="" width={24} height={24} />
-                  <span className="text-sm font-medium text-neutral-700">{t.immigrant_home.medical_script}</span>
-                </div>
-              )}
-            </div>
-
-            {/* 담당 통번역가 + 다음 예약 */}
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {myMatch?.interpreterId ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const res = await chatApi.roomWithInterpreter(myMatch.interpreterId)
-                      if (res.payload) router.push(`/chat/${res.payload.id}`)
-                    } catch { /* ignore */ }
-                  }}
-                  className="bg-gray-50 rounded-xl px-3 py-3 text-left hover:bg-gray-100 transition-colors"
-                >
-                  <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.assigned_interpreter}</p>
-                  <p className="text-sm font-semibold text-[#2592FF] truncate">{myMatch.interpreterName}</p>
-                  <p className="text-[10px] text-[#2592FF]/70 mt-0.5">채팅하기 →</p>
-                </button>
-              ) : (
-                <div className="bg-gray-50 rounded-xl px-3 py-3">
-                  <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.assigned_interpreter}</p>
-                  <p className="text-xs text-gray-400">{t.immigrant_home.no_interpreter}</p>
-                </div>
-              )}
-              <Link href="/my-records" className="bg-gray-50 rounded-xl px-3 py-3 block hover:bg-gray-100 transition-colors">
-                <p className="text-xs text-gray-400 mb-0.5">{t.immigrant_home.next_appointment}</p>
-                {nextAppointment ? (
-                  <>
-                    <p className="text-sm font-semibold text-neutral-900 truncate">{nextAppointment}</p>
-                    {nextAppointmentContext && (
-                      <p className="text-[10px] text-gray-400 truncate mt-0.5">{nextAppointmentContext}</p>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-xs text-gray-400">{t.immigrant_home.no_appointment}</p>
-                )}
-              </Link>
-            </div>
-          </>
-        )}
       </section>
 
       {/* 컨텐츠 - 회색 배경 */}
@@ -455,17 +557,6 @@ export default function DashboardPage() {
           />
         )}
 
-        {/* 이주민: 공지 피드 */}
-        {me?.role === 'patient' && (
-          <AnnouncementFeedSection
-            announcements={announcements}
-            categoryLabels={announcementCategoryLabels}
-            loading={announcementsLoading}
-            error={announcementsError}
-            locale={t.locale}
-            t={t}
-          />
-        )}
       </section>
     </AppShell>
   )

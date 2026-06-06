@@ -31,7 +31,7 @@ public class CenterController {
 
     private final CenterService centerService;
 
-    @Value("${byby.center.dev-secret:}")
+    @Value("${CENTER_DEV_SECRET:${byby.center.dev-secret:}}")
     private String centerDevSecret;
 
     // ─── 공개 조회 ────────────────────────────────────────────────────────────────
