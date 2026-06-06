@@ -29,17 +29,10 @@ function getDateLabel(dateStr: string) {
 }
 
 function GenderBadge({ gender }: { gender?: string | null }) {
-  if (gender === 'FEMALE') {
-    return (
-      <img src="/icons/common/gender/small-여성-배경o.svg" alt="여성" width={20} height={20} />
-    )
-  }
-  if (gender === 'MALE') {
-    return (
-      <img src="/icons/common/gender/small-남성-배경o.svg" alt="남성" width={20} height={20} />
-    )
-  }
-  return null
+  const src = gender === 'FEMALE'
+    ? '/icons/common/gender/small-여성-배경o.svg'
+    : '/icons/common/gender/small-남성-배경o.svg'
+  return <img src={src} alt={gender === 'FEMALE' ? '여성' : '남성'} width={20} height={20} />
 }
 
 export default function RmSelectPage() {

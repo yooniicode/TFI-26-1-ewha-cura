@@ -20,6 +20,7 @@ public class ConsultationResponse {
             LocalDateTime consultationDate,
             UUID patientId,
             String patientName,
+            Gender patientGender,
             UUID interpreterId,
             String interpreterName,
             String createdByName,
@@ -32,6 +33,7 @@ public class ConsultationResponse {
             return new Summary(
                     c.getId(), c.getConsultationDate(),
                     c.getPatient().getId(), c.getPatient().getName(),
+                    c.getPatient().getGender(),
                     c.getInterpreter() != null ? c.getInterpreter().getId() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,

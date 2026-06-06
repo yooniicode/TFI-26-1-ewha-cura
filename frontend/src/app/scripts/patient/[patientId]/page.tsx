@@ -214,21 +214,21 @@ export default function ScriptPage() {
                     className="bg-[#f0f1f5] rounded-full p-1 flex items-center justify-center w-7 h-7"
                     aria-label="듣기"
                   >
-                    {speaking ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#161616">
-                        <rect x="6" y="4" width="4" height="16" rx="1" />
-                        <rect x="14" y="4" width="4" height="16" rx="1" />
-                      </svg>
-                    ) : (
-                      <img src="/icons/immigrant/medical-script/speak.svg" alt="" width={16} height={16} />
-                    )}
+                    <img
+                      src={speaking
+                        ? '/icons/immigrant/medical-script/speaking.svg'
+                        : '/icons/immigrant/medical-script/speak.svg'}
+                      alt=""
+                      width={16}
+                      height={16}
+                    />
                   </button>
                 </div>
 
                 {/* 신체 부위 이미지 */}
                 <div className="w-full h-[200px] rounded-[20px] bg-[#f0f1f5] flex items-center justify-center overflow-hidden">
                   <img
-                    src={selectedPart.src}
+                    src={`/icons/common/body-parts/${selectedPart.key}.png`}
                     alt=""
                     className="w-28 h-28 object-contain"
                   />

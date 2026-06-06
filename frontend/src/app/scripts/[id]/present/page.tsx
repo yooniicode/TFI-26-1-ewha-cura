@@ -88,17 +88,14 @@ export default function ScriptPresentPage() {
           }`}
           title="다시 듣기"
         >
-          {speaking ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-              <path d="M15.54 8.46a5 5 0 010 7.07" />
-            </svg>
-          )}
+          <img
+            src={speaking
+              ? '/icons/immigrant/medical-script/speaking.svg'
+              : '/icons/immigrant/medical-script/speak.svg'}
+            alt=""
+            width={20}
+            height={20}
+          />
         </button>
         <button
           onClick={() => setCurrent(c => Math.min(sentences.length - 1, c + 1))}

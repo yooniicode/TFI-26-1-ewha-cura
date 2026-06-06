@@ -24,13 +24,15 @@ interface DrawerNavItem {
   label: string
   iconSrc?: string
   inlineSvg?: string
+  badgeCount?: number
 }
 
 import type { AppTranslation } from '@/lib/i18n/ko'
 
-function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation): DrawerNavItem[] {
+function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation, unreadCount: number): DrawerNavItem[] {
   const home: DrawerNavItem = { href: '/dashboard', label: t.drawer.home, inlineSvg: 'home' }
   const mypage: DrawerNavItem = { href: '/mypage', label: t.drawer.mypage, inlineSvg: 'user' }
+  const chat: DrawerNavItem = { href: '/chat', label: t.nav.chat, inlineSvg: 'chat', badgeCount: unreadCount }
 
   if (me?.role === 'interpreter') {
     return [
@@ -40,6 +42,7 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation): Dr
       { href: '/patients',            label: t.drawer.my_patients,   iconSrc: '/icons/interpreter/home/담당환자.svg' },
       { href: '/consultations',       label: t.drawer.my_activity,   iconSrc: '/icons/interpreter/home/나의활동.svg' },
       { href: '/consultations/schedule', label: t.drawer.add_schedule, inlineSvg: 'calendar-plus' },
+      chat,
       mypage,
     ]
   }
@@ -47,10 +50,10 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation): Dr
   if (me?.role === 'patient') {
     return [
       home,
-      { href: '/chat',                                                    label: t.drawer.medical_translation, iconSrc: '/icons/immigrant/home/의료통번역.svg' },
-      { href: '/emergency-call',                                          label: t.drawer.emergency_call,      iconSrc: '/icons/immigrant/home/긴급전화.svg' },
-      { href: '/my-records',                                              label: t.drawer.medical_records,     iconSrc: '/icons/immigrant/home/진료기록.svg' },
-      { href: me.entityId ? `/scripts/patient/${me.entityId}` : '#',     label: t.drawer.medical_script,      iconSrc: '/icons/immigrant/home/의료대본.svg' },
+      { href: '/chat',                                                label: t.drawer.medical_translation, iconSrc: '/icons/immigrant/home/의료통번역.svg', badgeCount: unreadCount },
+      { href: '/emergency-call',                                      label: t.drawer.emergency_call,      iconSrc: '/icons/immigrant/home/긴급전화.svg' },
+      { href: '/my-records',                                          label: t.drawer.medical_records,     iconSrc: '/icons/immigrant/home/진료기록.svg' },
+      { href: me.entityId ? `/scripts/patient/${me.entityId}` : '#', label: t.drawer.medical_script,      iconSrc: '/icons/immigrant/home/의료대본.svg' },
       mypage,
     ]
   }
@@ -64,7 +67,7 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation): Dr
       { href: '/members',       label: '회원 관리',      inlineSvg: 'members' },
       { href: '/interpreters',  label: '통번역가',       inlineSvg: 'interpreters' },
       { href: '/sheets',        label: '구글 시트',      inlineSvg: 'sheets' },
-      { href: '/chat',          label: '채팅',           inlineSvg: 'chat' },
+      { ...chat },
       mypage,
     ]
   }
@@ -181,7 +184,7 @@ export default function AppShell({ children, noPadding = false }: { children: Re
       })
     : []
 
-  const drawerItems = getDrawerNavItems(me, t)
+  const drawerItems = getDrawerNavItems(me, t, unreadChatCount)
 
   function handleLogout() {
     clearAccessToken()
@@ -290,7 +293,12 @@ export default function AppShell({ children, noPadding = false }: { children: Re
                 )}
               >
                 <DrawerIcon item={item} />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {!!item.badgeCount && item.badgeCount > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 bg-[#2592FF] text-white text-[11px] font-bold rounded-full flex items-center justify-center leading-none">
+                    {item.badgeCount > 99 ? '99+' : item.badgeCount}
+                  </span>
+                )}
               </Link>
             )
           })}
