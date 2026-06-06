@@ -39,7 +39,12 @@ function KakaoCallbackInner() {
       .then(res => {
         if (res.payload?.token) {
           setAccessToken(res.payload.token)
-          router.replace('/dashboard')
+          // 프로필 미완성(신규 유저)이면 정보 입력 페이지로
+          if (!res.payload.me?.entityId) {
+            router.replace('/auth/complete')
+          } else {
+            router.replace('/dashboard')
+          }
         } else {
           setError('로그인에 실패했습니다.')
           setTimeout(() => router.replace('/login'), 2000)

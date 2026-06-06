@@ -43,7 +43,8 @@ export default function AuthCompletePage() {
         if (res.payload.role === 'admin' || res.payload.entityId) {
           router.replace('/dashboard')
         } else {
-          setRole(res.payload.role === 'interpreter' ? 'interpreter' : 'patient')
+          // 카카오 신규 유저는 role이 'patient' 기본값 — 선택 가능하도록 null 유지
+          setRole(null)
           setNeedsProfile(true)
         }
       })
@@ -58,7 +59,7 @@ export default function AuthCompletePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!role) return
+    if (!role) { setError('역할을 선택해주세요.'); return }
     if (!name.trim()) { setError(t.auth_complete.err_name); return }
     if (role === 'patient' && !phone.trim()) { setError(t.auth_complete.err_phone); return }
     if (!centerId && !centerName.trim()) { setError(t.auth_complete.err_center); return }
@@ -92,7 +93,7 @@ export default function AuthCompletePage() {
       </div>
     )
   }
-  if (!needsProfile || !role) return null
+  if (!needsProfile) return null
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -105,6 +106,33 @@ export default function AuthCompletePage() {
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+
+          {/* 역할 선택 */}
+          <div>
+            <label className="label">역할 선택</label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: 'patient' as ProfileRole, label: '이주민', desc: '의료 대본 · 진료 기록', icon: '/icons/immigrant/home/진료기록.svg' },
+                { value: 'interpreter' as ProfileRole, label: '통번역가', desc: '보고서 · 담당 환자', icon: '/icons/interpreter/home/담당환자.svg' },
+              ] as const).map(({ value, label, desc, icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setRole(value)}
+                  className={`rounded-2xl border-2 p-4 text-left transition-all ${
+                    role === value
+                      ? 'border-[#2592FF] bg-[#f3f9ff]'
+                      : 'border-[#EEEEEE] bg-white hover:border-[#D1D1D1]'
+                  }`}
+                >
+                  <img src={icon} alt="" width={22} height={22} className="mb-2" />
+                  <p className={`text-sm font-bold ${role === value ? 'text-[#2592FF]' : 'text-[#161616]'}`}>{label}</p>
+                  <p className="text-xs text-[#A0A0A0] mt-0.5">{desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="label">{t.auth_complete.name}</label>
             <input type="text" className="input" value={name} onChange={e => setName(e.target.value)} required />
