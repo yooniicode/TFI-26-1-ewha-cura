@@ -90,10 +90,15 @@ byby:
     rest-api-key: ${KAKAO_REST_API_KEY:}
     # 카카오 개발자 콘솔에 등록한 Redirect URI 와 정확히 일치해야 합니다
     redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/auth/kakao/callback}
+    # 보안 탭에서 Client Secret 코드 활성화 시 필수
+    client-secret: ${KAKAO_CLIENT_SECRET:}
 
   gemini:
     api-key: ${GEMINI_API_KEY:}
     model: gemini-2.0-flash
+
+  google:
+    service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
 
 ---
 spring:

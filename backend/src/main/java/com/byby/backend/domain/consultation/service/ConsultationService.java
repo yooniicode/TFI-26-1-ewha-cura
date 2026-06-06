@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -210,6 +211,22 @@ public class ConsultationService {
         }
         return consultationRepository.findByPatientId(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
                 .map(ConsultationResponse.PatientView::from);
+    }
+
+    public List<ConsultationResponse.Summary> getExportData(UserPrincipal principal) {
+        Pageable all = PageRequest.of(0, 5000);
+        if (principal.isAdmin()) {
+            Center center = adminService.getAdminCenter(principal);
+            return consultationRepository.searchByCenter(center.getId(), null, all)
+                    .map(ConsultationResponse.Summary::from).getContent();
+        }
+        if (principal.isInterpreter()) {
+            Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                    .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+            return consultationRepository.searchByInterpreter(interpreter.getId(), null, all)
+                    .map(ConsultationResponse.Summary::from).getContent();
+        }
+        throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }
 
     private Consultation findConsultation(UUID id) {

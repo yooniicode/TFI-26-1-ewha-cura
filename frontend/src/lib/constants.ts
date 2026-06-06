@@ -1,6 +1,4 @@
 export const INTERPRETER_LANGUAGE_OPTIONS = [
-  '한국어',
-  '영어',
   '베트남어',
   '중국어',
   '캄보디아어',

@@ -3,6 +3,7 @@ package com.byby.backend.domain.consultation.controller;
 import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
+import com.byby.backend.common.service.GoogleSheetsExportService;
 import com.byby.backend.domain.consultation.dto.ConsultationRequest;
 import com.byby.backend.domain.consultation.dto.ConsultationResponse;
 import com.byby.backend.domain.consultation.service.ConsultationService;
@@ -28,6 +29,7 @@ import java.util.UUID;
 public class ConsultationController {
 
     private final ConsultationService consultationService;
+    private final GoogleSheetsExportService googleSheetsExportService;
 
     @PostMapping
     @PreAuthorize("hasRole('interpreter')")
@@ -91,6 +93,16 @@ public class ConsultationController {
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(
                 Response.success(SuccessCode.OK, consultationService.getByPatient(patientId, pageable, principal)));
+    }
+
+    @GetMapping("/export")
+    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
+    @Operation(summary = "상담/통역 보고서 구글 시트로 내보내기",
+            description = "내 상담 보고서 전체를 Google Sheets 에 작성하고 URL 을 반환합니다. (최대 5,000건)")
+    public ResponseEntity<Response<String>> exportToSheets(@AuthenticationPrincipal UserPrincipal principal) {
+        String url = googleSheetsExportService.createSheet(
+                "상담보고서", consultationService.getExportData(principal));
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, url));
     }
 
     @GetMapping("/interpreter/{interpreterId}")

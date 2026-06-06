@@ -42,6 +42,9 @@ public class KakaoOAuthService {
     @Value("${byby.kakao.redirect-uri:}")
     private String redirectUri;
 
+    @Value("${byby.kakao.client-secret:}")
+    private String clientSecret;
+
     /**
      * 카카오 인가 코드 → 우리 서비스 JWT 발급
      *
@@ -76,7 +79,8 @@ public class KakaoOAuthService {
             String body = "grant_type=authorization_code"
                     + "&client_id=" + restApiKey
                     + "&redirect_uri=" + java.net.URLEncoder.encode(effectiveRedirectUri, StandardCharsets.UTF_8)
-                    + "&code=" + code;
+                    + "&code=" + code
+                    + (StringUtils.hasText(clientSecret) ? "&client_secret=" + clientSecret : "");
 
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create("https://kauth.kakao.com/oauth/token"))

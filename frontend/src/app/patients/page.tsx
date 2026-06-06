@@ -109,7 +109,7 @@ export default function PatientsPage() {
           >
             전체
           </button>
-          {NATIONALITIES.filter(n => n !== 'OTHER').map(n => {
+          {NATIONALITIES.filter(n => n !== 'OTHER' && n !== 'KOREA' && n !== 'UNITED_STATES').map(n => {
             const flagSrc = getFlagSrc(n)
             return (
               <button
