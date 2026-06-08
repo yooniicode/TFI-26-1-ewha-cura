@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 import { useTranslation } from '@/lib/i18n/I18nContext'
@@ -34,14 +35,7 @@ export default function LandingContent({ centers }: LandingContentProps) {
     <div className="min-h-screen bg-white flex flex-col max-w-lg mx-auto">
       <header className="px-6 pt-10 pb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-[#2592FF] flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 00-3-3.87" />
-              <path d="M16 3.13a4 4 0 010 7.75" />
-            </svg>
-          </div>
+          <Image src="/icons/cura.svg" alt="Cura" width={32} height={32} />
           <span className="text-xl font-bold text-[#161616]">Cura</span>
         </div>
         <div className="flex items-center gap-2">
