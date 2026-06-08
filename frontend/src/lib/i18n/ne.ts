@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const ne: AppTranslation = {
   locale: 'ne-NP',
@@ -58,7 +58,7 @@ export const ne: AppTranslation = {
     sheets: 'सिट लिङ्क',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'अनुवाद सहायता प्लेटफर्म',
     err_browser_mismatch: 'यो प्रमाणीकरण लिंक पहिले नै प्रयोग भइसकेको छ वा यस ब्राउजरमा पूरा गर्न सकिँदैन। नयाँ प्रमाणीकरण इमेल अनुरोध गर्नुस् र लिंक मूल ब्राउजरमा खोल्नुस्।',
     err_link_invalid: 'प्रमाणीकरण लिंकको म्याद सकियो वा पहिले नै प्रयोग भयो। फेरि दर्ता गर्नुस् वा नयाँ लग इन लिंक अनुरोध गर्नुस्।',
@@ -249,7 +249,7 @@ export const ne: AppTranslation = {
     invite_signup: 'दर्ता गाइड प्रतिलिपि गर्नुस्',
     invite_copied: 'दर्ता गाइड प्रतिलिपि भयो।',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs दर्ता गाइड\nनाम: ${name}\nफोन: ${phone || 'दर्ता फोन'}\nयो केन्द्र अभिलेख जोड्न तलको लिंकमा आप्रवासीको रूपमा दर्ता गर्नुस्।\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura दर्ता गाइड\nनाम: ${name}\nफोन: ${phone || 'दर्ता फोन'}\nयो केन्द्र अभिलेख जोड्न तलको लिंकमा आप्रवासीको रूपमा दर्ता गर्नुस्।\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'तपाईंको केन्द्रमा कुनै दर्ता आप्रवासी छैन।',
     self_match: 'मेरो सूचीमा थप्नुस्',
     self_match_takeover: 'मलाई नियुक्त गर्नुस्',
@@ -915,6 +915,6 @@ export const ne: AppTranslation = {
     participating_centers: 'सहभागी केन्द्रहरू',
     cta: 'लग इन वा दर्ता गर्नुहोस्',
     cta_desc: 'आप्रवासी वा अनुवादक खाताबाट प्रयोग गर्न सकिन्छ',
-    footer: '© 2026 LinkUs चिकित्सा परामर्श अनुवाद रेकर्ड सेवा',
+    footer: '© 2026 Cura चिकित्सा परामर्श अनुवाद रेकर्ड सेवा',
   },
 }

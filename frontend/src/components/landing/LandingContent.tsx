@@ -42,7 +42,7 @@ export default function LandingContent({ centers }: LandingContentProps) {
               <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
           </div>
-          <span className="text-xl font-bold text-[#161616]">LinkUs</span>
+          <span className="text-xl font-bold text-[#161616]">Cura</span>
         </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />

@@ -79,7 +79,7 @@ export function NavIcon({ name, size = 20 }: { name: string; size?: number }) {
 export function DesktopSidebar({ items, pathname }: AppNavigationProps) {
   return (
     <aside className="hidden md:flex w-60 shrink-0 flex-col border-r border-gray-100 bg-white px-4 py-4">
-      <Link href="/dashboard" className="mb-6 font-bold text-primary-700 text-xl">LinkUs</Link>
+      <Link href="/dashboard" className="mb-6 font-bold text-primary-700 text-xl">Cura</Link>
       <nav className="space-y-1">
         {items.map(item => (
           <Link

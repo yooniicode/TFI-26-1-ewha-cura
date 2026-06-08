@@ -41,7 +41,7 @@ export default function AppHeader({
           href="/dashboard"
           className={clsx('font-bold text-[#2592FF] text-lg shrink-0', isDesktopMode && 'md:hidden')}
         >
-          LinkUs
+          Cura
         </Link>
       )}
       <div className="flex min-w-0 flex-1 items-center justify-end gap-2">

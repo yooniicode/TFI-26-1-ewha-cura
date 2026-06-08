@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const uz: AppTranslation = {
   locale: 'uz-UZ',
@@ -58,7 +58,7 @@ export const uz: AppTranslation = {
     sheets: 'Jadvallarni ulash',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'Tarjima yordami platformasi',
     err_browser_mismatch: "Ushbu tasdiqlash havolasi allaqachon ishlatilgan yoki joriy brauzerda yakunlab bo'lmaydi. Yangi tasdiqlash xatini so'rab, havolani so'rov yuborilgan brauzerda birinchi marta oching.",
     err_link_invalid: "Tasdiqlash havolasi muddati o'tgan yoki allaqachon ishlatilgan. Qayta ro'yxatdan o'ting yoki yangi kirish havolasini so'rang.",
@@ -249,7 +249,7 @@ export const uz: AppTranslation = {
     invite_signup: "Ro'yxatdan o'tish ko'rsatmasini nusxalash",
     invite_copied: "Ro'yxatdan o'tish ko'rsatmasi nusxalandi.",
     invite_message: (name: string, phone?: string) =>
-      `LinkUs ro'yxatdan o'tish ko'rsatmasi\nIsm: ${name}\nTelefon raqami: ${phone || "Ro'yxatga olingan telefon raqami"}\nQuyidagi havola orqali migrant sifatida ro'yxatdan o'tsangiz, markaz ro'yxatga olish ma'lumotlari bilan bog'lanadi.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura ro'yxatdan o'tish ko'rsatmasi\nIsm: ${name}\nTelefon raqami: ${phone || "Ro'yxatga olingan telefon raqami"}\nQuyidagi havola orqali migrant sifatida ro'yxatdan o'tsangiz, markaz ro'yxatga olish ma'lumotlari bilan bog'lanadi.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: "Markazda ro'yxatdan o'tgan migrant yo'q.",
     self_match: "O'z mas'uliyatimga ro'yxatdan o'tkazish",
     self_match_takeover: "O'z mas'uliyatimga o'zgartirish",
@@ -925,6 +925,6 @@ export const uz: AppTranslation = {
     participating_centers: 'Ishtirokchi markazlar',
     cta: "Kirish yoki ro'yxatdan o'tish",
     cta_desc: "Migrant yoki tarjimon hisobi orqali foydalanish mumkin",
-    footer: '© 2026 LinkUs Tibbiy Konsultatsiya Tarjima Yozuvlari Xizmati',
+    footer: '© 2026 Cura Tibbiy Konsultatsiya Tarjima Yozuvlari Xizmati',
   },
 }

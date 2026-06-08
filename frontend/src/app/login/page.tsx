@@ -128,7 +128,7 @@ export default function LoginPage() {
               <path d="M16 3.13a4 4 0 010 7.75" />
             </svg>
           </div>
-          <span className="text-base font-bold text-[#161616]">LinkUs</span>
+          <span className="text-base font-bold text-[#161616]">Cura</span>
         </div>
         <LanguageSwitcher />
       </header>

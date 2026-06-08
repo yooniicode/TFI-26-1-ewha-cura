@@ -4,10 +4,14 @@ import QueryProvider from '@/components/QueryProvider'
 import { I18nProvider } from '@/lib/i18n/I18nContext'
 
 export const metadata: Metadata = {
-  title: 'LinkUs Interpretation Support Platform',
+  title: 'Cura Interpretation Support Platform',
   description: 'Medical interpretation support system for migrants',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'LinkUs' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'Cura' },
+  icons: {
+    icon: '/icons/cura.svg',
+    apple: '/icons/cura.svg',
+  },
 }
 
 export const viewport: Viewport = {
@@ -21,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icons/cura.svg" />
       </head>
       <body>
         <QueryProvider>

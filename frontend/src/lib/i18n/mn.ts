@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const mn: AppTranslation = {
   locale: 'mn-MN',
@@ -58,7 +58,7 @@ export const mn: AppTranslation = {
     sheets: 'Хүснэгт холболт',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'Орчуулгын дэмжлэгийн платформ',
     err_browser_mismatch: 'Энэ баталгаажуулах холбоосыг аль хэдийн ашигласан эсвэл одоогийн хөтчид дуусгах боломжгүй байна. Шинэ баталгаажуулах имэйл хүссэний дараа холбоосыг хүсэлт гаргасан хөтчинд анх удаа нээнэ үү.',
     err_link_invalid: 'Баталгаажуулах холбоос хугацаа дууссан эсвэл аль хэдийн ашиглагдсан байна. Дахин бүртгүүлэх эсвэл шинэ нэвтрэх холбоос хүснэ үү.',
@@ -249,7 +249,7 @@ export const mn: AppTranslation = {
     invite_signup: 'Бүртгэлийн зааварчилгааг хуулах',
     invite_copied: 'Бүртгэлийн зааварчилгааг хууллаа.',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs бүртгэлийн зааварчилгаа\nНэр: ${name}\nУтасны дугаар: ${phone || 'Бүртгэлтэй утасны дугаар'}\nДоорх холбоосоор цагаачаар бүртгүүлбэл төвийн бүртгэлийн мэдээлэлтэй холбогдоно.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura бүртгэлийн зааварчилгаа\nНэр: ${name}\nУтасны дугаар: ${phone || 'Бүртгэлтэй утасны дугаар'}\nДоорх холбоосоор цагаачаар бүртгүүлбэл төвийн бүртгэлийн мэдээлэлтэй холбогдоно.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'Төвд бүртгэлтэй цагаач байхгүй байна.',
     self_match: 'Өөрийн хариуцсан этгээдээр бүртгэх',
     self_match_takeover: 'Өөрийн хариуцсан этгээд болгож өөрчлөх',
@@ -925,6 +925,6 @@ export const mn: AppTranslation = {
     participating_centers: 'Оролцогч төвүүд',
     cta: 'Нэвтрэх эсвэл бүртгүүлэх',
     cta_desc: 'Цагаач эсвэл орчуулагчийн бүртгэлээр ашиглах боломжтой',
-    footer: '© 2026 LinkUs Эмнэлгийн зөвлөгөөний орчуулгын тэмдэглэлийн үйлчилгээ',
+    footer: '© 2026 Cura Эмнэлгийн зөвлөгөөний орчуулгын тэмдэглэлийн үйлчилгээ',
   },
 }

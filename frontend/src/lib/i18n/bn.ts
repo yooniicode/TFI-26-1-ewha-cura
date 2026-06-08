@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const bn: AppTranslation = {
   locale: 'bn-BD',
@@ -58,7 +58,7 @@ export const bn: AppTranslation = {
     sheets: 'শিট সংযোগ',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'অনুবাদ সহায়তা প্ল্যাটফর্ম',
     err_browser_mismatch: 'এই যাচাইকরণ লিঙ্কটি ইতিমধ্যে ব্যবহৃত হয়েছে অথবা বর্তমান ব্রাউজারে সম্পূর্ণ করা যাচ্ছে না। অনুগ্রহ করে নতুন যাচাইকরণ ইমেইলের অনুরোধ করুন এবং প্রথমে যে ব্রাউজার থেকে অনুরোধ করেছিলেন সেখানেই লিঙ্কটি খুলুন।',
     err_link_invalid: 'যাচাইকরণ লিঙ্কটির মেয়াদ শেষ হয়ে গেছে অথবা ইতিমধ্যে ব্যবহৃত হয়েছে। আবার নিবন্ধন করুন অথবা নতুন লগইন লিঙ্কের অনুরোধ করুন।',
@@ -249,7 +249,7 @@ export const bn: AppTranslation = {
     invite_signup: 'নিবন্ধন গাইড কপি করুন',
     invite_copied: 'নিবন্ধন গাইড কপি করা হয়েছে।',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs নিবন্ধন গাইড\nনাম: ${name}\nফোন নম্বর: ${phone || 'নিবন্ধিত ফোন নম্বর'}\nনিচের লিঙ্ক থেকে অভিবাসী হিসেবে নিবন্ধন করলে, কেন্দ্রের নিবন্ধন তথ্যের সাথে সংযুক্ত হবে।\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura নিবন্ধন গাইড\nনাম: ${name}\nফোন নম্বর: ${phone || 'নিবন্ধিত ফোন নম্বর'}\nনিচের লিঙ্ক থেকে অভিবাসী হিসেবে নিবন্ধন করলে, কেন্দ্রের নিবন্ধন তথ্যের সাথে সংযুক্ত হবে।\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'কেন্দ্রে নিবন্ধিত অভিবাসী নেই।',
     self_match: 'আমার দায়িত্বে নিবন্ধন করুন',
     self_match_takeover: 'আমার দায়িত্বে পরিবর্তন করুন',
@@ -925,6 +925,6 @@ export const bn: AppTranslation = {
     participating_centers: 'অংশগ্রহণকারী কেন্দ্র',
     cta: 'লগ ইন বা নিবন্ধন করুন',
     cta_desc: 'অভিবাসী বা অনুবাদক অ্যাকাউন্ট দিয়ে ব্যবহার করা যায়',
-    footer: '© 2026 LinkUs চিকিৎসা পরামর্শ অনুবাদ রেকর্ড সেবা',
+    footer: '© 2026 Cura চিকিৎসা পরামর্শ অনুবাদ রেকর্ড সেবা',
   },
 }

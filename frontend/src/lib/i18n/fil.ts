@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const fil: AppTranslation = {
   locale: 'fil-PH',
@@ -58,7 +58,7 @@ export const fil: AppTranslation = {
     sheets: 'Pag-uugnay ng Sheets',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'Platform ng Suporta sa Pagsasalin',
     err_browser_mismatch: 'Ang link ng pag-verify na ito ay nagamit na o hindi makumpleto sa browser na ito. Humiling ng bagong email ng pag-verify at buksan ang susunod na link sa browser kung saan ka nag-request.',
     err_link_invalid: 'Ang link ng pag-verify ay nag-expire na o nagamit na. Mag-sign up muli o humiling ng bagong login link.',
@@ -249,7 +249,7 @@ export const fil: AppTranslation = {
     invite_signup: 'Kopyahin ang gabay sa pag-sign up',
     invite_copied: 'Nakopya ang gabay sa pag-sign up.',
     invite_message: (name: string, phone?: string) =>
-      `Gabay sa pag-sign up sa LinkUs\nPangalan: ${name}\nTelephono: ${phone || 'nakarehistrong telepono'}\nMag-sign up bilang migrante sa link sa ibaba para i-connect ang rekord ng sentro na ito.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Gabay sa pag-sign up sa Cura\nPangalan: ${name}\nTelephono: ${phone || 'nakarehistrong telepono'}\nMag-sign up bilang migrante sa link sa ibaba para i-connect ang rekord ng sentro na ito.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'Walang migrante na nakarehistra sa iyong sentro.',
     self_match: 'Idagdag sa aking listahan',
     self_match_takeover: 'Italaga sa akin',
@@ -915,6 +915,6 @@ export const fil: AppTranslation = {
     participating_centers: 'Mga kasaling sentro',
     cta: 'Mag-log in o magparehistro',
     cta_desc: 'Magagamit gamit ang account ng migrante o interpreter',
-    footer: '© 2026 LinkUs Serbisyo sa Talaan ng Pagsasalin sa Konsultasyon',
+    footer: '© 2026 Cura Serbisyo sa Talaan ng Pagsasalin sa Konsultasyon',
   },
 }

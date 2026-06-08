@@ -35,7 +35,7 @@ export default function AuthGateOverlays({ me, pathname }: AuthGateOverlaysProps
       {needsProfile && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-4 pb-10">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <p className="text-lg mb-1">LinkUs</p>
+            <p className="text-lg mb-1">Cura</p>
             <h2 className="text-base font-bold mb-2">{t.auth_complete.profile_title}</h2>
             <p className="text-sm text-gray-500 mb-5">
               {t.auth_complete.profile_subtitle_patient}

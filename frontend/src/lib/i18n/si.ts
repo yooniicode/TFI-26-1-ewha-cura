@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const si: AppTranslation = {
   locale: 'si-LK',
@@ -58,7 +58,7 @@ export const si: AppTranslation = {
     sheets: 'පත්‍රිකා සම්බන්ධතාව',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'පරිවර්තන සහාය වේදිකාව',
     err_browser_mismatch: 'මෙම තහවුරු කිරීමේ සබැඳිය දැනටමත් භාවිතා කර ඇත හෝ වත්මන් බ්‍රවුසරයේ සම්පූර්ණ කළ නොහැක. කරුණාකර නව තහවුරු කිරීමේ විද්‍යුත් තැපෑලක් ඉල්ලා, සබැඳිය ඉල්ලූ බ්‍රවුසරයේ පළමු වරට විවෘත කරන්න.',
     err_link_invalid: 'තහවුරු කිරීමේ සබැඳියේ කාලය ඉකුත් වී ඇත හෝ දැනටමත් භාවිතා කර ඇත. නැවත ලියාපදිංචි වන්න හෝ නව පිවිසුම් සබැඳියක් ඉල්ලන්න.',
@@ -249,7 +249,7 @@ export const si: AppTranslation = {
     invite_signup: 'ලියාපදිංචි මාර්ගෝපදේශය පිටපත් කරන්න',
     invite_copied: 'ලියාපදිංචි මාර්ගෝපදේශය පිටපත් කරන ලදී.',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs ලියාපදිංචි මාර්ගෝපදේශය\nනම: ${name}\nදුරකථන අංකය: ${phone || 'ලියාපදිංචි දුරකථන අංකය'}\nපහත සබැඳියෙන් සංක්‍රමණිකයෙකු ලෙස ලියාපදිංචි වුවහොත්, මධ්‍යස්ථාන ලියාපදිංචි තොරතුරු සමඟ සම්බන්ධ වේ.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura ලියාපදිංචි මාර්ගෝපදේශය\nනම: ${name}\nදුරකථන අංකය: ${phone || 'ලියාපදිංචි දුරකථන අංකය'}\nපහත සබැඳියෙන් සංක්‍රමණිකයෙකු ලෙස ලියාපදිංචි වුවහොත්, මධ්‍යස්ථාන ලියාපදිංචි තොරතුරු සමඟ සම්බන්ධ වේ.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'මධ්‍යස්ථානයේ ලියාපදිංචි සංක්‍රමණිකයින් නොමැත.',
     self_match: 'මගේ වගකීමට ලියාපදිංචි කරන්න',
     self_match_takeover: 'මගේ වගකීමට වෙනස් කරන්න',
@@ -925,6 +925,6 @@ export const si: AppTranslation = {
     participating_centers: 'සහභාගී වන මධ්‍යස්ථාන',
     cta: 'පුරන්න හෝ ලියාපදිංචි වන්න',
     cta_desc: 'සංක්‍රමණික හෝ පරිවර්තක ගිණුමකින් භාවිත කළ හැක',
-    footer: '© 2026 LinkUs වෛද්‍ය උපදේශන පරිවර්තන වාර්තා සේවාව',
+    footer: '© 2026 Cura වෛද්‍ය උපදේශන පරිවර්තන වාර්තා සේවාව',
   },
 }

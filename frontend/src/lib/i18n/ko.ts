@@ -56,7 +56,7 @@
     sheets: '시트 연동',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: '통번역 지원 플랫폼',
     err_browser_mismatch: '이 인증 링크는 이미 사용되었거나 현재 브라우저에서 완료할 수 없습니다. 새 인증 메일을 요청한 뒤, 다음 링크는 요청한 브라우저에서 처음 열어주세요.',
     err_link_invalid: '인증 링크가 만료되었거나 이미 사용되었습니다. 다시 가입하거나 새 로그인 링크를 요청해주세요.',
@@ -247,7 +247,7 @@
     invite_signup: '가입 안내 복사',
     invite_copied: '가입 안내를 복사했습니다.',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs 가입 안내\n이름: ${name}\n연락처: ${phone || '등록된 연락처'}\n아래 링크에서 이주민으로 회원가입하면 센터 등록 정보와 연결됩니다.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura 가입 안내\n이름: ${name}\n연락처: ${phone || '등록된 연락처'}\n아래 링크에서 이주민으로 회원가입하면 센터 등록 정보와 연결됩니다.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: '센터에 등록된 이주민이 없습니다.',
     self_match: '내 담당 등록',
     self_match_takeover: '내 담당으로 변경',
@@ -936,7 +936,7 @@
     participating_centers: '참여 센터',
     cta: '로그인 또는 회원가입',
     cta_desc: '이주민 또는 통번역가 계정으로 이용할 수 있어요',
-    footer: '© 2026 LinkUs 진료 통역 기록 서비스',
+    footer: '© 2026 Cura 진료 통역 기록 서비스',
   },
 }
 

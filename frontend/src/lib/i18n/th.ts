@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const th: AppTranslation = {
   locale: 'th-TH',
@@ -58,7 +58,7 @@ export const th: AppTranslation = {
     sheets: 'การเชื่อมต่อชีต',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'แพลตฟอร์มสนับสนุนการแปล',
     err_browser_mismatch: 'ลิงก์ยืนยันนี้ถูกใช้ไปแล้วหรือไม่สามารถดำเนินการในเบราว์เซอร์นี้ได้ กรุณาขอรับอีเมลยืนยันใหม่และเปิดลิงก์ในเบราว์เซอร์เดิม',
     err_link_invalid: 'ลิงก์ยืนยันหมดอายุหรือถูกใช้ไปแล้ว กรุณาสมัครใหม่หรือขอรับลิงก์เข้าสู่ระบบใหม่',
@@ -249,7 +249,7 @@ export const th: AppTranslation = {
     invite_signup: 'คัดลอกคู่มือการสมัคร',
     invite_copied: 'คัดลอกคู่มือการสมัครแล้ว',
     invite_message: (name: string, phone?: string) =>
-      `คู่มือสมัครสมาชิก LinkUs\nชื่อ: ${name}\nโทรศัพท์: ${phone || 'โทรศัพท์ที่ลงทะเบียน'}\nสมัครสมาชิกในฐานะผู้อพยพที่ลิงก์ด้านล่างเพื่อเชื่อมต่อบันทึกของศูนย์นี้\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `คู่มือสมัครสมาชิก Cura\nชื่อ: ${name}\nโทรศัพท์: ${phone || 'โทรศัพท์ที่ลงทะเบียน'}\nสมัครสมาชิกในฐานะผู้อพยพที่ลิงก์ด้านล่างเพื่อเชื่อมต่อบันทึกของศูนย์นี้\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'ไม่มีผู้อพยพที่ลงทะเบียนในศูนย์ของคุณ',
     self_match: 'เพิ่มในรายการของฉัน',
     self_match_takeover: 'มอบหมายให้ฉัน',
@@ -915,6 +915,6 @@ export const th: AppTranslation = {
     participating_centers: 'ศูนย์ที่เข้าร่วม',
     cta: 'เข้าสู่ระบบหรือสมัครสมาชิก',
     cta_desc: 'สามารถใช้งานได้ด้วยบัญชีผู้ย้ายถิ่นฐานหรือล่าม',
-    footer: '© 2026 LinkUs บริการบันทึกการแปลการให้คำปรึกษาทางการแพทย์',
+    footer: '© 2026 Cura บริการบันทึกการแปลการให้คำปรึกษาทางการแพทย์',
   },
 }

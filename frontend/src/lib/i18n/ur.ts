@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const ur: AppTranslation = {
   locale: 'ur-PK',
@@ -58,7 +58,7 @@ export const ur: AppTranslation = {
     sheets: 'شیٹس کا انضمام',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'ترجمہ معاونت پلیٹ فارم',
     err_browser_mismatch: 'یہ تصدیقی لنک پہلے ہی استعمال ہو چکا ہے یا موجودہ براؤزر میں مکمل نہیں کیا جا سکتا۔ براہ کرم نیا تصدیقی ای میل طلب کریں اور جس براؤزر سے درخواست کی تھی اسی میں لنک کھولیں۔',
     err_link_invalid: 'تصدیقی لنک کی میعاد ختم ہو چکی ہے یا یہ پہلے ہی استعمال ہو چکا ہے۔ دوبارہ رجسٹر کریں یا نیا لاگ ان لنک طلب کریں۔',
@@ -249,7 +249,7 @@ export const ur: AppTranslation = {
     invite_signup: 'رجسٹریشن گائیڈ کاپی کریں',
     invite_copied: 'رجسٹریشن گائیڈ کاپی کر دیا گیا ہے۔',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs رجسٹریشن گائیڈ\nنام: ${name}\nفون نمبر: ${phone || 'رجسٹرڈ فون نمبر'}\nنیچے دیے گئے لنک سے تارک وطن کے طور پر رجسٹر کریں تو مرکز کی رجسٹریشن معلومات سے منسلک ہو جائے گا۔\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura رجسٹریشن گائیڈ\nنام: ${name}\nفون نمبر: ${phone || 'رجسٹرڈ فون نمبر'}\nنیچے دیے گئے لنک سے تارک وطن کے طور پر رجسٹر کریں تو مرکز کی رجسٹریشن معلومات سے منسلک ہو جائے گا۔\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'مرکز میں کوئی رجسٹرڈ تارک وطن نہیں ہے۔',
     self_match: 'اپنی ذمہ داری میں رجسٹر کریں',
     self_match_takeover: 'اپنی ذمہ داری میں تبدیل کریں',
@@ -925,6 +925,6 @@ export const ur: AppTranslation = {
     participating_centers: 'شریک مراکز',
     cta: 'لاگ ان کریں یا رجسٹر کریں',
     cta_desc: 'تارک وطن یا مترجم اکاؤنٹ کے ساتھ استعمال کیا جا سکتا ہے',
-    footer: '© 2026 LinkUs طبی مشاورت ترجمہ ریکارڈ سروس',
+    footer: '© 2026 Cura طبی مشاورت ترجمہ ریکارڈ سروس',
   },
 }

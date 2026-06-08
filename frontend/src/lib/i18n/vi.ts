@@ -58,7 +58,7 @@ export const vi: AppTranslation = {
     sheets: 'Liên kết Sheets',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'Nền tảng hỗ trợ phiên dịch',
     err_browser_mismatch: 'Liên kết xác minh này đã được sử dụng hoặc không thể hoàn thành trên trình duyệt này. Hãy yêu cầu email xác minh mới và mở liên kết trên trình duyệt bạn đã dùng để đăng ký.',
     err_link_invalid: 'Liên kết xác minh đã hết hạn hoặc đã được sử dụng. Vui lòng đăng ký lại hoặc yêu cầu liên kết đăng nhập mới.',
@@ -249,7 +249,7 @@ export const vi: AppTranslation = {
     invite_signup: 'Sao chép hướng dẫn đăng ký',
     invite_copied: 'Đã sao chép hướng dẫn đăng ký.',
     invite_message: (name: string, phone?: string) =>
-      `Hướng dẫn đăng ký LinkUs\nTên: ${name}\nSố điện thoại: ${phone || 'số đã đăng ký'}\nĐăng ký với vai trò người di cư bằng liên kết dưới đây để kết nối hồ sơ trung tâm.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Hướng dẫn đăng ký Cura\nTên: ${name}\nSố điện thoại: ${phone || 'số đã đăng ký'}\nĐăng ký với vai trò người di cư bằng liên kết dưới đây để kết nối hồ sơ trung tâm.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'Chưa có người di cư nào được đăng ký tại trung tâm của bạn.',
     self_match: 'Nhận phụ trách',
     self_match_takeover: 'Chuyển cho tôi',
@@ -925,6 +925,6 @@ export const vi: AppTranslation = {
     participating_centers: 'Trung tâm tham gia',
     cta: 'Đăng nhập hoặc đăng ký',
     cta_desc: 'Bạn có thể sử dụng bằng tài khoản người di cư hoặc phiên dịch viên',
-    footer: '© 2026 Dịch vụ ghi chép phiên dịch y tế LinkUs',
+    footer: '© 2026 Dịch vụ ghi chép phiên dịch y tế Cura',
   },
 }

@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const id: AppTranslation = {
   locale: 'id-ID',
@@ -58,7 +58,7 @@ export const id: AppTranslation = {
     sheets: 'Sinkronisasi Spreadsheet',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'Platform Dukungan Penerjemahan',
     err_browser_mismatch: 'Tautan verifikasi ini sudah digunakan atau tidak dapat diselesaikan di browser ini. Minta email verifikasi baru dan buka tautan berikutnya di browser yang sama.',
     err_link_invalid: 'Tautan verifikasi telah kedaluwarsa atau sudah digunakan. Daftar ulang atau minta tautan masuk baru.',
@@ -249,7 +249,7 @@ export const id: AppTranslation = {
     invite_signup: 'Salin panduan daftar',
     invite_copied: 'Panduan daftar disalin.',
     invite_message: (name: string, phone?: string) =>
-      `Panduan daftar LinkUs\nNama: ${name}\nTelepon: ${phone || 'telepon terdaftar'}\nDaftar sebagai migran di tautan berikut untuk menghubungkan catatan pusat ini.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Panduan daftar Cura\nNama: ${name}\nTelepon: ${phone || 'telepon terdaftar'}\nDaftar sebagai migran di tautan berikut untuk menghubungkan catatan pusat ini.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'Tidak ada migran yang terdaftar di pusat Anda.',
     self_match: 'Tambahkan ke daftar saya',
     self_match_takeover: 'Tugaskan ke saya',
@@ -915,6 +915,6 @@ export const id: AppTranslation = {
     participating_centers: 'Pusat yang berpartisipasi',
     cta: 'Masuk atau daftar',
     cta_desc: 'Dapat digunakan dengan akun migran atau penerjemah',
-    footer: '© 2026 LinkUs Layanan Catatan Penerjemahan Konsultasi Medis',
+    footer: '© 2026 Cura Layanan Catatan Penerjemahan Konsultasi Medis',
   },
 }

@@ -58,7 +58,7 @@ export const en: AppTranslation = {
     sheets: 'Sheets Sync',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: 'Interpretation Support Platform',
     err_browser_mismatch: 'This verification link has already been used or cannot be completed in this browser. Please request a new verification email and open the next link in the browser where you made the request.',
     err_link_invalid: 'The verification link has expired or already been used. Please sign up again or request a new login link.',
@@ -249,7 +249,7 @@ export const en: AppTranslation = {
     invite_signup: 'Copy sign-up guide',
     invite_copied: 'Sign-up guide copied.',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs sign-up guide\nName: ${name}\nPhone: ${phone || 'registered phone'}\nSign up as a migrant at the link below to connect this center record.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura sign-up guide\nName: ${name}\nPhone: ${phone || 'registered phone'}\nSign up as a migrant at the link below to connect this center record.\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: 'No patients are registered to your center.',
     self_match: 'Add to my caseload',
     self_match_takeover: 'Assign to me',
@@ -925,6 +925,6 @@ export const en: AppTranslation = {
     participating_centers: 'Participating Centers',
     cta: 'Log in or sign up',
     cta_desc: 'You can use it with a migrant or interpreter account',
-    footer: '© 2026 LinkUs Medical Interpretation Record Service',
+    footer: '© 2026 Cura Medical Interpretation Record Service',
   },
 }

@@ -1,4 +1,4 @@
-import type { AppTranslation } from './ko'
+﻿import type { AppTranslation } from './ko'
 
 export const zh: AppTranslation = {
   locale: 'zh-CN',
@@ -58,7 +58,7 @@ export const zh: AppTranslation = {
     sheets: '表格同步',
   },
   login: {
-    app_name: 'LinkUs',
+    app_name: 'Cura',
     subtitle: '翻译支援平台',
     err_browser_mismatch: '此验证链接已被使用或无法在当前浏览器中完成。请申请新的验证邮件，并在原来的浏览器中打开链接。',
     err_link_invalid: '验证链接已过期或已被使用。请重新注册或申请新的登录链接。',
@@ -249,7 +249,7 @@ export const zh: AppTranslation = {
     invite_signup: '复制注册指南',
     invite_copied: '已复制注册指南。',
     invite_message: (name: string, phone?: string) =>
-      `LinkUs注册指南\n姓名：${name}\n联系方式：${phone || '注册的联系方式'}\n请通过以下链接以移民身份注册，与中心登记信息关联。\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
+      `Cura注册指南\n姓名：${name}\n联系方式：${phone || '注册的联系方式'}\n请通过以下链接以移民身份注册，与中心登记信息关联。\n${typeof window !== 'undefined' ? window.location.origin : ''}/login`,
     empty_interpreter: '中心没有注册的移民。',
     self_match: '添加为负责人',
     self_match_takeover: '更换为我的负责人',
@@ -915,6 +915,6 @@ export const zh: AppTranslation = {
     participating_centers: '参与中心',
     cta: '登录或注册',
     cta_desc: '可以使用移民或口译员账户',
-    footer: '© 2026 LinkUs 诊疗口译记录服务',
+    footer: '© 2026 Cura 诊疗口译记录服务',
   },
 }
