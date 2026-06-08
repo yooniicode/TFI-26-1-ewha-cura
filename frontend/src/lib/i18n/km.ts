@@ -814,10 +814,14 @@ export const km: AppTranslation = {
 
   schedule: {
     title: 'បន្ថែមកាលវិភាគ',
-    select_patient_title: 'តើអ្នកចង់បន្ថែម\nកាលវិភាគសម្រាប់អ្នកជំងឺណា?',
-    select_patient_desc: 'សូមជ្រើសរើសពីអ្នកជំងឺដែលអ្នកទទួលខុសត្រូវ',
-    no_patients: 'គ្មានអ្នកជំងឺដែលអ្នកទទួលខុសត្រូវទេ',
-    when_where_title: 'ពេលណា និងកន្លែងណា\nដែលនឹងព្យាបាល?',
+    select_request_title: 'ជ្រើសរើសការស្នើសុំ\nបកប្រែនៅមជ្ឈមណ្ឌល',
+    select_request_desc: 'ការស្នើសុំដែលមិនទាន់ចាត់ចែងនៅមជ្ឈមណ្ឌល',
+    no_pending: 'គ្មានការស្នើសុំដែលមិនទាន់ចាត់ចែងទេ',
+    preferred_date: 'ថ្ងៃចូលចិត្តរបស់អ្នកជំងឺ',
+    confirm_date_title: 'បញ្ជាក់ថ្ងៃ\nណាត់ជួប',
+    confirm_date_desc: 'ប្រើថ្ងៃចូលចិត្តរបស់អ្នកជំងឺ ឬកំណត់ថ្ងៃថ្មី',
+    date_tbd_label: 'ថ្ងៃមិនទាន់កំណត់',
+    date_tbd_desc: 'ទទួលការស្នើសុំដោយមិនបញ្ជាក់ថ្ងៃ',
     visit_date: 'ថ្ងៃព្យាបាល',
     hospital: 'មន្ទីរពេទ្យដែលបានទស្សនា',
     hospital_optional: '(ស្រេចចិត្ត)',
@@ -825,11 +829,13 @@ export const km: AppTranslation = {
     department: 'ផ្នែកព្យាបាល',
     department_optional: '(ស្រេចចិត្ត)',
     department_placeholder: 'ឧទាហរណ៍៖ អក្សរសាស្ត្រខាងក្នុង ស្បែក',
-    add_btn: 'បន្ថែមកាលវិភាគ',
+    accept_btn: 'ទទួលការស្នើសុំ',
     prev_btn: 'មុន',
     next_btn: 'បន្ទាប់',
     saving: 'កំពុងរក្សាទុក...',
     err_save: 'ការរក្សាទុកបានបរាជ័យ',
+    patient_comment: 'ការស្នើសុំរបស់អ្នកជំងឺ',
+    no_comment: 'គ្មានព័ត៌មានលម្អិត',
   },
 
   patient_profile: {

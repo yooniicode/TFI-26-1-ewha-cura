@@ -16,6 +16,7 @@ public enum BusinessErrorCode implements Code {
     MATCH_NOT_FOUND(404, "매칭 정보를 찾을 수 없습니다."),
 
     CONSULTATION_ALREADY_CONFIRMED(409, "이미 확인 완료된 보고서입니다."),
+    CONSULTATION_ALREADY_ACCEPTED(409, "이미 통번역가가 배정된 요청입니다."),
     HANDOVER_ALREADY_ASSIGNED(409, "이미 배정된 인수인계입니다."),
     MATCH_ALREADY_EXISTS(409, "이미 활성화된 매칭이 존재합니다."),
     INTERPRETER_ALREADY_EXISTS(409, "해당 인증 계정의 통번역가가 이미 존재합니다."),

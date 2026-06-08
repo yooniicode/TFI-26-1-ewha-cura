@@ -143,6 +143,11 @@ public class Consultation extends BaseEntity {
         this.nextAppointmentDate = nextAppointmentDate;
     }
 
+    public void accept(Interpreter interpreter, LocalDateTime confirmedDate) {
+        this.interpreter = interpreter;
+        if (confirmedDate != null) this.consultationDate = confirmedDate;
+    }
+
     public void confirm(String confirmedBy, String confirmedByPhone) {
         this.confirmedAt = LocalDate.now();
         this.confirmedBy = confirmedBy;

@@ -814,10 +814,14 @@ export const mn: AppTranslation = {
 
   schedule: {
     title: 'Хуваарь нэмэх',
-    select_patient_title: 'Аль өвчтөний\nхуваарийг нэмэх вэ?',
-    select_patient_desc: 'Хариуцсан өвчтөнүүдээс сонгоно уу',
-    no_patients: 'Хариуцсан өвчтөн байхгүй байна',
-    when_where_title: 'Хэзээ, хаана\nүзлэг хийх вэ?',
+    select_request_title: 'Төвд ирсэн орчуулгын\nхүсэлтийг сонгоно уу',
+    select_request_desc: 'Таны төвийн хүлээгдэж буй хүсэлтүүд',
+    no_pending: 'Хүлээгдэж буй хүсэлт байхгүй байна',
+    preferred_date: 'Өвчтөний хүссэн огноо',
+    confirm_date_title: 'Цаг товлолын огноог\nбатлана уу',
+    confirm_date_desc: 'Өвчтөний хүссэн огноог хэвээр үлдээх эсвэл шинэ огноо тохируулах',
+    date_tbd_label: 'Огноо тодорхойгүй',
+    date_tbd_desc: 'Огноог баталгаажуулахгүйгээр хүсэлтийг хүлээн авна',
     visit_date: 'Үзлэгийн огноо',
     hospital: 'Үзлэг хийсэн эмнэлэг',
     hospital_optional: '(Заавал биш)',
@@ -825,11 +829,13 @@ export const mn: AppTranslation = {
     department: 'Тасаг',
     department_optional: '(Заавал биш)',
     department_placeholder: 'Жишээ нь: Дотрын тасаг, арьс судлал',
-    add_btn: 'Хуваарь нэмэх',
+    accept_btn: 'Хүсэлтийг хүлээн авах',
     prev_btn: 'Өмнөх',
     next_btn: 'Дараах',
     saving: 'Хадгалж байна...',
     err_save: 'Хадгалахад алдаа гарлаа',
+    patient_comment: 'Өвчтөний хүсэлт',
+    no_comment: 'Дэлгэрэнгүй мэдээлэл байхгүй',
   },
 
   patient_profile: {

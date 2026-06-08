@@ -814,10 +814,14 @@ export const vi: AppTranslation = {
 
   schedule: {
     title: 'Thêm lịch',
-    select_patient_title: 'Thêm lịch cho\nbệnh nhân nào?',
-    select_patient_desc: 'Chọn trong danh sách bệnh nhân phụ trách',
-    no_patients: 'Không có bệnh nhân phụ trách',
-    when_where_title: 'Khám ở đâu\nvào khi nào?',
+    select_request_title: 'Chọn yêu cầu phiên dịch\ntại trung tâm',
+    select_request_desc: 'Yêu cầu chưa phân công tại trung tâm của bạn',
+    no_pending: 'Không có yêu cầu đang chờ',
+    preferred_date: 'Ngày ưu tiên của bệnh nhân',
+    confirm_date_title: 'Xác nhận ngày\nhẹn khám',
+    confirm_date_desc: 'Giữ ngày ưu tiên của bệnh nhân hoặc đặt ngày mới',
+    date_tbd_label: 'Chưa xác định ngày',
+    date_tbd_desc: 'Chấp nhận yêu cầu mà không xác nhận ngày',
     visit_date: 'Ngày khám',
     hospital: 'Bệnh viện',
     hospital_optional: '(tùy chọn)',
@@ -825,11 +829,13 @@ export const vi: AppTranslation = {
     department: 'Khoa',
     department_optional: '(tùy chọn)',
     department_placeholder: 'Ví dụ: Nội khoa, Da liễu',
-    add_btn: 'Thêm lịch',
+    accept_btn: 'Chấp nhận yêu cầu',
     prev_btn: 'Quay lại',
     next_btn: 'Tiếp theo',
     saving: 'Đang lưu...',
     err_save: 'Lưu thất bại',
+    patient_comment: 'Yêu cầu của bệnh nhân',
+    no_comment: 'Không có thông tin chi tiết',
   },
 
   patient_profile: {

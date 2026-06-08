@@ -27,6 +27,7 @@ export const queryKeys = {
       ['consultations', 'list', page, patientQuery, sortBy, direction] as const,
     detail:    (id: string)                      => ['consultations', id] as const,
     byPatient: (patientId: string, page: number) => ['consultations', 'patient', patientId, page] as const,
+    pending:   () => ['consultations', 'pending'] as const,
   },
 
   handovers: {

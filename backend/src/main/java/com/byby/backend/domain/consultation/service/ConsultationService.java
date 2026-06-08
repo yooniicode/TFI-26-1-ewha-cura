@@ -6,6 +6,8 @@ import com.byby.backend.common.response.code.BusinessErrorCode;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.admin.service.AdminService;
+import com.byby.backend.domain.auth.entity.UserCredential;
+import com.byby.backend.domain.auth.repository.UserCredentialRepository;
 import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
@@ -41,6 +43,14 @@ public class ConsultationService {
     private final PatientMatchRepository patientMatchRepository;
     private final AdminService adminService;
     private final PatientCenterRepository patientCenterRepository;
+    private final UserCredentialRepository userCredentialRepository;
+
+    private String resolvePatientAvatarUrl(Patient patient) {
+        if (patient.getAuthUserId() == null) return null;
+        return userCredentialRepository.findByAuthUserId(patient.getAuthUserId())
+                .map(UserCredential::getAvatarUrl)
+                .orElse(null);
+    }
 
     public record ExportData(
             UUID centerId,
@@ -62,7 +72,8 @@ public class ConsultationService {
                 .processing(req.processing())
                 .patientComment(req.patientComment())
                 .build();
-        return ConsultationResponse.Detail.from(consultationRepository.save(consultation));
+        Consultation saved = consultationRepository.save(consultation);
+        return ConsultationResponse.Detail.from(saved, resolvePatientAvatarUrl(saved.getPatient()));
     }
 
     @Transactional
@@ -105,7 +116,35 @@ public class ConsultationService {
                 .fee(req.fee())
                 .nextAppointmentDate(req.nextAppointmentDate())
                 .build();
-        return ConsultationResponse.Detail.from(consultationRepository.save(consultation));
+        Consultation saved = consultationRepository.save(consultation);
+        return ConsultationResponse.Detail.from(saved, resolvePatientAvatarUrl(saved.getPatient()));
+    }
+
+    public Page<ConsultationResponse.PendingItem> getPending(Pageable pageable, UserPrincipal principal) {
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        if (interpreter.getCenter() == null) return Page.empty(pageable);
+        return consultationRepository.findPendingByCenter(interpreter.getCenter().getId(),
+                PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
+                .map(c -> ConsultationResponse.PendingItem.from(c, resolvePatientAvatarUrl(c.getPatient())));
+    }
+
+    @Transactional
+    public ConsultationResponse.Detail accept(UUID id, ConsultationRequest.Accept req, UserPrincipal principal) {
+        Consultation c = findConsultation(id);
+        if (c.getInterpreter() != null) throw new BusinessException(BusinessErrorCode.CONSULTATION_ALREADY_ACCEPTED);
+
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+
+        boolean sameCenters = interpreter.getCenter() != null
+                && c.getPatient().getPatientCenters().stream()
+                    .anyMatch(pc -> pc.getCenter().getId().equals(interpreter.getCenter().getId()));
+        if (!sameCenters) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
+
+        c.accept(interpreter, req.consultationDate());
+        Consultation saved = consultationRepository.save(c);
+        return ConsultationResponse.Detail.from(saved, resolvePatientAvatarUrl(saved.getPatient()));
     }
 
     public Page<ConsultationResponse.Summary> getAll(Pageable pageable, UserPrincipal principal, String patientQuery) {
@@ -113,13 +152,13 @@ public class ConsultationService {
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
             return consultationRepository.searchByCenter(center.getId(), patientQuery, unsorted)
-                    .map(ConsultationResponse.Summary::from);
+                    .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
         }
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
             return consultationRepository.searchByInterpreter(interpreter.getId(), patientQuery, unsorted)
-                    .map(ConsultationResponse.Summary::from);
+                    .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }
@@ -130,7 +169,7 @@ public class ConsultationService {
         if (principal.isPatient()) {
             return ConsultationResponse.PatientView.from(c);
         }
-        return ConsultationResponse.Detail.from(c);
+        return ConsultationResponse.Detail.from(c, resolvePatientAvatarUrl(c.getPatient()));
     }
 
     @Transactional
@@ -160,7 +199,8 @@ public class ConsultationService {
                 req.diagnosisContent(), req.diagnosisNameCode(), req.medicationInstruction(),
                 req.counselorName(), req.workDescription(), req.doctorConfirmationSignature(),
                 req.durationHours(), req.fee());
-        return ConsultationResponse.Detail.from(c);
+        Consultation updated = consultationRepository.save(c);
+        return ConsultationResponse.Detail.from(updated, resolvePatientAvatarUrl(updated.getPatient()));
     }
 
     @Transactional
@@ -170,7 +210,8 @@ public class ConsultationService {
         requireAdminCenterAccess(c, principal);
         if (c.isConfirmed()) throw new BusinessException(BusinessErrorCode.CONSULTATION_ALREADY_CONFIRMED);
         c.confirm(req.confirmedBy(), req.confirmedByPhone());
-        return ConsultationResponse.Detail.from(c);
+        Consultation confirmed = consultationRepository.save(c);
+        return ConsultationResponse.Detail.from(confirmed, resolvePatientAvatarUrl(confirmed.getPatient()));
     }
 
     public Page<ConsultationResponse.Summary> getByPatient(UUID patientId, Pageable pageable, UserPrincipal principal) {
@@ -193,7 +234,7 @@ public class ConsultationService {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
         return consultationRepository.findByPatientId(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
-                .map(ConsultationResponse.Summary::from);
+                .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
     }
 
     public Page<ConsultationResponse.Summary> getByInterpreter(UUID interpreterId, Pageable pageable, UserPrincipal principal) {
@@ -206,14 +247,14 @@ public class ConsultationService {
                 throw new GeneralException(GeneralErrorCode.FORBIDDEN);
             }
             return consultationRepository.findByInterpreterId(interpreterId, unsorted)
-                    .map(ConsultationResponse.Summary::from);
+                    .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
         }
         if (principal.isInterpreter()) {
             Interpreter self = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
             if (!self.getId().equals(interpreterId)) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
             return consultationRepository.findByInterpreterId(interpreterId, unsorted)
-                    .map(ConsultationResponse.Summary::from);
+                    .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }

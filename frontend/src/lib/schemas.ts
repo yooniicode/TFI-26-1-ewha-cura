@@ -43,6 +43,7 @@ export const patientSchema = z.object({
   activeInterpreterName: z.string().nullable().optional(),
   createdAt:     z.string(),
   updatedAt:     z.string().optional().default(''),
+  avatarUrl:     nullableString,
 })
 
 export const interpreterSchema = z.object({
@@ -113,6 +114,7 @@ export const consultationSchema = z.object({
   confirmed:           z.boolean(),
   createdAt:           z.string().optional().default(''),
   updatedAt:           z.string().optional().default(''),
+  patientAvatarUrl:    nullableString,
 })
 
 export const patientReportSchema = z.object({
@@ -282,6 +284,20 @@ export const interpreterAssignedCountSchema = z.object({
   count: z.number(),
 })
 
+export const pendingConsultationSchema = z.object({
+  id:                 z.string().uuid(),
+  consultationDate:   z.string(),
+  patientId:          z.string().uuid(),
+  patientName:        z.string(),
+  patientGender:      genderSchema.nullable().optional(),
+  patientNationality: nationalitySchema.nullable().optional(),
+  patientComment:     nullableString,
+  createdAt:          z.string(),
+  patientAvatarUrl:   nullableString,
+})
+
+export type PendingConsultation = z.infer<typeof pendingConsultationSchema>
+
 // ─── 배열 스키마 ─────────────────────────────────────────────
 export const schemas = {
   patient:       patientSchema,
@@ -292,8 +308,10 @@ export const schemas = {
   interpreters:  z.array(interpreterSchema),
   hospital:      hospitalSchema,
   hospitals:     z.array(hospitalSchema),
-  consultation:  consultationSchema,
-  consultations: z.array(consultationSchema),
+  consultation:         consultationSchema,
+  consultations:        z.array(consultationSchema),
+  pendingConsultation:  pendingConsultationSchema,
+  pendingConsultations: z.array(pendingConsultationSchema),
   patientReport: patientReportSchema,
   patientReports: z.array(patientReportSchema),
   handover:      handoverSchema,

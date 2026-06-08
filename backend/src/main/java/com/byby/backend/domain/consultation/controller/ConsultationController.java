@@ -51,6 +51,27 @@ public class ConsultationController {
                 .body(Response.success(SuccessCode.CREATED, consultationService.create(req, principal)));
     }
 
+    @GetMapping("/pending")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "센터 내 미배정 통번역 요청 목록")
+    public ResponseEntity<Response<List<ConsultationResponse.PendingItem>>> getPending(
+            @PageableDefault(size = 50) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                Response.success(SuccessCode.OK, consultationService.getPending(pageable, principal).getContent()));
+    }
+
+    @PatchMapping("/{id}/accept")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "통번역 요청 수락 (담당 배정)")
+    public ResponseEntity<Response<ConsultationResponse.Detail>> accept(
+            @PathVariable UUID id,
+            @RequestBody ConsultationRequest.Accept req,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                Response.success(SuccessCode.OK, consultationService.accept(id, req, principal)));
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "상담/통역 보고서 목록 조회")

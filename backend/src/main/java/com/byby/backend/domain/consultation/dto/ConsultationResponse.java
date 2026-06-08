@@ -27,9 +27,14 @@ public class ConsultationResponse {
             String hospitalName,
             IssueType issueType,
             boolean confirmed,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            String patientAvatarUrl
     ) {
         public static Summary from(Consultation c) {
+            return from(c, null);
+        }
+
+        public static Summary from(Consultation c, String patientAvatarUrl) {
             return new Summary(
                     c.getId(), c.getConsultationDate(),
                     c.getPatient().getId(), c.getPatient().getName(),
@@ -38,7 +43,7 @@ public class ConsultationResponse {
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getResolvedHospitalName(),
-                    c.getIssueType(), c.isConfirmed(), c.getCreatedAt());
+                    c.getIssueType(), c.isConfirmed(), c.getCreatedAt(), patientAvatarUrl);
         }
     }
 
@@ -80,9 +85,14 @@ public class ConsultationResponse {
             String confirmedByPhone,
             boolean confirmed,
             LocalDateTime createdAt,
-            LocalDateTime updatedAt
+            LocalDateTime updatedAt,
+            String patientAvatarUrl
     ) {
         public static Detail from(Consultation c) {
+            return from(c, null);
+        }
+
+        public static Detail from(Consultation c, String patientAvatarUrl) {
             return new Detail(
                     c.getId(), c.getConsultationDate(),
                     c.getPatient().getId(), c.getPatient().getName(),
@@ -104,7 +114,32 @@ public class ConsultationResponse {
                     c.getDoctorConfirmationSignature(), c.getDurationHours(), c.getFee(), c.getNextAppointmentDate(),
                     c.getConfirmedAt(), c.getConfirmedBy(), c.getConfirmedByPhone(),
                     c.isConfirmed(),
-                    c.getCreatedAt(), c.getUpdatedAt());
+                    c.getCreatedAt(), c.getUpdatedAt(), patientAvatarUrl);
+        }
+    }
+
+    /** 센터 내 미배정 요청 목록용 — 통번역가 홈 "+" 화면에서 사용 */
+    public record PendingItem(
+            UUID id,
+            LocalDateTime consultationDate,
+            UUID patientId,
+            String patientName,
+            Gender patientGender,
+            Nationality patientNationality,
+            String patientComment,
+            LocalDateTime createdAt,
+            String patientAvatarUrl
+    ) {
+        public static PendingItem from(Consultation c) {
+            return from(c, null);
+        }
+
+        public static PendingItem from(Consultation c, String patientAvatarUrl) {
+            return new PendingItem(
+                    c.getId(), c.getConsultationDate(),
+                    c.getPatient().getId(), c.getPatient().getName(),
+                    c.getPatient().getGender(), c.getPatient().getNationality(),
+                    c.getPatientComment(), c.getCreatedAt(), patientAvatarUrl);
         }
     }
 

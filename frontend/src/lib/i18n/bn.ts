@@ -814,10 +814,14 @@ export const bn: AppTranslation = {
 
   schedule: {
     title: 'সময়সূচি যোগ করুন',
-    select_patient_title: 'কোন রোগীর\nসময়সূচি যোগ করবেন?',
-    select_patient_desc: 'দায়িত্বপ্রাপ্ত রোগীদের মধ্য থেকে নির্বাচন করুন',
-    no_patients: 'দায়িত্বপ্রাপ্ত রোগী নেই',
-    when_where_title: 'কখন, কোথায়\nচিকিৎসা হবে?',
+    select_request_title: 'কেন্দ্রের অনুবাদ\nঅনুরোধ নির্বাচন করুন',
+    select_request_desc: 'একই কেন্দ্রের অপেক্ষামান অনুরোধ',
+    no_pending: 'কোনো অপেক্ষামান অনুরোধ নেই',
+    preferred_date: 'রোগীর পছন্দের তারিখ',
+    confirm_date_title: 'অ্যাপয়েন্টমেন্টের\nতারিখ নিশ্চিত করুন',
+    confirm_date_desc: 'রোগীর পছন্দের তারিখ ব্যবহার করুন বা নতুন সেট করুন',
+    date_tbd_label: 'তারিখ অনির্ধারিত',
+    date_tbd_desc: 'তারিখ নিশ্চিত না করে অনুরোধ গ্রহণ করুন',
     visit_date: 'চিকিৎসার তারিখ',
     hospital: 'পরিদর্শিত হাসপাতাল',
     hospital_optional: '(ঐচ্ছিক)',
@@ -825,11 +829,13 @@ export const bn: AppTranslation = {
     department: 'বিভাগ',
     department_optional: '(ঐচ্ছিক)',
     department_placeholder: 'উদাহরণ: অভ্যন্তরীণ চিকিৎসা, ত্বক বিজ্ঞান',
-    add_btn: 'সময়সূচি যোগ করুন',
+    accept_btn: 'অনুরোধ গ্রহণ করুন',
     prev_btn: 'পূর্ববর্তী',
     next_btn: 'পরবর্তী',
     saving: 'সংরক্ষণ করা হচ্ছে...',
     err_save: 'সংরক্ষণ ব্যর্থ হয়েছে',
+    patient_comment: 'রোগীর অনুরোধ',
+    no_comment: 'কোনো বিবরণ নেই',
   },
 
   patient_profile: {

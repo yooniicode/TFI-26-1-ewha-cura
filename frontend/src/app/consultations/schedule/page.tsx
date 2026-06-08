@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Suspense, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -8,19 +9,23 @@ import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
 import StepIndicator from '@/components/interpreter/StepIndicator'
 import { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
-import { patientApi, consultationApi } from '@/lib/api'
+import PatientAvatar from '@/components/interpreter/PatientAvatar'
+import { consultationApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
-import type { Patient } from '@/lib/types'
+import type { PendingConsultation } from '@/lib/schemas'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
-function calcAge(birthDate?: string | null) {
-  if (!birthDate) return null
-  const b = new Date(birthDate)
-  if (isNaN(b.getTime())) return null
-  const today = new Date()
-  let age = today.getFullYear() - b.getFullYear()
-  if (today.getMonth() < b.getMonth() || (today.getMonth() === b.getMonth() && today.getDate() < b.getDate())) age--
-  return age
+function formatPreferredDate(dateStr: string) {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function toLocalDatetimeValue(dateStr: string) {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 16)
+  const offset = d.getTimezoneOffset() * 60000
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16)
 }
 
 export default function SchedulePage() {
@@ -35,31 +40,29 @@ function ScheduleInner() {
   const router = useRouter()
   const { t } = useTranslation()
   const [step, setStep] = useState<1 | 2>(1)
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 16))
-  const [hospitalName, setHospitalName] = useState('')
-  const [department, setDepartment] = useState('')
+  const [selected, setSelected] = useState<PendingConsultation | null>(null)
+  const [dateTbd, setDateTbd] = useState(false)
+  const [date, setDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const { data: patients = [], isLoading } = useQuery<Patient[]>({
-    queryKey: queryKeys.patients.list(0),
-    queryFn: () => patientApi.list(0).then(r => r.payload ?? []),
+  const { data: requests = [], isLoading } = useQuery<PendingConsultation[]>({
+    queryKey: queryKeys.consultations.pending(),
+    queryFn: () => consultationApi.pending().then(r => r.payload ?? []),
   })
 
-  const myPatients = patients.filter(p => p.assignedToMe)
+  function handleSelectRequest(req: PendingConsultation) {
+    setSelected(req === selected ? null : req)
+    setDate(toLocalDatetimeValue(req.consultationDate))
+    setDateTbd(false)
+  }
 
-  async function handleSave() {
-    if (!selectedPatient) return
+  async function handleAccept() {
+    if (!selected) return
     setSaving(true); setError('')
     try {
-      await consultationApi.create({
-        patientId: selectedPatient.id,
-        consultationDate: date,
-        issueType: 'MEDICAL',
-        processing: 'INTERPRETATION',
-        hospitalName: hospitalName.trim() || undefined,
-        department: department.trim() || undefined,
+      await consultationApi.accept(selected.id, {
+        consultationDate: dateTbd ? null : date,
       })
       router.replace('/dashboard')
     } catch (e) {
@@ -72,57 +75,62 @@ function ScheduleInner() {
     <AppShell noPadding>
       <PageHeader title={t.schedule.title} showClose />
 
-      {/* Step 1 — 환자 선택 */}
+      {/* Step 1 — 요청 목록 */}
       {step === 1 && (
         <>
           <div className="bg-white px-4 pt-7 pb-5">
             <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] mb-2 whitespace-pre-line">
-              {t.schedule.select_patient_title}
+              {t.schedule.select_request_title}
             </h2>
-            <p className="text-sm text-[#808080] mb-6">{t.schedule.select_patient_desc}</p>
+            <p className="text-sm text-[#808080] mb-6">{t.schedule.select_request_desc}</p>
             <StepIndicator current={1} total={2} />
           </div>
 
           <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
             {isLoading ? (
               <div className="flex justify-center py-16"><Spinner /></div>
-            ) : myPatients.length === 0 ? (
+            ) : requests.length === 0 ? (
               <div className="bg-white rounded-2xl px-5 py-10 text-center">
-                <p className="text-sm text-[#A0A0A0]">{t.schedule.no_patients}</p>
+                <p className="text-sm text-[#A0A0A0]">{t.schedule.no_pending}</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {myPatients.map(p => {
-                  const isSelected = selectedPatient?.id === p.id
-                  const flagSrc = getFlagSrc(p.nationality)
-                  const age = calcAge(p.birthDate)
+                {requests.map(req => {
+                  const isSelected = selected?.id === req.id
+                  const flagSrc = req.patientNationality ? getFlagSrc(req.patientNationality) : null
                   return (
                     <button
-                      key={p.id}
+                      key={req.id}
                       type="button"
-                      onClick={() => setSelectedPatient(isSelected ? null : p)}
-                      className={`w-full flex items-center gap-3 rounded-2xl px-4 py-4 border-2 transition-all text-left ${
+                      onClick={() => handleSelectRequest(req)}
+                      className={`w-full flex items-start gap-3 rounded-2xl px-4 py-4 border-2 transition-all text-left ${
                         isSelected ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-transparent bg-white hover:border-[#EEEEEE]'
                       }`}
                     >
-                      {/* 성별 아이콘 */}
-                      <div className="relative shrink-0">
-                        <img
-                          src={p.gender === 'FEMALE' ? '/icons/common/gender/small-여성-배경o.svg' : '/icons/common/gender/small-남성-배경o.svg'}
-                          alt=""
-                          width={40}
-                          height={40}
-                        />
+                      {/* 프로필 (아바타 or 성별) + 국기 */}
+                      <div className="relative shrink-0 mt-0.5">
+                        <PatientAvatar avatarUrl={req.patientAvatarUrl} gender={req.patientGender} size="md" />
                         {flagSrc && (
-                          <img src={flagSrc} alt="" width={14} height={14} className="absolute -bottom-0.5 -right-0.5" />
+                          <Image src={flagSrc} alt="" width={14} height={14} className="absolute -bottom-0.5 -right-0.5" />
                         )}
                       </div>
+
                       <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold text-[#161616] truncate">{p.name}</p>
-                        {age !== null && <p className="text-sm text-[#808080]">{t.patient.age_years(age)}</p>}
+                        <p className="text-base font-semibold text-[#161616] truncate">{req.patientName}</p>
+                        <p className="text-xs text-[#2592FF] mt-0.5">
+                          {t.schedule.preferred_date}: {formatPreferredDate(req.consultationDate)}
+                        </p>
+                        {req.patientComment ? (
+                          <p className="text-sm text-[#494949] mt-1.5 line-clamp-2 whitespace-pre-line">
+                            {req.patientComment}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-[#A0A0A0] mt-1.5">{t.schedule.no_comment}</p>
+                        )}
                       </div>
+
                       {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-[#2592FF] flex items-center justify-center shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-[#2592FF] flex items-center justify-center shrink-0 mt-1">
                           <svg width="10" height="8" viewBox="0 0 12 9" fill="none">
                             <path d="M1 4.5L4.5 8L11 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
@@ -139,7 +147,7 @@ function ScheduleInner() {
             <button
               type="button"
               onClick={() => setStep(2)}
-              disabled={!selectedPatient}
+              disabled={!selected}
               className="w-full h-[60px] bg-[#2592FF] rounded-2xl text-lg font-bold text-white disabled:opacity-40 transition-opacity"
             >
               {t.schedule.next_btn}
@@ -148,54 +156,63 @@ function ScheduleInner() {
         </>
       )}
 
-      {/* Step 2 — 날짜·장소 선택 */}
-      {step === 2 && selectedPatient && (
+      {/* Step 2 — 일정 확정 */}
+      {step === 2 && selected && (
         <>
           <div className="bg-white px-4 pt-7 pb-5">
             <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] mb-2 whitespace-pre-line">
-              {t.schedule.when_where_title}
+              {t.schedule.confirm_date_title}
             </h2>
-            <p className="text-sm text-[#808080] mb-6">{selectedPatient.name}</p>
+            <p className="text-sm text-[#808080] mb-6">{selected.patientName}</p>
             <StepIndicator current={2} total={2} />
           </div>
 
           <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
             <div className="bg-white rounded-2xl px-5 py-5 space-y-4">
 
-              {/* 날짜·시간 */}
-              <div>
-                <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.schedule.visit_date}</label>
-                <input
-                  type="datetime-local"
-                  value={date}
-                  onChange={e => setDate(e.target.value)}
-                  className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none border border-[#A1A1A1]"
-                />
-              </div>
+              {/* 이주민 요청사항 요약 */}
+              {selected.patientComment && (
+                <div className="bg-[#F3F9FF] rounded-xl px-4 py-3">
+                  <p className="text-xs font-semibold text-[#2592FF] mb-1">{t.schedule.patient_comment}</p>
+                  <p className="text-sm text-[#494949] whitespace-pre-line">{selected.patientComment}</p>
+                </div>
+              )}
 
-              {/* 병원 */}
-              <div>
-                <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.schedule.hospital} <span className="text-[#A0A0A0] font-normal">{t.schedule.hospital_optional}</span></label>
-                <input
-                  type="text"
-                  value={hospitalName}
-                  onChange={e => setHospitalName(e.target.value)}
-                  placeholder={t.schedule.hospital_placeholder}
-                  className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
-                />
-              </div>
+              {/* 일정 미정 토글 */}
+              <button
+                type="button"
+                onClick={() => setDateTbd(v => !v)}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3.5 border-2 transition-all text-left ${
+                  dateTbd ? 'border-[#2592FF] bg-[#f3f9ff]' : 'border-[#E8E8E8] bg-white'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                  dateTbd ? 'border-[#2592FF] bg-[#2592FF]' : 'border-[#D0D0D0]'
+                }`}>
+                  {dateTbd && (
+                    <svg width="10" height="8" viewBox="0 0 12 9" fill="none">
+                      <path d="M1 4.5L4.5 8L11 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[#161616]">{t.schedule.date_tbd_label}</p>
+                  <p className="text-xs text-[#808080] mt-0.5">{t.schedule.date_tbd_desc}</p>
+                </div>
+              </button>
 
-              {/* 진료과 */}
-              <div>
-                <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.schedule.department} <span className="text-[#A0A0A0] font-normal">{t.schedule.department_optional}</span></label>
-                <input
-                  type="text"
-                  value={department}
-                  onChange={e => setDepartment(e.target.value)}
-                  placeholder={t.schedule.department_placeholder}
-                  className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none placeholder:text-[#A0A0A0]"
-                />
-              </div>
+              {/* 날짜 입력 */}
+              {!dateTbd && (
+                <div>
+                  <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.schedule.visit_date}</label>
+                  <input
+                    type="datetime-local"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none border border-[#A1A1A1]"
+                  />
+                </div>
+              )}
 
               {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
@@ -211,11 +228,11 @@ function ScheduleInner() {
             </button>
             <button
               type="button"
-              onClick={handleSave}
-              disabled={saving || !date}
+              onClick={handleAccept}
+              disabled={saving || (!dateTbd && !date)}
               className="flex-1 h-[60px] bg-[#2592FF] rounded-2xl text-lg font-bold text-white disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors"
             >
-              {saving ? t.schedule.saving : t.schedule.add_btn}
+              {saving ? t.schedule.saving : t.schedule.accept_btn}
             </button>
           </div>
         </>

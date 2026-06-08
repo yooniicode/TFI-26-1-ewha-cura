@@ -814,10 +814,14 @@ export const si: AppTranslation = {
 
   schedule: {
     title: 'කාලසටහනක් එක් කරන්න',
-    select_patient_title: 'කුමන රෝගියාගේ\nකාලසටහනක් එක් කරන්නද?',
-    select_patient_desc: 'වගකිව යුතු රෝගීන් අතුරෙන් තෝරන්න',
-    no_patients: 'වගකිව යුතු රෝගීන් නොමැත',
-    when_where_title: 'කවදා, කොහෙන්\nප්‍රතිකාර කරන්නද?',
+    select_request_title: 'මධ්‍යස්ථානයේ\nපරිවර්තන ඉල්ලීමක් තෝරන්න',
+    select_request_desc: 'ඔබේ මධ්‍යස්ථානයේ බලාපොරොත්තු ඉල්ලීම්',
+    no_pending: 'බලාපොරොත්තු ඉල්ලීම් නොමැත',
+    preferred_date: 'රෝගියා කැමති දිනය',
+    confirm_date_title: 'හමුවීමේ දිනය\nතහවුරු කරන්න',
+    confirm_date_desc: 'රෝගියාගේ කැමති දිනය භාවිතා කරන්න හෝ නව දිනයක් සකසන්න',
+    date_tbd_label: 'දිනය තවම නිශ්චිත නැත',
+    date_tbd_desc: 'දිනය තහවුරු නොකර ඉල්ලීම පිළිගන්න',
     visit_date: 'ප්‍රතිකාර දිනය',
     hospital: 'පැමිණි රෝහල',
     hospital_optional: '(විකල්පයි)',
@@ -825,11 +829,13 @@ export const si: AppTranslation = {
     department: 'අංශය',
     department_optional: '(විකල්පයි)',
     department_placeholder: 'උදා: අභ්‍යන්තර වෛද්‍ය විද්‍යාව, සමේ රෝග',
-    add_btn: 'කාලසටහන එක් කරන්න',
+    accept_btn: 'ඉල්ලීම පිළිගන්න',
     prev_btn: 'පෙර',
     next_btn: 'ඊළඟට',
     saving: 'සුරකිමින්...',
     err_save: 'සුරැකීම අසාර්ථක විය',
+    patient_comment: 'රෝගියාගේ ඉල්ලීම',
+    no_comment: 'විස්තර ලබා දී නැත',
   },
 
   patient_profile: {

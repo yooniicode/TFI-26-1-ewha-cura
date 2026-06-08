@@ -12,6 +12,8 @@
 
 ## 1) 전체 아키텍처
 
+### 애플리케이션 흐름
+
 ```text
 [Client Browser / PWA]
         |
@@ -27,7 +29,33 @@
   - Domain APIs (환자, 통번역가, 상담, 인수인계, 매칭, 의료대본, 센터, 관리자)
         |
         v
-[PostgreSQL (Supabase)]
+[PostgreSQL]
+```
+
+### 배포 인프라
+
+```text
+사용자 (모바일 PWA)
+        |
+        v
+┌─────────────────┐       ┌──────────────────────────────────────────┐
+│  Vercel         │       │  Railway Project                         │
+│  (Next.js)      │──────▶│                                          │
+│  cura-ewha.kr   │ HTTPS │  ┌──────────────────┐                   │
+└─────────────────┘       │  │ Spring Boot API   │ (퍼블릭 URL 노출) │
+                          │  └────────┬─────────┘                   │
+        ┌─────────────────┤           │ *.railway.internal           │
+        │  외부 서비스     │           │ (프라이빗 네트워크)           │
+        │                 │  ┌────────▼─────────┐                   │
+        │  Supabase        │  │  PostgreSQL DB    │ (외부 비노출)    │
+        │  (파일 스토리지) │  └──────────────────┘                   │
+        │  Kakao OAuth     │                                          │
+        │  Gemini API      └──────────────────────────────────────────┘
+        │  Google Sheets
+        └─────────────────
+
+[GitHub] ──push──▶ [GitHub Actions CI] ──테스트/빌드 통과──▶ Railway 자동 배포
+                                                          └──▶ Vercel 자동 배포
 ```
 
 ## 2) 서버 아키텍처 (백엔드)
@@ -207,13 +235,12 @@ cd backend
 
 `/.github/workflows/deploy.yml`
 
-- PR/Push 시:
-  - Backend 테스트/빌드
-  - Frontend lint/build
-- `main` push 시:
-  - Backend/Frontend Docker 이미지 빌드 + GHCR 푸시
-  - Backend 배포 (Railway)
-  - Frontend 배포 (Vercel)
+- **PR/push 시 GitHub Actions CI 실행** (배포 전 안전망):
+  - Backend: Gradle 테스트 (JUnit 5 + H2)
+  - Frontend: ESLint 린트 + Next.js 빌드 검증
+- **`main` push 시 자동 배포** (GitHub 소스 직접 연동):
+  - Railway: GitHub 소스에서 Dockerfile 빌드 후 자동 배포
+  - Vercel: Next.js 자동 빌드 후 배포
 
 ### GitHub Secrets 필요 항목
 

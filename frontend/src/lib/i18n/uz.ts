@@ -814,10 +814,14 @@ export const uz: AppTranslation = {
 
   schedule: {
     title: "Jadval qo'shish",
-    select_patient_title: "Qaysi bemor uchun\njadval qo'shmoqchisiz?",
-    select_patient_desc: "Mas'ul bemorlaringiz orasidan tanlang",
-    no_patients: "Mas'ul bemor yo'q",
-    when_where_title: "Qachon, qayerda\ndavolanish bo'ladi?",
+    select_request_title: "Markazdagi tarjimonlik\nso'rovini tanlang",
+    select_request_desc: "Markazingizda kutilayotgan so'rovlar",
+    no_pending: "Kutilayotgan so'rov yo'q",
+    preferred_date: "Bemorning afzal ko'rgan sanasi",
+    confirm_date_title: "Uchrashuv sanasini\ntasdiqlang",
+    confirm_date_desc: "Bemorning sanasini saqlang yoki yangi sana o'rnating",
+    date_tbd_label: 'Sana aniqlanmagan',
+    date_tbd_desc: "Sanani tasdiqlamasdan so'rovni qabul qiling",
     visit_date: 'Davolanish sanasi',
     hospital: 'Tashrif buyurilgan shifoxona',
     hospital_optional: '(Ixtiyoriy)',
@@ -825,11 +829,13 @@ export const uz: AppTranslation = {
     department: "Bo'lim",
     department_optional: '(Ixtiyoriy)',
     department_placeholder: 'Masalan: Terapevtika, dermatologiya',
-    add_btn: "Jadval qo'shish",
+    accept_btn: "So'rovni qabul qilish",
     prev_btn: 'Oldingi',
     next_btn: 'Keyingi',
     saving: 'Saqlanmoqda...',
     err_save: "Saqlash muvaffaqiyatsiz tugadi",
+    patient_comment: "Bemor so'rovi",
+    no_comment: "Tafsilot berilmagan",
   },
 
   patient_profile: {

@@ -7,6 +7,7 @@ import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
 import Link from 'next/link'
 import { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
+import PatientAvatar from '@/components/interpreter/PatientAvatar'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -99,12 +100,7 @@ function RmPatientSelect() {
                   className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-4 hover:bg-[#f3f9ff] transition-colors text-left"
                 >
                   <div className="relative shrink-0">
-                    <img
-                      src={c.patientGender === 'FEMALE'
-                        ? '/icons/common/gender/small-여성-배경o.svg'
-                        : '/icons/common/gender/small-남성-배경o.svg'}
-                      alt="" width={36} height={36}
-                    />
+                    <PatientAvatar avatarUrl={c.patientAvatarUrl} gender={c.patientGender} size="md" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-semibold text-[#161616] truncate">{c.patientName}</p>
@@ -150,12 +146,7 @@ function RmPatientSelect() {
                     className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-4 hover:bg-[#f3f9ff] transition-colors text-left"
                   >
                     <div className="relative shrink-0">
-                      <img
-                        src={p.gender === 'FEMALE'
-                          ? '/icons/common/gender/small-여성-배경o.svg'
-                          : '/icons/common/gender/small-남성-배경o.svg'}
-                        alt="" width={36} height={36}
-                      />
+                      <PatientAvatar avatarUrl={p.avatarUrl} gender={p.gender} size="md" />
                       {flag && <img src={flag} alt="" width={12} height={12} className="absolute -bottom-0.5 -right-0.5" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -345,13 +336,8 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
   const age = calcAge(patient?.birthDate)
 
   const patientRequest = consultation?.patientComment?.trim()
-  const genderIcon = patient
-    ? (patient.gender === 'FEMALE'
-        ? '/icons/common/gender/small-여성-배경o.svg'
-        : '/icons/common/gender/small-남성-배경o.svg')
-    : (consultation?.patientGender === 'FEMALE'
-        ? '/icons/common/gender/small-여성-배경o.svg'
-        : '/icons/common/gender/small-남성-배경o.svg')
+  const patientAvatarUrl = patient?.avatarUrl ?? consultation?.patientAvatarUrl
+  const patientGender = patient?.gender ?? consultation?.patientGender
 
   return (
     <AppShell noPadding>
@@ -372,7 +358,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           href={`/patients/${patientId}`}
           className="flex items-center gap-2 active:opacity-70 transition-opacity"
         >
-          <img src={genderIcon} alt="" width={24} height={24} />
+          <PatientAvatar avatarUrl={patientAvatarUrl} gender={patientGender} size="sm" />
           <span className="text-[18px] font-medium text-[#161616]">{patientName}</span>
           {age !== null && <span className="text-[18px] text-[#494949]">{t.patient.age_years(age)}</span>}
           <img src="/icons/common/arrows/right.svg" alt="" width={20} height={20} className="ml-auto" />

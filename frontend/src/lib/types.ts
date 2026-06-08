@@ -118,6 +118,7 @@ export interface Consultation {
   confirmed: boolean
   createdAt: string
   updatedAt: string
+  patientAvatarUrl?: string | null
 }
 
 export interface PatientReport {

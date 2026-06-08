@@ -814,10 +814,14 @@ export const my: AppTranslation = {
 
   schedule: {
     title: 'အချိန်ဇယား ထည့်ရန်',
-    select_patient_title: 'မည်သည့် လူနာအတွက်\nအချိန်ဇယား ထည့်လိုပါသလဲ?',
-    select_patient_desc: 'တာဝန်ယူထားသော လူနာများထဲမှ ရွေးချယ်ပါ',
-    no_patients: 'တာဝန်ယူထားသော လူနာ မရှိပါ',
-    when_where_title: 'ဘယ်အချိန်၊ ဘယ်နေရာမှာ\nကုသမည်နည်း?',
+    select_request_title: 'စင်တာတွင် ဘာသာပြန်\nတောင်းဆိုမှုကို ရွေးပါ',
+    select_request_desc: 'သင့်စင်တာ၏ မတ်ပ် မထားသေးသော တောင်းဆိုမှုများ',
+    no_pending: 'ဆောင်ရွက်ဆဲ တောင်းဆိုမှု မရှိပါ',
+    preferred_date: 'လူနာ ကြိုက်နှစ်သက်သော ရက်စွဲ',
+    confirm_date_title: 'ချိန်းဆိုချိန်\nရက်စွဲကို အတည်ပြုပါ',
+    confirm_date_desc: 'လူနာ၏ ရက်စွဲကို ထားရှိပါ သို့မဟုတ် အသစ် သတ်မှတ်ပါ',
+    date_tbd_label: 'ရက်စွဲ မသေချာ',
+    date_tbd_desc: 'ရက်စွဲ မအတည်ပြုဘဲ တောင်းဆိုမှုကို လက်ခံပါ',
     visit_date: 'ကုသသည့် ရက်စွဲ',
     hospital: 'သွားရောက်ခဲ့သော ဆေးရုံ',
     hospital_optional: '(ရွေးချယ်စရာ)',
@@ -825,11 +829,13 @@ export const my: AppTranslation = {
     department: 'ဌာနခွဲ',
     department_optional: '(ရွေးချယ်စရာ)',
     department_placeholder: 'ဥပမာ - အတွင်းကျောင်း၊ အရေပြားကျောင်း',
-    add_btn: 'အချိန်ဇယား ထည့်မည်',
+    accept_btn: 'တောင်းဆိုမှုကို လက်ခံပါ',
     prev_btn: 'ယခင်',
     next_btn: 'နောက်သို့',
     saving: 'သိမ်းနေသည်...',
     err_save: 'သိမ်းခြင်း မအောင်မြင်ပါ',
+    patient_comment: 'လူနာ တောင်းဆိုမှု',
+    no_comment: 'အသေးစိတ် မပေးထားပါ',
   },
 
   patient_profile: {

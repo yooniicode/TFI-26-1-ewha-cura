@@ -814,10 +814,14 @@ export const ur: AppTranslation = {
 
   schedule: {
     title: 'شیڈول شامل کریں',
-    select_patient_title: 'کس مریض کا\nشیڈول شامل کریں؟',
-    select_patient_desc: 'ذمہ دار مریضوں میں سے منتخب کریں',
-    no_patients: 'کوئی ذمہ دار مریض نہیں ہے',
-    when_where_title: 'کب، کہاں\nعلاج ہوگا؟',
+    select_request_title: 'مرکز میں ترجمانی\nکی درخواست منتخب کریں',
+    select_request_desc: 'آپ کے مرکز میں زیر التواء درخواستیں',
+    no_pending: 'کوئی زیر التواء درخواست نہیں',
+    preferred_date: 'مریض کی پسندیدہ تاریخ',
+    confirm_date_title: 'اپوائنٹمنٹ کی تاریخ\nکی تصدیق کریں',
+    confirm_date_desc: 'مریض کی پسندیدہ تاریخ استعمال کریں یا نئی تاریخ مقرر کریں',
+    date_tbd_label: 'تاریخ غیر متعین',
+    date_tbd_desc: 'تاریخ کی تصدیق کیے بغیر درخواست قبول کریں',
     visit_date: 'علاج کی تاریخ',
     hospital: 'وزٹ کیا گیا ہسپتال',
     hospital_optional: '(اختیاری)',
@@ -825,11 +829,13 @@ export const ur: AppTranslation = {
     department: 'شعبہ',
     department_optional: '(اختیاری)',
     department_placeholder: 'مثال: اندرونی طب، جلدی امراض',
-    add_btn: 'شیڈول شامل کریں',
+    accept_btn: 'درخواست قبول کریں',
     prev_btn: 'پچھلا',
     next_btn: 'اگلا',
     saving: 'محفوظ ہو رہا ہے...',
     err_save: 'محفوظ کرنا ناکام ہوا',
+    patient_comment: 'مریض کی درخواست',
+    no_comment: 'کوئی تفصیل نہیں',
   },
 
   patient_profile: {

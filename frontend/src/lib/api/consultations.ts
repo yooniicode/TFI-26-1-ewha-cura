@@ -32,4 +32,7 @@ export const consultationApi = {
   confirm:   (id: string, body: unknown) => patch(`/consultations/${id}/confirm`, body, schemas.consultation),
   byPatient: (patientId: string, page = 0) =>
     get(`/consultations/patient/${patientId}?page=${page}&size=20`, schemas.consultations),
+  pending:   () => get('/consultations/pending?size=50', schemas.pendingConsultations),
+  accept:    (id: string, body: { consultationDate?: string | null }) =>
+    patch(`/consultations/${id}/accept`, body, schemas.consultation),
 }

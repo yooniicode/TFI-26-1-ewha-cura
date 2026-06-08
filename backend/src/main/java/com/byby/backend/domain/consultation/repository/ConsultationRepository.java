@@ -68,6 +68,15 @@ public interface ConsultationRepository extends JpaRepository<Consultation, UUID
     Page<Consultation> findByPatientId(@Param("patientId") UUID patientId, Pageable pageable);
 
     @Query("""
+            SELECT c FROM Consultation c
+            JOIN c.patient.patientCenters pc
+            WHERE c.interpreter IS NULL
+              AND pc.center.id = :centerId
+            ORDER BY c.consultationDate ASC
+            """)
+    Page<Consultation> findPendingByCenter(@Param("centerId") UUID centerId, Pageable pageable);
+
+    @Query("""
             SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END
             FROM Consultation c
             WHERE c.patient.id = :patientId AND c.interpreter.id = :interpreterId

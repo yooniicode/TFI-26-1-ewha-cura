@@ -63,4 +63,7 @@ public class ConsultationRequest {
             @NotNull String confirmedBy,
             @NotNull String confirmedByPhone
     ) {}
+
+    /** 통번역가가 요청을 수락할 때 — consultationDate 가 null 이면 환자 희망일 유지 */
+    public record Accept(LocalDateTime consultationDate) {}
 }

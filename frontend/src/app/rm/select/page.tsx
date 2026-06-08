@@ -12,13 +12,7 @@ import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Consultation } from '@/lib/types'
 import { formatKoreanDateTime } from '@/lib/dateFormat'
-
-function GenderBadge({ gender }: { gender?: string | null }) {
-  const src = gender === 'FEMALE'
-    ? '/icons/common/gender/small-여성-배경o.svg'
-    : '/icons/common/gender/small-남성-배경o.svg'
-  return <img src={src} alt="" width={20} height={20} />
-}
+import PatientAvatar from '@/components/interpreter/PatientAvatar'
 
 export default function RmSelectPage() {
   return (
@@ -107,7 +101,7 @@ function RmSelectInner() {
                     <div className="flex flex-col gap-1 flex-1 min-w-0 pr-3">
                       <div className="flex items-center gap-2">
                         <span className="text-[18px] font-medium text-[#161616]">{c.patientName}</span>
-                        <GenderBadge gender={c.patientGender} />
+                        <PatientAvatar avatarUrl={c.patientAvatarUrl} gender={c.patientGender} size="sm" />
                       </div>
                       {locationLine && (
                         <span className="text-[14px] text-[#808080] truncate">{locationLine}</span>

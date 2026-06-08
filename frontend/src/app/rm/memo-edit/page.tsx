@@ -11,6 +11,7 @@ import { consultationApi, patientApi } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import type { Consultation, Patient } from '@/lib/types'
 import { formatKoreanDateTime } from '@/lib/dateFormat'
+import PatientAvatar from '@/components/interpreter/PatientAvatar'
 
 function calcAge(birthDate?: string | null): number | null {
   if (!birthDate) return null
@@ -88,9 +89,7 @@ function RmMemoEditInner() {
   const patientName = patient?.name ?? consultation?.patientName ?? ''
   const age = calcAge(patient?.birthDate)
   const gender = patient?.gender ?? consultation?.patientGender
-  const genderIcon = gender === 'FEMALE'
-    ? '/icons/common/gender/small-여성-배경o.svg'
-    : '/icons/common/gender/small-남성-배경o.svg'
+  const avatarUrl = patient?.avatarUrl ?? consultation?.patientAvatarUrl
   const createdAtStr = consultation?.createdAt
     ? `${t.consultation.written_at} ${formatKoreanDateTime(consultation.createdAt)}`
     : ''
@@ -120,7 +119,7 @@ function RmMemoEditInner() {
           href={`/patients/${patientId}`}
           className="flex items-center gap-2"
         >
-          <img src={genderIcon} alt="" width={24} height={24} />
+          <PatientAvatar avatarUrl={avatarUrl} gender={gender} size="sm" />
           <span className="text-[18px] font-medium text-[#161616]">{patientName}</span>
           {age !== null && <span className="text-[18px] text-[#494949]">{t.patient.age_years(age)}</span>}
           <img src="/icons/common/arrows/right.svg" alt="" width={20} height={20} className="ml-auto" />

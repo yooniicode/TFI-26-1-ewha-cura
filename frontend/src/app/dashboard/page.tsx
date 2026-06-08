@@ -12,6 +12,7 @@ import { useMe } from '@/hooks/useMe'
 import type { Announcement, AnnouncementCategory, Consultation } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { daysBetweenDateKeys, formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
+import PatientAvatar from '@/components/interpreter/PatientAvatar'
 
 function formatToday(locale: string) {
   const d = new Date()
@@ -366,9 +367,6 @@ export default function DashboardPage() {
 
           <div className="flex flex-col gap-4">
             {recentConsultations.map((c, idx) => {
-              const genderIcon = c.patientGender === 'FEMALE'
-                ? '/icons/common/gender/small-여성-배경o.svg'
-                : '/icons/common/gender/small-남성-배경o.svg'
               const location = [c.hospitalName, c.department].filter(Boolean).join(' ') || '-'
 
               if (idx === 0) {
@@ -381,7 +379,7 @@ export default function DashboardPage() {
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-1">
                             <span className="text-[18px] font-semibold text-[#161616]">{c.patientName}</span>
-                            <img src={genderIcon} alt="" width={20} height={20} />
+                            <PatientAvatar avatarUrl={c.patientAvatarUrl} gender={c.patientGender} size="sm" />
                           </div>
                           <span className="text-[16px] text-[#494949]">{location}</span>
                         </div>
@@ -409,7 +407,7 @@ export default function DashboardPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1">
                         <span className="text-[18px] font-semibold text-[#808080]">{c.patientName}</span>
-                        <img src={genderIcon} alt="" width={20} height={20} />
+                        <PatientAvatar avatarUrl={c.patientAvatarUrl} gender={c.patientGender} size="sm" />
                       </div>
                       <span className="text-[16px] text-[#808080]">{location}</span>
                     </div>
