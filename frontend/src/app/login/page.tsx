@@ -101,7 +101,7 @@ export default function LoginPage() {
         router.replace('/dashboard')
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : '회원가입에 실패했습니다')
+      setError(e instanceof Error ? e.message : t.login.err_auth_unknown)
       setLoading(false)
     }
   }
@@ -144,7 +144,7 @@ export default function LoginPage() {
               mode === m ? 'text-[#2592FF]' : 'text-[#A0A0A0]'
             }`}
           >
-            {m === 'login' ? '로그인' : '회원가입'}
+            {m === 'login' ? t.auth.login : t.auth.signup}
             {mode === m && (
               <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#2592FF] rounded-full" />
             )}
@@ -188,23 +188,22 @@ export default function LoginPage() {
               className="w-full h-[56px] bg-[#2592FF] rounded-2xl text-base font-bold text-white disabled:opacity-40 transition-opacity hover:bg-[#1a7ee6] active:bg-[#1568c7]"
               disabled={loading}
             >
-              {loading ? '로그인 중...' : t.auth.login}
+              {loading ? t.login.logging_in : t.auth.login}
             </button>
 
             {/* 소셜 로그인 구분선 */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex-1 h-px bg-[#EEEEEE]" />
-              <span className="text-xs text-[#A0A0A0]">또는</span>
+              <span className="text-xs text-[#A0A0A0]">{t.common.or}</span>
               <div className="flex-1 h-px bg-[#EEEEEE]" />
             </div>
 
             {/* 카카오 로그인 */}
-            <KakaoLoginButton />
+            <KakaoButton label={`Kakao ${t.auth.login}`} />
 
             <p className="text-center text-sm text-[#808080] pt-1">
-              계정이 없으신가요?{' '}
               <button type="button" onClick={() => switchMode('signup')} className="text-[#2592FF] font-semibold hover:underline">
-                회원가입
+                {t.auth.signup}
               </button>
             </p>
           </form>
@@ -215,12 +214,12 @@ export default function LoginPage() {
           <div className="space-y-3">
 
             {/* 카카오 빠른 가입 */}
-            <KakaoSignupButton />
+            <KakaoButton label={`Kakao ${t.auth.signup}`} />
 
             {/* 구분선 */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-[#EEEEEE]" />
-              <span className="text-xs text-[#A0A0A0]">또는 이메일로 직접 가입</span>
+              <span className="text-xs text-[#A0A0A0]">{t.common.or} {t.auth.email} {t.auth.signup}</span>
               <div className="flex-1 h-px bg-[#EEEEEE]" />
             </div>
 
@@ -240,7 +239,7 @@ export default function LoginPage() {
                     ) : n}
                   </div>
                   <span className={`text-xs font-medium ${signupStep >= n ? 'text-[#2592FF]' : 'text-[#A0A0A0]'}`}>
-                    {n === 1 ? '내 정보' : '계정 만들기'}
+                    {n === 1 ? t.mypage.title : t.auth.signup}
                   </span>
                   {n === 1 && <div className={`flex-1 h-0.5 rounded-full transition-colors ${signupStep > 1 ? 'bg-[#2592FF]' : 'bg-[#EEEEEE]'}`} />}
                 </div>
@@ -265,8 +264,8 @@ export default function LoginPage() {
                 <FormField label={t.login.account_type}>
                   <div className="grid grid-cols-2 gap-2">
                     {([
-                      { value: 'patient' as SignupType, label: '이주민', desc: '의료 대본 · 진료 기록', icon: '/icons/immigrant/home/진료기록.svg' },
-                      { value: 'interpreter' as SignupType, label: '통번역가', desc: '보고서 · 담당 환자', icon: '/icons/interpreter/home/담당환자.svg' },
+                      { value: 'patient' as SignupType, label: t.login.type_patient, desc: t.login.type_patient_desc, icon: '/icons/immigrant/home/진료기록.svg' },
+                      { value: 'interpreter' as SignupType, label: t.login.type_interpreter, desc: t.login.type_interpreter_desc, icon: '/icons/interpreter/home/담당환자.svg' },
                     ] as const).map(({ value, label, desc, icon }) => (
                       <button
                         key={value}
@@ -298,7 +297,7 @@ export default function LoginPage() {
                 </FormField>
 
                 {/* 센터 */}
-                <FormField label={accountType === 'patient' ? '담당 센터' : t.login.work_center}>
+                <FormField label={t.login.work_center}>
                   <CenterSearchSelect
                     valueName={centerName}
                     placeholder={t.login.center_search_placeholder}
@@ -355,7 +354,7 @@ export default function LoginPage() {
                   className="w-full h-[56px] bg-[#2592FF] rounded-2xl text-base font-bold text-white hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
                   onClick={handleNextStep}
                 >
-                  다음
+                  {t.common.next_page}
                 </button>
               </div>
             )}
@@ -404,23 +403,23 @@ export default function LoginPage() {
                     className="w-[100px] h-[56px] bg-[#F0F1F5] rounded-2xl text-base font-semibold text-[#494949] hover:bg-[#e4e4e8] transition-colors"
                     onClick={() => { setError(''); setSignupStep(1) }}
                   >
-                    이전
+                    {t.common.prev_page}
                   </button>
                   <button
                     type="submit"
                     className="flex-1 h-[56px] bg-[#2592FF] rounded-2xl text-base font-bold text-white disabled:opacity-40 hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
                     disabled={loading}
                   >
-                    {loading ? '가입 중...' : t.auth.signup}
+                    {loading ? t.login.signing_up : t.auth.signup}
                   </button>
                 </div>
               </div>
             )}
 
             <p className="text-center text-sm text-[#808080] pt-1">
-              이미 계정이 있으신가요?{' '}
+              {t.login.already_have_account}{' '}
               <button type="button" onClick={() => switchMode('login')} className="text-[#2592FF] font-semibold hover:underline">
-                로그인
+                {t.auth.login}
               </button>
             </p>
           </form>
@@ -473,12 +472,4 @@ function KakaoButton({ label }: { label: string }) {
       {label}
     </button>
   )
-}
-
-function KakaoLoginButton() {
-  return <KakaoButton label="카카오로 로그인" />
-}
-
-function KakaoSignupButton() {
-  return <KakaoButton label="카카오로 시작하기" />
 }

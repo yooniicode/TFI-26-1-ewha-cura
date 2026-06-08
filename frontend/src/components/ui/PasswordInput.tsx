@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 
 interface PasswordInputProps {
   value: string
@@ -20,6 +21,7 @@ export default function PasswordInput({
   autoComplete,
 }: PasswordInputProps) {
   const [show, setShow] = useState(false)
+  const { t } = useTranslation()
 
   return (
     <div className="relative">
@@ -37,7 +39,7 @@ export default function PasswordInput({
         tabIndex={-1}
         onClick={() => setShow(v => !v)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-        aria-label={show ? '비밀번호 숨기기' : '비밀번호 보기'}
+        aria-label={show ? `${t.auth.password} hide` : `${t.auth.password} show`}
       >
         {show ? (
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

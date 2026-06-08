@@ -10,6 +10,8 @@ import StepIndicator from '@/components/interpreter/StepIndicator'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
+import { useTranslation } from '@/lib/i18n/I18nContext'
+import { formatKoreanDate, parseAppDate } from '@/lib/dateFormat'
 
 function calcAge(birthDate?: string | null): string {
   if (!birthDate) return ''
@@ -35,6 +37,8 @@ function ReportWriteInner() {
   const patientId = searchParams.get('patientId') ?? ''
   const rmCid = searchParams.get('cid')
 
+  const { t } = useTranslation()
+  const tc = t.consultation
   const labels = useEnumLabels()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [recentHistory, setRecentHistory] = useState<Consultation[]>([])
@@ -45,7 +49,9 @@ function ReportWriteInner() {
   // Step 1 (처음부터 작성하기 전용)
   const [workDescription, setWorkDescription] = useState('')
   // Step 2
-  const [consultationDate, setConsultationDate] = useState(new Date().toISOString().slice(0, 16))
+  const [consultationDate, setConsultationDate] = useState(() =>
+    new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16)
+  )
   const [hospitalName, setHospitalName] = useState('')
   const [department, setDepartment] = useState('')
   // Step 3
@@ -72,7 +78,10 @@ function ReportWriteInner() {
     if (fields.diagnosisContent) setDiagnosisContent(fields.diagnosisContent)
     if (fields.treatmentResult) setTreatmentResult(fields.treatmentResult)
     if (fields.medicationInstruction) setMedicationInstruction(fields.medicationInstruction)
-    if (fields.nextAppointmentDate) setNextAppointmentDate(fields.nextAppointmentDate)
+    // YYYY-MM-DD 형식만 허용 (AI가 "6개월 후" 같은 비날짜 문자열을 반환하면 NaN 버그 발생)
+    if (fields.nextAppointmentDate && /^\d{4}-\d{2}-\d{2}$/.test(fields.nextAppointmentDate)) {
+      setNextAppointmentDate(fields.nextAppointmentDate)
+    }
     if (fields.department) setDepartment(fields.department)
     if (fields.hospitalName) setHospitalName(fields.hospitalName)
     if (fields.patientComment) setPatientComment(fields.patientComment)
@@ -129,15 +138,22 @@ function ReportWriteInner() {
   // sessionStorage에서 AI 파싱 결과 적용 (메모→편집→여기로 올 때)
   useEffect(() => {
     const raw = sessionStorage.getItem('rm_parsed_fields')
-    if (!raw) return
-    sessionStorage.removeItem('rm_parsed_fields')
-    try {
-      const fields = JSON.parse(raw) as Record<string, string>
-      const filled = Object.entries(fields).filter(([, v]) => !!v).map(([k]) => k)
-      console.log(`[new:parse] sessionStorage 적용 filled=[${filled.join(',')}]`)
-      applyParsedFields(fields)
-    } catch (e) {
-      console.error('[new:parse] sessionStorage 파싱 실패:', e instanceof Error ? e.message : e)
+    if (raw) {
+      sessionStorage.removeItem('rm_parsed_fields')
+      try {
+        const fields = JSON.parse(raw) as Record<string, string>
+        const filled = Object.entries(fields).filter(([, v]) => !!v).map(([k]) => k)
+        console.log(`[new:parse] sessionStorage 적용 filled=[${filled.join(',')}]`)
+        applyParsedFields(fields)
+      } catch (e) {
+        console.error('[new:parse] sessionStorage 파싱 실패:', e instanceof Error ? e.message : e)
+      }
+    }
+    // 자동저장 실패 폴백: 메모 내용을 진료메모 칸에 미리 채움
+    const fallback = sessionStorage.getItem('rm_fallback_text')
+    if (fallback) {
+      sessionStorage.removeItem('rm_fallback_text')
+      setWorkDescription(fallback)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -162,7 +178,7 @@ function ReportWriteInner() {
     try {
       if (rmCid && rmConsultation) {
         await consultationApi.update(rmCid, {
-          consultationDate,
+          consultationDate: consultationDate || null,
           patientId: rmConsultation.patientId,
           hospitalId: rmConsultation.hospitalId ?? null,
           hospitalName: hospitalName || rmConsultation.hospitalName || '',
@@ -176,7 +192,7 @@ function ReportWriteInner() {
           diagnosisContent: diagnosisContent || '',
           diagnosisNameCode: diagnosisNameCode || rmConsultation.diagnosisNameCode || '',
           medicationInstruction: medicationInstruction || '',
-          nextAppointmentDate: nextAppointmentDate || null,
+          nextAppointmentDate: /^\d{4}-\d{2}-\d{2}$/.test(nextAppointmentDate) ? nextAppointmentDate : null,
           counselorName: rmConsultation.counselorName || '',
           durationHours: rmConsultation.durationHours ?? null,
           fee: rmConsultation.fee ?? null,
@@ -196,14 +212,14 @@ function ReportWriteInner() {
           diagnosisContent: diagnosisContent || undefined,
           treatmentResult: treatmentResult || undefined,
           medicationInstruction: medicationInstruction || undefined,
-          nextAppointmentDate: nextAppointmentDate || undefined,
+          nextAppointmentDate: /^\d{4}-\d{2}-\d{2}$/.test(nextAppointmentDate) ? nextAppointmentDate : undefined,
           department: department || undefined,
           hospitalName: hospitalName || undefined,
         })
       }
       setDone(true)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
+      setError(e instanceof Error ? e.message : tc.err_save)
       setSubmitting(false)
     }
   }
@@ -219,7 +235,7 @@ function ReportWriteInner() {
   if (done) {
     return (
       <AppShell noPadding>
-        <PageHeader title="보고서 작성" />
+        <PageHeader title={tc.write_report} />
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
           <div className="w-16 h-16 rounded-full bg-[#f3f9ff] flex items-center justify-center mb-6">
             <svg width="32" height="24" viewBox="0 0 32 24" fill="none">
@@ -227,32 +243,32 @@ function ReportWriteInner() {
             </svg>
           </div>
           <p className="text-[26px] font-semibold text-[#161616] leading-[1.4]">
-            보고서를 작성했어요
+            {tc.report_done}
           </p>
-          <p className="mt-2 text-base text-[#808080]">수고하셨습니다</p>
+          <p className="mt-2 text-base text-[#808080]">{tc.well_done}</p>
         </div>
         <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
           <button
             onClick={() => router.replace('/dashboard')}
             className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white"
           >
-            홈으로 돌아가기
+            {tc.go_home}
           </button>
         </div>
       </AppShell>
     )
   }
 
-  const FILL_TITLE = '비어있는 부분을\n빠짐없이 작성합니다'
+  const FILL_TITLE = tc.step_fill
   const stepTitles: Record<number, string> = fromMemo
     ? { 1: FILL_TITLE, 2: FILL_TITLE, 3: FILL_TITLE }
-    : { 1: '진료 메모를\n작성해주세요', 2: FILL_TITLE, 3: FILL_TITLE, 4: FILL_TITLE }
+    : { 1: tc.step_memo, 2: FILL_TITLE, 3: FILL_TITLE, 4: FILL_TITLE }
 
   const title = stepTitles[step] ?? ''
 
   return (
     <AppShell noPadding>
-      <PageHeader title="보고서 작성" showClose />
+      <PageHeader title={tc.write_report} showClose />
 
       {/* 환자 정보 바 */}
       <PatientInfoBar
@@ -344,7 +360,7 @@ function ReportWriteInner() {
             onClick={() => setStep(s => s - 1)}
             className="w-[111px] h-[60px] bg-[#F0F1F5] rounded-lg text-lg font-medium text-[#494949]"
           >
-            이전
+            {t.common.prev_page}
           </button>
         )}
         <button
@@ -360,7 +376,7 @@ function ReportWriteInner() {
           disabled={submitting || aiParsing}
           className="flex-1 h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-60"
         >
-          {aiParsing ? 'AI 분석 중...' : step < TOTAL_STEPS ? '다음으로' : submitting ? '저장 중...' : '저장하기'}
+          {aiParsing ? tc.ai_analyzing : step < TOTAL_STEPS ? tc.next_step : submitting ? t.common.saving : tc.save_btn}
         </button>
       </div>
     </AppShell>
@@ -416,6 +432,8 @@ function FieldTextarea({ label, value, onChange, placeholder, fromMemo }: {
 function Step1Scratch({ workDescription, onChange, aiParsing }: {
   workDescription: string; onChange: (v: string) => void; aiParsing: boolean
 }) {
+  const { t } = useTranslation()
+  const tc = t.consultation
   return (
     <div className="flex flex-col gap-3">
       {aiParsing && (
@@ -424,14 +442,14 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
-          <span className="text-sm text-blue-600">AI가 메모를 분석하는 중...</span>
+          <span className="text-sm text-blue-600">{tc.ai_parsing}</span>
         </div>
       )}
       <div className="bg-white border border-[#eee] rounded-[8px] p-4">
         <textarea
           value={workDescription}
           onChange={e => onChange(e.target.value)}
-          placeholder="예) 얼굴에 1도 화상으로 내원함. 처방받은 연고를 하루 3회 도포하도록 안내함. 피부 자극을 줄이기 위해 뜨거운 물 세안은 피하도록 설명함."
+          placeholder={tc.scratch_ph}
           className="w-full min-h-[394px] resize-none outline-none text-[18px] text-[#161616] leading-relaxed placeholder:text-[#a1a1a1]"
           autoFocus
         />
@@ -444,10 +462,12 @@ function StepDate({ consultationDate, hospitalName, department, onDateChange, on
   consultationDate: string; hospitalName: string; department: string;
   onDateChange: (v: string) => void; onHospitalChange: (v: string) => void; onDepartmentChange: (v: string) => void
 }) {
+  const { t } = useTranslation()
+  const tc = t.consultation
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <label className="text-base font-medium text-[#161616]">진료 날짜·시간</label>
+        <label className="text-base font-medium text-[#161616]">{tc.visit_datetime}</label>
         <input
           type="datetime-local"
           value={consultationDate}
@@ -459,7 +479,7 @@ function StepDate({ consultationDate, hospitalName, department, onDateChange, on
       {/* 병원 검색 (HIRA 병원정보서비스) */}
       <HospitalSearchField value={hospitalName} onChange={onHospitalChange} />
 
-      <FieldInput label="방문 과" value={department} onChange={onDepartmentChange} placeholder="진료과를 입력해주세요" />
+      <FieldInput label={tc.visit_dept} value={department} onChange={onDepartmentChange} placeholder={tc.visit_dept_ph} />
     </div>
   )
 }
@@ -469,6 +489,8 @@ function StepDate({ consultationDate, hospitalName, department, onDateChange, on
 interface HospResult { name: string; address: string; phone: string; type: string }
 
 function HospitalSearchField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation()
+  const tc = t.consultation
   const [query, setQuery] = useState('')
   const [directInput, setDirectInput] = useState('')
   const [mode, setMode] = useState<'search' | 'direct'>('search')
@@ -485,13 +507,13 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
       const res = await fetch(`/api/hospital-search?q=${encodeURIComponent(q)}`)
       const data = await res.json() as { results: HospResult[] }
       if (data.results.length === 0) {
-        setSearchErr('검색 결과가 없습니다.')
+        setSearchErr(t.common.no_result)
       } else {
         setResults(data.results)
         setShowPopup(true)
       }
     } catch {
-      setSearchErr('검색에 실패했습니다.')
+      setSearchErr(tc.search_failed)
     } finally {
       setSearching(false)
     }
@@ -521,10 +543,10 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
   return (
     <div className="flex flex-col gap-2">
       <label className="text-base font-medium text-[#161616]">
-        방문 병원
+        {tc.hospital}
         {mode === 'direct'
-          ? <span className="ml-1 text-xs text-[#2592FF] font-normal">직접 입력</span>
-          : <span className="ml-1 text-xs text-[#A0A0A0] font-normal">HIRA 검색</span>}
+          ? <span className="ml-1 text-xs text-[#2592FF] font-normal">{tc.hosp_direct_badge}</span>
+          : <span className="ml-1 text-xs text-[#A0A0A0] font-normal">{tc.hosp_hira_badge}</span>}
       </label>
 
       {/* 선택된 병원 */}
@@ -551,7 +573,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="병원명을 검색해주세요"
+            placeholder={tc.hosp_search_ph}
             className="flex-1 px-4 py-3.5 rounded-lg text-base text-[#161616] outline-none border border-[#EEEEEE] bg-[#F7F7F7] placeholder:text-[#A0A0A0]"
           />
           <button
@@ -565,7 +587,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
-            ) : '검색'}
+            ) : t.common.search}
           </button>
         </div>
       )}
@@ -578,7 +600,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
             value={directInput}
             onChange={e => setDirectInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleDirectConfirm()}
-            placeholder="병원명을 직접 입력해주세요"
+            placeholder={tc.hosp_direct_ph}
             autoFocus
             className="flex-1 px-4 py-3.5 rounded-lg text-base text-[#161616] outline-none border border-[#2592FF] bg-white placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-[#2592FF]/20"
           />
@@ -588,7 +610,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
             disabled={!directInput.trim()}
             className="px-4 py-2 bg-[#2592FF] text-white text-sm font-semibold rounded-lg disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors shrink-0"
           >
-            확인
+            {t.common.confirm}
           </button>
         </div>
       )}
@@ -600,7 +622,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
           onClick={() => { setMode(m => m === 'search' ? 'direct' : 'search'); setSearchErr('') }}
           className="text-xs text-[#A0A0A0] hover:text-[#2592FF] text-left transition-colors"
         >
-          {mode === 'search' ? '검색 없이 직접 입력하기 →' : '← HIRA로 검색하기'}
+          {mode === 'search' ? tc.hosp_switch_direct : tc.hosp_switch_hira}
         </button>
       )}
 
@@ -613,8 +635,8 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
           <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white rounded-t-3xl px-5 py-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-base font-bold text-[#161616]">병원 검색 결과</p>
-                <p className="text-xs text-[#A0A0A0] mt-0.5">건강보험심사평가원 병원정보</p>
+                <p className="text-base font-bold text-[#161616]">{tc.hosp_result_title}</p>
+                <p className="text-xs text-[#A0A0A0] mt-0.5">{tc.hosp_result_source}</p>
               </div>
               <button
                 type="button"
@@ -652,7 +674,7 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
             </div>
 
             <p className="text-center text-xs text-[#A0A0A0] mt-4">
-              출처: 건강보험심사평가원 병원정보서비스
+              {tc.hosp_result_footer}
             </p>
           </div>
         </>
@@ -671,16 +693,18 @@ function StepDiagnosis({
   onDiagnosisChange: (v: string) => void
   onTreatmentChange: (v: string) => void
 }) {
+  const { t } = useTranslation()
+  const tc = t.consultation
   return (
     <div className="flex flex-col gap-5">
       {fromMemo && (diagnosisContent || patientComment || treatmentResult) && (
         <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 rounded-lg border border-blue-100">
           <img src="/icons/interpreter/report/check.svg" alt="" width={16} height={16} />
-          <span className="text-sm text-blue-600 font-medium">AI가 자동으로 채워드렸어요</span>
+          <span className="text-sm text-blue-600 font-medium">{tc.ai_auto_filled}</span>
         </div>
       )}
-      <FieldTextarea label="증상 및 내원 계기" value={patientComment} onChange={onPatientCommentChange}
-        placeholder="증상을 입력해주세요" fromMemo={fromMemo} />
+      <FieldTextarea label={tc.symptom_field} value={patientComment} onChange={onPatientCommentChange}
+        placeholder={tc.symptom_ph} fromMemo={fromMemo} />
 
       {/* 병명 검색 (HIRA API) */}
       <DiseaseSearchField
@@ -689,10 +713,10 @@ function StepDiagnosis({
         fromMemo={fromMemo}
       />
 
-      <FieldTextarea label="의사 진단 상세" value={diagnosisContent} onChange={onDiagnosisChange}
-        placeholder="진단 내용을 입력해주세요" fromMemo={fromMemo} />
-      <FieldTextarea label="주의 사항" value={treatmentResult} onChange={onTreatmentChange}
-        placeholder="주의 사항을 입력해주세요" fromMemo={fromMemo} />
+      <FieldTextarea label={tc.doctor_diagnosis} value={diagnosisContent} onChange={onDiagnosisChange}
+        placeholder={tc.doctor_diagnosis_ph} fromMemo={fromMemo} />
+      <FieldTextarea label={tc.caution_field} value={treatmentResult} onChange={onTreatmentChange}
+        placeholder={tc.caution_ph} fromMemo={fromMemo} />
     </div>
   )
 }
@@ -706,6 +730,8 @@ function DiseaseSearchField({
 }: {
   value: string; onChange: (v: string) => void; fromMemo?: boolean
 }) {
+  const { t } = useTranslation()
+  const tc = t.consultation
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const [results, setResults] = useState<DiseaseResult[]>([])
@@ -720,13 +746,13 @@ function DiseaseSearchField({
       const res = await fetch(`/api/disease-search?q=${encodeURIComponent(q)}`)
       const data = await res.json() as { results: DiseaseResult[] }
       if (data.results.length === 0) {
-        setSearchErr('검색 결과가 없습니다.')
+        setSearchErr(t.common.no_result)
       } else {
         setResults(data.results)
         setShowPopup(true)
       }
     } catch {
-      setSearchErr('검색에 실패했습니다.')
+      setSearchErr(tc.search_failed)
     } finally {
       setSearching(false)
     }
@@ -743,8 +769,8 @@ function DiseaseSearchField({
   return (
     <div className="flex flex-col gap-2">
       <label className="text-base font-medium text-[#161616]">
-        병명·질병코드
-        <span className="ml-1 text-xs text-[#A0A0A0] font-normal">HIRA 검색</span>
+        {tc.disease_field}
+        <span className="ml-1 text-xs text-[#A0A0A0] font-normal">{tc.hosp_hira_badge}</span>
       </label>
 
       {/* 현재 선택된 병명 */}
@@ -773,7 +799,7 @@ function DiseaseSearchField({
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            placeholder="예) 감기, 고혈압, 당뇨"
+            placeholder={tc.disease_ph}
             className={`flex-1 px-4 py-3.5 rounded-lg text-base text-[#161616] outline-none border ${
               filled ? 'border-[#A1A1A1]' : 'border-[#EEEEEE] bg-[#F7F7F7]'
             } placeholder:text-[#A0A0A0]`}
@@ -789,7 +815,7 @@ function DiseaseSearchField({
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
-            ) : '검색'}
+            ) : t.common.search}
           </button>
         </div>
       )}
@@ -802,8 +828,8 @@ function DiseaseSearchField({
           <div className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto bg-white rounded-t-3xl px-5 py-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-base font-bold text-[#161616]">병명 검색 결과</p>
-                <p className="text-xs text-[#A0A0A0] mt-0.5">건강보험심사평가원 질병정보</p>
+                <p className="text-base font-bold text-[#161616]">{tc.disease_result_title}</p>
+                <p className="text-xs text-[#A0A0A0] mt-0.5">{tc.disease_result_source}</p>
               </div>
               <button
                 type="button"
@@ -829,7 +855,7 @@ function DiseaseSearchField({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-semibold text-[#161616] leading-snug">{r.name}</p>
-                    <p className="text-xs text-[#808080] mt-0.5">ICD 코드: {r.code}</p>
+                    <p className="text-xs text-[#808080] mt-0.5">{tc.disease_icd} {r.code}</p>
                   </div>
                   <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
                     <path d="M1 1l6 6-6 6" stroke="#2592FF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -839,7 +865,7 @@ function DiseaseSearchField({
             </div>
 
             <p className="text-center text-xs text-[#A0A0A0] mt-4">
-              출처: 건강보험심사평가원 질병정보서비스
+              {tc.disease_result_footer}
             </p>
           </div>
         </>
@@ -853,18 +879,20 @@ function StepMedication({ medicationInstruction, nextAppointmentDate, fromMemo,
   medicationInstruction: string; nextAppointmentDate: string; fromMemo?: boolean;
   onMedicationChange: (v: string) => void; onNextDateChange: (v: string) => void
 }) {
+  const { t } = useTranslation()
+  const tc = t.consultation
   return (
     <div className="flex flex-col gap-5">
       {fromMemo && medicationInstruction && (
         <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 rounded-lg border border-blue-100">
           <img src="/icons/interpreter/report/check.svg" alt="" width={16} height={16} />
-          <span className="text-sm text-blue-600 font-medium">AI가 자동으로 채워드렸어요</span>
+          <span className="text-sm text-blue-600 font-medium">{tc.ai_auto_filled}</span>
         </div>
       )}
-      <FieldTextarea label="약 복용" value={medicationInstruction} onChange={onMedicationChange}
-        placeholder="약 복용 방법을 입력해주세요" fromMemo={fromMemo} />
+      <FieldTextarea label={tc.medication_field} value={medicationInstruction} onChange={onMedicationChange}
+        placeholder={tc.medication_ph} fromMemo={fromMemo} />
       <div className="flex flex-col gap-2">
-        <label className="text-base font-medium text-[#161616]">다음 일정</label>
+        <label className="text-base font-medium text-[#161616]">{tc.next_schedule}</label>
         <CalendarPicker value={nextAppointmentDate} onChange={onNextDateChange} />
       </div>
     </div>
@@ -872,15 +900,17 @@ function StepMedication({ medicationInstruction, nextAppointmentDate, fromMemo,
 }
 
 function CalendarPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useTranslation()
   const today = new Date()
+  const initDate = parseAppDate(value)
   const [viewYear, setViewYear] = useState(() =>
-    value ? parseInt(value.split('-')[0]) : today.getFullYear()
+    initDate ? initDate.getFullYear() : today.getFullYear()
   )
   const [viewMonth, setViewMonth] = useState(() =>
-    value ? parseInt(value.split('-')[1]) - 1 : today.getMonth()
+    initDate ? initDate.getMonth() : today.getMonth()
   )
 
-  const selectedDate = value ? new Date(value + 'T00:00:00') : null
+  const selectedDate = parseAppDate(value)
 
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay()
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
@@ -914,7 +944,7 @@ function CalendarPicker({ value, onChange }: { value: string; onChange: (v: stri
     onChange(`${y}-${m}-${day}`)
   }
 
-  const DAYS = ['일', '월', '화', '수', '목', '금', '토']
+  const DAYS = t.common.weekdays
 
   return (
     <div className="bg-white border border-[#eee] rounded-[20px] p-6">
@@ -973,11 +1003,7 @@ function CalendarPicker({ value, onChange }: { value: string; onChange: (v: stri
       {value && (
         <div className="mt-3 pt-3 border-t border-[#eee] text-center">
           <span className="text-[14px] text-[#2592ff] font-medium">
-            {(() => {
-              const d = new Date(value + 'T00:00:00')
-              const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
-              return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} (${dow})`
-            })()}
+            {formatKoreanDate(value)}
           </span>
         </div>
       )}

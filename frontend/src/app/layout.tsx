@@ -4,8 +4,8 @@ import QueryProvider from '@/components/QueryProvider'
 import { I18nProvider } from '@/lib/i18n/I18nContext'
 
 export const metadata: Metadata = {
-  title: 'LinkUs 통번역 지원 플랫폼',
-  description: '이주민 의료 통번역 지원 시스템',
+  title: 'LinkUs Interpretation Support Platform',
+  description: 'Medical interpretation support system for migrants',
   manifest: '/manifest.json',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: 'LinkUs' },
 }

@@ -50,7 +50,7 @@ export interface EnumLabels {
   script: Record<ScriptType, string>
 }
 
-export const enumLabels: Record<Language, EnumLabels> = {
+export const enumLabels: Partial<Record<Language, EnumLabels>> = {
   ko: {
     nationality: {
       KOREA: '한국',
@@ -253,5 +253,5 @@ export const enumLabels: Record<Language, EnumLabels> = {
 
 export function useEnumLabels(): EnumLabels {
   const { lang } = useTranslation()
-  return enumLabels[lang]
+  return enumLabels[lang] ?? enumLabels.en!
 }

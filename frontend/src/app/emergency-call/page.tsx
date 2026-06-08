@@ -14,12 +14,12 @@ export default function EmergencyCallPage() {
   const { t } = useTranslation()
 
   const EMERGENCY_NUMBERS = [
-    { labelKey: 'emergency_fire' as const, descKey: 'emergency_fire_desc' as const, number: '119', hours: '24시간' },
-    { labelKey: 'police' as const, descKey: 'police_desc' as const, number: '112', hours: '24시간' },
-    { labelKey: 'medical_info' as const, descKey: 'medical_info_desc' as const, number: '1339', hours: '24시간' },
-    { labelKey: 'danuri' as const, descKey: 'danuri_desc' as const, number: '1577-1366', hours: '24시간' },
-    { labelKey: 'immigration' as const, descKey: 'immigration_desc' as const, number: '1345', hours: '평일 09:00~22:00' },
-    { labelKey: 'nhis' as const, descKey: 'nhis_desc' as const, number: '033-811-2000', hours: '평일 09:00~18:00', url: 'https://www.nhis.or.kr/vietnamese/index.do' },
+    { labelKey: 'emergency_fire' as const, descKey: 'emergency_fire_desc' as const, number: '119', hours: '24h' },
+    { labelKey: 'police' as const, descKey: 'police_desc' as const, number: '112', hours: '24h' },
+    { labelKey: 'medical_info' as const, descKey: 'medical_info_desc' as const, number: '1339', hours: '24h' },
+    { labelKey: 'danuri' as const, descKey: 'danuri_desc' as const, number: '1577-1366', hours: '24h' },
+    { labelKey: 'immigration' as const, descKey: 'immigration_desc' as const, number: '1345', hours: 'Weekdays 09:00-22:00' },
+    { labelKey: 'nhis' as const, descKey: 'nhis_desc' as const, number: '033-811-2000', hours: 'Weekdays 09:00-18:00', url: 'https://www.nhis.or.kr/vietnamese/index.do' },
   ]
 
   return (
@@ -62,7 +62,7 @@ export default function EmergencyCallPage() {
                 className="mt-1.5 inline-block text-[13px] font-medium text-[#2592ff] underline underline-offset-2 active:opacity-60 transition-opacity"
                 onClick={e => e.stopPropagation()}
               >
-                웹사이트 바로가기 →
+                {t.dashboard.resource_open}
               </a>
             )}
           </div>

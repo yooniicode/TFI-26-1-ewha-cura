@@ -42,6 +42,12 @@ public class ConsultationService {
     private final AdminService adminService;
     private final PatientCenterRepository patientCenterRepository;
 
+    public record ExportData(
+            UUID centerId,
+            String centerName,
+            List<ConsultationResponse.Summary> rows
+    ) {}
+
     @Transactional
     public ConsultationResponse.Detail createByPatient(ConsultationRequest.Create req, UserPrincipal principal) {
         Patient patient = patientRepository.findByAuthUserId(principal.getAuthUserId())
@@ -136,7 +142,7 @@ public class ConsultationService {
             if (c.isConfirmed()) throw new BusinessException(BusinessErrorCode.CONSULTATION_ALREADY_CONFIRMED);
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            if (!c.getInterpreter().getId().equals(interpreter.getId())) {
+            if (c.getInterpreter() == null || !c.getInterpreter().getId().equals(interpreter.getId())) {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
             }
         } else {
@@ -230,18 +236,25 @@ public class ConsultationService {
                 .map(ConsultationResponse.PatientView::from);
     }
 
-    public List<ConsultationResponse.Summary> getExportData(UserPrincipal principal) {
+    public ExportData getExportData(UserPrincipal principal) {
         Pageable all = PageRequest.of(0, 5000);
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
-            return consultationRepository.searchByCenter(center.getId(), null, all)
+            List<ConsultationResponse.Summary> rows = consultationRepository.searchByCenter(center.getId(), null, all)
                     .map(ConsultationResponse.Summary::from).getContent();
+            return new ExportData(center.getId(), center.getName(), rows);
         }
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            return consultationRepository.searchByInterpreter(interpreter.getId(), null, all)
+            if (interpreter.getCenter() == null) {
+                throw new GeneralException(GeneralErrorCode.BAD_REQUEST,
+                        "통번역가의 센터 정보가 없어 export 대상 스프레드시트를 결정할 수 없습니다");
+            }
+            Center center = interpreter.getCenter();
+            List<ConsultationResponse.Summary> rows = consultationRepository.searchByInterpreter(interpreter.getId(), null, all)
                     .map(ConsultationResponse.Summary::from).getContent();
+            return new ExportData(center.getId(), center.getName(), rows);
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }

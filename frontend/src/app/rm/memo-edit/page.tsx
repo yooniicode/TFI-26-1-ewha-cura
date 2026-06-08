@@ -8,27 +8,18 @@ import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
 import StepIndicator from '@/components/interpreter/StepIndicator'
 import { consultationApi, patientApi } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 import type { Consultation, Patient } from '@/lib/types'
+import { formatKoreanDateTime } from '@/lib/dateFormat'
 
-function calcAge(birthDate?: string | null): string {
-  if (!birthDate) return ''
+function calcAge(birthDate?: string | null): number | null {
+  if (!birthDate) return null
   const birth = new Date(birthDate)
   const today = new Date()
   let age = today.getFullYear() - birth.getFullYear()
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return `${age}세`
-}
-
-function formatCreatedAt(dateStr?: string | null): string {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return ''
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  const hh = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `작성일 ${mm}.${dd} ${hh}:${min}`
+  return age
 }
 
 export default function RmMemoEditPage() {
@@ -41,6 +32,7 @@ export default function RmMemoEditPage() {
 
 function RmMemoEditInner() {
   const router = useRouter()
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const cid = searchParams.get('cid') ?? ''
   const patientId = searchParams.get('patientId') ?? ''
@@ -94,21 +86,23 @@ function RmMemoEditInner() {
   }
 
   const patientName = patient?.name ?? consultation?.patientName ?? ''
-  const ageStr = calcAge(patient?.birthDate)
+  const age = calcAge(patient?.birthDate)
   const gender = patient?.gender ?? consultation?.patientGender
   const genderIcon = gender === 'FEMALE'
     ? '/icons/common/gender/small-여성-배경o.svg'
     : '/icons/common/gender/small-남성-배경o.svg'
-  const createdAtStr = formatCreatedAt(consultation?.createdAt)
+  const createdAtStr = consultation?.createdAt
+    ? `${t.consultation.written_at} ${formatKoreanDateTime(consultation.createdAt)}`
+    : ''
 
   return (
     <AppShell noPadding>
-      <PageHeader title="보고서 작성" showClose />
+      <PageHeader title={t.report_flow.title} showClose />
 
       <div className="bg-white px-4 pt-7 pb-4">
         <div className="mb-6">
-          <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4]">
-            보고서로 작성할<br />진료 메모를 선택합니다
+          <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
+            {t.report_flow.edit_memo_title}
           </h2>
           {createdAtStr && (
             <p className="mt-2 text-[16px] text-[#808080]">{createdAtStr}</p>
@@ -128,7 +122,7 @@ function RmMemoEditInner() {
         >
           <img src={genderIcon} alt="" width={24} height={24} />
           <span className="text-[18px] font-medium text-[#161616]">{patientName}</span>
-          {ageStr && <span className="text-[18px] text-[#494949]">{ageStr}</span>}
+          {age !== null && <span className="text-[18px] text-[#494949]">{t.patient.age_years(age)}</span>}
           <img src="/icons/common/arrows/right.svg" alt="" width={20} height={20} className="ml-auto" />
         </Link>
       </div>
@@ -138,7 +132,7 @@ function RmMemoEditInner() {
         <div className="bg-white border border-[#eee] rounded-[8px] p-4">
           {consultation ? (
             <p className="text-[18px] text-[#494949] leading-relaxed whitespace-pre-wrap min-h-[200px]">
-              {consultation.workDescription || '메모 내용이 없습니다.'}
+              {consultation.workDescription || t.report_flow.memo_placeholder}
             </p>
           ) : (
             <div className="flex justify-center py-8"><Spinner /></div>
@@ -147,7 +141,7 @@ function RmMemoEditInner() {
 
         {aiStatus === 'loading' && (
           <div className="mt-3 text-center text-xs py-1.5 rounded-lg bg-blue-50 text-[#2592FF]">
-            AI가 메모를 분석하는 중...
+            {t.report_flow.ai_analyzing}
           </div>
         )}
       </div>
@@ -159,7 +153,7 @@ function RmMemoEditInner() {
           onClick={() => router.back()}
           className="w-[111px] h-[60px] bg-[#f0f1f5] rounded-[8px] text-[18px] font-medium text-[#494949]"
         >
-          이전
+          {t.report_flow.prev_btn}
         </button>
         <button
           type="button"
@@ -167,7 +161,7 @@ function RmMemoEditInner() {
           disabled={submitting || aiStatus === 'loading' || !consultation}
           className="flex-1 h-[60px] bg-[#2592FF] rounded-[8px] text-[18px] font-semibold text-white disabled:opacity-50"
         >
-          {aiStatus === 'loading' ? 'AI 분석 중...' : submitting ? '저장 중...' : '다음으로'}
+          {aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : submitting ? t.common.saving : t.report_flow.next_btn}
         </button>
       </div>
     </AppShell>

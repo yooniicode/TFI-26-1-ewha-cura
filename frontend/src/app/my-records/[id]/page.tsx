@@ -10,12 +10,10 @@ import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { getBodyPartImage, getDiseaseShortName, getIcdCode } from '@/lib/bodyPartUtils'
+import { formatKoreanDateTime } from '@/lib/dateFormat'
 
 function consultDateKo(dateStr: string) {
-  const d = new Date(dateStr + 'T00:00:00')
-  if (isNaN(d.getTime())) return dateStr
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
-  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${dow})`
+  return formatKoreanDateTime(dateStr)
 }
 
 export default function MyRecordDetailPage() {
@@ -178,7 +176,7 @@ export default function MyRecordDetailPage() {
             <div className="flex flex-col gap-0.5">
               <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">다음 예약</p>
               <p className="text-[16px] font-semibold text-[#2592ff] leading-[1.4]">
-                {record.nextAppointmentDate}
+                {formatKoreanDateTime(record.nextAppointmentDate)}
               </p>
             </div>
           )}

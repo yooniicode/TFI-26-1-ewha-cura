@@ -15,6 +15,7 @@ public class MatchResponse {
             String patientName,
             UUID interpreterId,
             String interpreterName,
+            String interpreterPhone,
             boolean active,
             LocalDateTime createdAt
     ) {
@@ -25,6 +26,7 @@ public class MatchResponse {
                     m.getPatient().getName(),
                     m.getInterpreter().getId(),
                     m.getInterpreter().getName(),
+                    m.getInterpreter().getPhone(),
                     m.isActive(),
                     m.getCreatedAt());
         }

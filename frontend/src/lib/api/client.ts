@@ -86,7 +86,7 @@ async function request<T>(
   const res = await instance.request({ method, url: path, data: options?.data })
 
   const wrapper = wrapperSchema.safeParse(res.data)
-  if (!wrapper.success) throw new ApiError('서버 응답 형식이 올바르지 않습니다.', res.status)
+  if (!wrapper.success) throw new ApiError('Invalid server response format.', res.status)
   if (!wrapper.data.isSuccess) throw new ApiError(wrapper.data.message, res.status)
 
   const payload = options?.schema
@@ -98,7 +98,7 @@ async function request<T>(
 
 function parsePayload<T>(schema: z.ZodType<T>, payload: unknown, status: number): T {
   const parsed = schema.safeParse(payload)
-  if (!parsed.success) throw new ApiError('서버 응답 데이터 형식이 올바르지 않습니다.', status)
+  if (!parsed.success) throw new ApiError('Invalid server response data format.', status)
   return parsed.data
 }
 

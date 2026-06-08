@@ -6,8 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import { patientApi, consultationApi } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Consultation, Patient } from '@/lib/types'
+import { formatKoreanDate, toDateKey } from '@/lib/dateFormat'
 
 const FLAG: Record<string, string> = {
   VIETNAM: '🇻🇳', CHINA: '🇨🇳', CAMBODIA: '🇰🇭', MYANMAR: '🇲🇲',
@@ -16,35 +18,28 @@ const FLAG: Record<string, string> = {
   PAKISTAN: '🇵🇰', OTHER: '🌍',
 }
 
-function calcAge(birthDate?: string | null): string {
-  if (!birthDate) return ''
+function calcAge(birthDate?: string | null): number | null {
+  if (!birthDate) return null
   const b = new Date(birthDate)
-  if (isNaN(b.getTime())) return ''
+  if (isNaN(b.getTime())) return null
   const today = new Date()
   let age = today.getFullYear() - b.getFullYear()
   if (
     today.getMonth() < b.getMonth() ||
     (today.getMonth() === b.getMonth() && today.getDate() < b.getDate())
   ) age--
-  return `${age}세`
+  return age
 }
 
-function formatBirth(birthDate?: string | null): string {
-  if (!birthDate) return ''
-  const d = new Date(birthDate)
-  if (isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
-}
-
-function getDateLabel(dateStr: string): string {
+function getDateLabel(dateStr: string, todayLabel: string, yesterdayLabel: string): string {
   const today = new Date().toISOString().split('T')[0]
   const yd = new Date()
   yd.setDate(yd.getDate() - 1)
   const yesterday = yd.toISOString().split('T')[0]
-  if (dateStr >= today) return '오늘'
-  if (dateStr === yesterday) return '어제'
-  const d = new Date(dateStr + 'T00:00:00')
-  return `${d.getMonth() + 1}월 ${d.getDate()}일`
+  const dateKey = toDateKey(dateStr)
+  if (dateKey === today) return todayLabel
+  if (dateKey === yesterday) return yesterdayLabel
+  return formatKoreanDate(dateStr)
 }
 
 function GenderAvatar({ gender }: { gender?: string | null }) {
@@ -94,6 +89,7 @@ export default function PatientSelectPage() {
 
 function PatientSelectInner() {
   const router = useRouter()
+  const { t } = useTranslation()
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const { data: consultationsData = [], isLoading: loadingRecent } = useQuery<Consultation[]>({
@@ -133,13 +129,13 @@ function PatientSelectInner() {
     <AppShell noPadding>
       {/* 헤더 */}
       <div className="bg-white px-4 py-3 flex items-center gap-3 border-b border-[#F6F6F6]">
-        <button onClick={() => router.back()} className="w-6 flex items-center justify-center">
+        <button onClick={() => router.back()} className="w-6 flex items-center justify-center" aria-label="Back">
           <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
             <path d="M10 2L2 10L10 18" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <h1 className="flex-1 text-center text-lg font-semibold text-[#161616]">보고서 작성</h1>
-        <button onClick={() => router.back()} className="w-6 flex items-center justify-center">
+        <h1 className="flex-1 text-center text-lg font-semibold text-[#161616]">{t.report_flow.title}</h1>
+        <button onClick={() => router.back()} className="w-6 flex items-center justify-center" aria-label="Close">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M1 1L13 13M13 1L1 13" stroke="#161616" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
@@ -149,8 +145,8 @@ function PatientSelectInner() {
       <div className="flex-1 overflow-y-auto bg-white">
         <div className="px-4 pt-7 pb-4">
           {/* 타이틀 */}
-          <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] mb-6">
-            어떤 분의<br />보고서를 작성할까요?
+          <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] mb-6 whitespace-pre-line">
+            {t.report_flow.patient_select_title}
           </h2>
 
           {/* 스텝 인디케이터 */}
@@ -178,7 +174,7 @@ function PatientSelectInner() {
             {/* 최근 진료 */}
             {recentPatients.length > 0 && (
               <div className="px-4">
-                <p className="text-[16px] font-medium text-[#161616] mb-3">최근 진료</p>
+                <p className="text-[16px] font-medium text-[#161616] mb-3">{t.report_flow.recent_visit}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {recentPatients.map(p => {
                     const isSelected = selectedId === p.id
@@ -194,9 +190,11 @@ function PatientSelectInner() {
                       >
                         <GenderAvatar gender={p.gender} />
                         <p className="text-[18px] font-medium text-[#161616] truncate w-full">{p.name}</p>
-                        {age && <p className="text-[16px] text-[#494949]">{age}</p>}
+                        {age !== null && <p className="text-[16px] text-[#494949]">{t.patient.age_years(age)}</p>}
                         <div className="bg-[#f7f7f7] rounded-[8px] px-3 py-1.5 self-start">
-                          <span className="text-[14px] font-medium text-[#494949]">{getDateLabel(p.consultationDate)}</span>
+                          <span className="text-[14px] font-medium text-[#494949]">
+                            {getDateLabel(p.consultationDate, t.common.today, t.common.yesterday)}
+                          </span>
                         </div>
                       </button>
                     )
@@ -208,7 +206,7 @@ function PatientSelectInner() {
             {/* 전체 */}
             {patientsData.length > 0 && (
               <div className="px-4">
-                <p className="text-[16px] font-medium text-[#161616] mb-3">전체</p>
+                <p className="text-[16px] font-medium text-[#161616] mb-3">{t.report_flow.all_patients}</p>
                 <div className="grid grid-cols-2 gap-3">
                   {patientsData.map(p => {
                     const isSelected = selectedId === p.id
@@ -224,7 +222,7 @@ function PatientSelectInner() {
                       >
                         <GenderAvatar gender={p.gender} />
                         <p className="text-[18px] font-medium text-[#161616] truncate w-full">{p.name}</p>
-                        {age && <p className="text-[16px] text-[#494949]">{age}</p>}
+                        {age !== null && <p className="text-[16px] text-[#494949]">{t.patient.age_years(age)}</p>}
                       </button>
                     )
                   })}
@@ -234,7 +232,7 @@ function PatientSelectInner() {
 
             {recentPatients.length === 0 && patientsData.length === 0 && (
               <div className="py-16 text-center text-sm text-[#808080]">
-                환자 정보가 없어요
+                {t.report_flow.no_patient_info}
               </div>
             )}
           </div>
@@ -249,7 +247,7 @@ function PatientSelectInner() {
           disabled={!selectedId}
           className="w-full h-[60px] bg-[#2592ff] rounded-lg text-lg font-semibold text-white disabled:opacity-40 transition-opacity"
         >
-          다음으로
+          {t.report_flow.next_btn}
         </button>
       </div>
     </AppShell>

@@ -6,6 +6,8 @@ import PageHeader from '@/components/interpreter/PageHeader'
 import Spinner from '@/components/ui/Spinner'
 import { useMe } from '@/hooks/useMe'
 import { useRouter } from 'next/navigation'
+import { formatKoreanDateTime } from '@/lib/dateFormat'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 
 const LS_KEY = 'byby_sheets_url'
 const LS_RANGE_KEY = 'byby_sheets_range'
@@ -28,15 +30,14 @@ function parseSpreadsheetId(input: string): string | null {
 }
 
 function formatFetchedAt(iso: string) {
-  return new Date(iso).toLocaleString('ko-KR', {
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit',
-  })
+  return formatKoreanDateTime(iso)
 }
 
 export default function SheetsPage() {
   const { data: me, isLoading: meLoading } = useMe()
   const router = useRouter()
+  const { t } = useTranslation()
+  const ts = t.sheets
 
   const [url, setUrl] = useState(() =>
     typeof window !== 'undefined' ? (localStorage.getItem(LS_KEY) ?? '') : ''
@@ -71,7 +72,7 @@ export default function SheetsPage() {
   async function handleFetch(urlInput = url, rangeInput = range) {
     const id = parseSpreadsheetId(urlInput)
     if (!id) {
-      setError('올바른 Google Sheets URL 또는 ID를 입력해주세요.')
+      setError(ts.err_invalid_id)
       return
     }
     setLoading(true)
@@ -82,14 +83,14 @@ export default function SheetsPage() {
       const json = await res.json() as SheetData & { error?: string }
       if (!res.ok) {
         if (res.status === 503) setApiKeyMissing(true)
-        setError(json.error ?? '데이터를 불러오지 못했습니다.')
+        setError(json.error ?? ts.err_fetch_failed)
         return
       }
       setData(json)
       localStorage.setItem(LS_KEY, urlInput)
       localStorage.setItem(LS_RANGE_KEY, rangeInput)
     } catch {
-      setError('네트워크 오류가 발생했습니다.')
+      setError(ts.err_network)
     } finally {
       setLoading(false)
     }
@@ -104,17 +105,17 @@ export default function SheetsPage() {
 
   return (
     <AppShell noPadding>
-      <PageHeader title="구글 시트 연동" />
+      <PageHeader title={ts.title} />
 
       <div className="bg-[#F5F5F5] px-4 py-4 pb-10 min-h-screen space-y-4">
 
         {/* 연결 설정 카드 */}
         <div className="bg-white rounded-2xl px-5 py-5 space-y-3">
-          <p className="text-xs font-bold text-[#A0A0A0] uppercase tracking-wider">연결 설정</p>
+          <p className="text-xs font-bold text-[#A0A0A0] uppercase tracking-wider">{ts.settings}</p>
 
           <div>
             <label className="block text-sm font-medium text-[#161616] mb-1.5">
-              Google Sheets URL 또는 ID
+              Google Sheets URL / ID
             </label>
             <input
               type="text"
@@ -128,8 +129,8 @@ export default function SheetsPage() {
 
           <div>
             <label className="block text-sm font-medium text-[#161616] mb-1.5">
-              시트 이름 / 범위
-              <span className="ml-1 text-xs text-[#A0A0A0] font-normal">예: Sheet1, 상담기록!A:Z</span>
+              {ts.sheet_range}
+              <span className="ml-1 text-xs text-[#A0A0A0] font-normal">{ts.range_example}</span>
             </label>
             <input
               type="text"
@@ -171,7 +172,7 @@ export default function SheetsPage() {
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  불러오는 중...
+                  {ts.loading}
                 </>
               ) : (
                 <>
@@ -179,7 +180,7 @@ export default function SheetsPage() {
                     <polyline points="23 4 23 10 17 10" />
                     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
                   </svg>
-                  {data ? '새로고침' : '불러오기'}
+                  {data ? ts.refresh : ts.fetch}
                 </>
               )}
             </button>
@@ -189,22 +190,22 @@ export default function SheetsPage() {
                 onClick={() => { setData(null); setUrl(''); setRange('Sheet1'); localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_RANGE_KEY) }}
                 className="px-4 h-[48px] bg-[#F0F1F5] rounded-xl text-sm font-semibold text-[#494949] hover:bg-[#e4e4e8] transition-colors"
               >
-                연결 해제
+                {ts.disconnect}
               </button>
             )}
           </div>
 
           {/* 안내 */}
           <div className="bg-[#FFF8E1] rounded-xl px-4 py-3 text-xs text-[#7B5E00] leading-relaxed">
-            <p className="font-semibold mb-1">연결 전 확인사항</p>
-            <p>• Google 시트를 <strong>&ldquo;링크가 있는 모든 사용자 — 뷰어&rdquo;</strong>로 공유 설정해야 합니다.</p>
-            <p>• 서버에 <strong>GOOGLE_SHEETS_API_KEY</strong> 환경변수가 설정되어 있어야 합니다.</p>
-            <p>• 데이터는 읽기 전용으로 표시되며 앱 내에서 수정할 수 없습니다.</p>
+            <p className="font-semibold mb-1">{ts.notice_title}</p>
+            <p>• {ts.notice_share}</p>
+            <p>• {ts.notice_api_key}</p>
+            <p>• {ts.notice_readonly}</p>
           </div>
 
           {apiKeyMissing && (
             <div className="bg-red-50 rounded-xl px-4 py-3 text-xs text-red-600">
-              GOOGLE_SHEETS_API_KEY 환경변수가 설정되지 않았습니다. 서버 관리자에게 문의하세요.
+              {ts.err_api_key_missing}
             </div>
           )}
           {error && !apiKeyMissing && (
@@ -220,11 +221,11 @@ export default function SheetsPage() {
               <div>
                 <p className="text-sm font-bold text-[#161616]">{data.title}</p>
                 <p className="text-xs text-[#A0A0A0] mt-0.5">
-                  {data.range} · {bodyRows.length}행 · {headers.length}열
+                  {data.range} · {ts.row_count(bodyRows.length)} · {ts.col_count(headers.length)}
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-[10px] text-[#A0A0A0]">마지막 업데이트</span>
+                <span className="text-[10px] text-[#A0A0A0]">{ts.last_updated}</span>
                 <p className="text-xs font-medium text-[#494949]">{formatFetchedAt(data.fetchedAt)}</p>
               </div>
             </div>
@@ -242,7 +243,7 @@ export default function SheetsPage() {
                         key={i}
                         className="px-4 py-2.5 text-left text-xs font-semibold text-[#494949] whitespace-nowrap border-l border-[#F0F0F0]"
                       >
-                        {h || <span className="text-[#D0D0D0]">열 {i + 1}</span>}
+                        {h || <span className="text-[#D0D0D0]">{ts.col_label(i)}</span>}
                       </th>
                     ))}
                   </tr>
@@ -272,14 +273,14 @@ export default function SheetsPage() {
             </div>
 
             <p className="px-5 py-2 text-[10px] text-[#C0C0C0] text-right border-t border-[#F0F0F0]">
-              읽기 전용 · 출처: Google Sheets
+              {ts.readonly_footer}
             </p>
           </div>
         )}
 
         {data && data.rows.length === 0 && (
           <div className="bg-white rounded-2xl px-5 py-10 text-center">
-            <p className="text-sm text-[#A0A0A0]">시트에 데이터가 없습니다.</p>
+            <p className="text-sm text-[#A0A0A0]">{ts.empty}</p>
           </div>
         )}
       </div>

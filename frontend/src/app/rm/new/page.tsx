@@ -13,38 +13,25 @@ import { useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/queryKeys'
+import { formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
 
 function getKSTDateStr() {
   const kst = new Date(Date.now() + 9 * 60 * 60 * 1000)
   return kst.toISOString().split('T')[0]
 }
 
-function calcAge(birthDate?: string | null): string {
-  if (!birthDate) return ''
+function getKSTDateTimeStr() {
+  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 16)
+}
+
+function calcAge(birthDate?: string | null): number | null {
+  if (!birthDate) return null
   const birth = new Date(birthDate)
   const today = new Date()
   let age = today.getFullYear() - birth.getFullYear()
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return `${age}세`
-}
-
-function formatTime(date: Date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
-}
-
-function consultDateKo(dateStr: string) {
-  const d = new Date(dateStr + 'T00:00:00')
-  if (isNaN(d.getTime())) return dateStr
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
-  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${dow})`
-}
-
-function formatStartedAt(date: Date) {
-  const month = date.getMonth() + 1
-  const day = String(date.getDate()).padStart(2, '0')
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
-  return `${month}.${day} (${dow}) ${formatTime(date)}`
+  return age
 }
 
 function formatAutoSaveDate(date: Date) {
@@ -91,7 +78,7 @@ function RmPatientSelect() {
     queryFn: () => patientApi.list(0).then(r => r.payload ?? []),
   })
 
-  const todayConsultations = allConsultations.filter(c => c.consultationDate === todayStr)
+  const todayConsultations = allConsultations.filter(c => toDateKey(c.consultationDate) === todayStr)
   const assignedPatients = allPatients.filter(p => p.assignedToMe)
 
   return (
@@ -102,7 +89,7 @@ function RmPatientSelect() {
         {/* 오늘 진료 예정 */}
         {todayConsultations.length > 0 && (
           <section>
-            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">오늘 진료 예정</p>
+            <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">{t.interpreter_home.today_schedule}</p>
             <div className="space-y-2">
               {todayConsultations.map(c => (
                 <button
@@ -122,10 +109,10 @@ function RmPatientSelect() {
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-semibold text-[#161616] truncate">{c.patientName}</p>
                     <p className="text-sm text-[#808080]">
-                      {[c.hospitalName, c.department].filter(Boolean).join(' ') || '병원 미정'}
+                      {[c.hospitalName, c.department].filter(Boolean).join(' ') || t.my_records.no_hospital}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-[#2592FF] bg-[#EAF4FF] rounded-full px-2.5 py-1 shrink-0">오늘</span>
+                  <span className="text-xs font-semibold text-[#2592FF] bg-[#EAF4FF] rounded-full px-2.5 py-1 shrink-0">{t.common.today}</span>
                 </button>
               ))}
             </div>
@@ -135,7 +122,7 @@ function RmPatientSelect() {
         {todayConsultations.length > 0 && assignedPatients.length > 0 && (
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-[#E0E0E0]" />
-            <span className="text-xs text-[#A0A0A0] shrink-0">담당 환자</span>
+            <span className="text-xs text-[#A0A0A0] shrink-0">{t.drawer.my_patients}</span>
             <div className="flex-1 h-px bg-[#E0E0E0]" />
           </div>
         )}
@@ -145,12 +132,12 @@ function RmPatientSelect() {
           <div className="flex justify-center py-10"><Spinner /></div>
         ) : assignedPatients.length === 0 && todayConsultations.length === 0 ? (
           <div className="bg-white rounded-2xl px-5 py-10 text-center">
-            <p className="text-sm text-[#A0A0A0]">담당 환자가 없습니다</p>
+            <p className="text-sm text-[#A0A0A0]">{t.schedule.no_patients}</p>
           </div>
         ) : (
           <section>
             {todayConsultations.length === 0 && (
-              <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">담당 환자</p>
+              <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">{t.drawer.my_patients}</p>
             )}
             <div className="space-y-2">
               {assignedPatients.map(p => {
@@ -193,16 +180,27 @@ function RmPatientSelect() {
 
 function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | null }) {
   const router = useRouter()
-  const labels = useEnumLabels()
   const { t } = useTranslation()
+
+  const storageKey = `rm_draft_${patientId}`
 
   const [patient, setPatient] = useState<Patient | null>(null)
   const [consultation, setConsultation] = useState<Consultation | null>(null)
-  const [remark, setRemark] = useState('')
+  const [remark, setRemark] = useState<string>(() => {
+    try { return sessionStorage.getItem(storageKey) ?? '' } catch { return '' }
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const [startedAt] = useState(() => new Date())
+  const [startedAt] = useState<Date>(() => {
+    try {
+      const stored = sessionStorage.getItem(`${storageKey}_startedAt`)
+      if (stored) return new Date(Number(stored))
+      const now = new Date()
+      sessionStorage.setItem(`${storageKey}_startedAt`, String(now.getTime()))
+      return now
+    } catch { return new Date() }
+  })
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
   const [savedCid, setSavedCid] = useState<string | null>(cid)
   const savedCidRef = useRef<string | null>(cid)
@@ -217,10 +215,15 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
       consultationApi.get(cid).then(r => {
         const c = r.payload ?? null
         setConsultation(c)
-        if (c?.workDescription) setRemark(c.workDescription)
+        // sessionStorage에 이미 초안이 있으면 서버 데이터로 덮어쓰지 않음
+        // (환자 정보 페이지 다녀온 후에도 작성 내용 보존)
+        if (c?.workDescription) {
+          const localDraft = (() => { try { return sessionStorage.getItem(storageKey) } catch { return null } })()
+          if (!localDraft) setRemark(c.workDescription)
+        }
       }).catch(() => {})
     }
-  }, [patientId, cid])
+  }, [patientId, cid, storageKey])
 
   const autoSaveRef = useRef<() => Promise<void>>(async () => {})
   autoSaveRef.current = async () => {
@@ -229,7 +232,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
     try {
       if (savedCid) {
         await consultationApi.update(savedCid, {
-          consultationDate: consultation?.consultationDate ?? new Date().toISOString().split('T')[0],
+          consultationDate: consultation?.consultationDate ?? getKSTDateTimeStr(),
           patientId: consultation?.patientId ?? patientId,
           hospitalId: consultation?.hospitalId ?? null,
           department: consultation?.department ?? '',
@@ -253,7 +256,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
       } else {
         const res = await consultationApi.create({
           patientId,
-          consultationDate: new Date().toISOString().split('T')[0],
+          consultationDate: getKSTDateTimeStr(),
           issueType: 'MEDICAL',
           processing: 'INTERPRETATION',
           workDescription: remark,
@@ -280,6 +283,8 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
     setError('')
     try {
       await autoSaveRef.current()
+
+      const targetCid = savedCidRef.current
 
       if (remark.trim()) {
         setAiStatus('loading')
@@ -310,33 +315,34 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           console.error('[rm:parse] 네트워크 오류:', e instanceof Error ? e.message : e)
           setAiStatus('fail')
         }
+
+        // cid가 없을 경우(자동저장 실패) 메모 내용을 보고서 칸에 폴백으로 전달
+        if (!targetCid) {
+          try { sessionStorage.setItem('rm_fallback_text', remark) } catch {}
+        }
       }
 
-      const targetCid = savedCidRef.current
+      try {
+        sessionStorage.removeItem(storageKey)
+        sessionStorage.removeItem(`${storageKey}_startedAt`)
+      } catch {}
       router.push(`/consultations/new?patientId=${patientId}${targetCid ? `&cid=${targetCid}` : ''}`)
     } catch (e) {
-      setError(e instanceof Error ? e.message : '저장에 실패했습니다.')
+      setError(e instanceof Error ? e.message : t.consultation.err_save)
       setSubmitting(false)
     }
   }
 
   const contextDate = consultation
-    ? consultDateKo(consultation.consultationDate)
-    : consultDateKo(new Date().toISOString().split('T')[0])
+    ? formatKoreanDateTime(consultation.consultationDate)
+    : formatKoreanDateTime(new Date().toISOString())
 
   const contextLocation = consultation
     ? [consultation.hospitalName, consultation.department].filter(Boolean).join(' ')
     : ''
 
   const patientName = patient?.name ?? consultation?.patientName ?? ''
-  const ageStr = calcAge(patient?.birthDate)
-  const demographics = patient
-    ? [
-        labels.nationality[patient.nationality],
-        labels.gender[patient.gender],
-        ageStr,
-      ].filter(Boolean).join(' | ')
-    : ''
+  const age = calcAge(patient?.birthDate)
 
   const patientRequest = consultation?.patientComment?.trim()
   const genderIcon = patient
@@ -353,7 +359,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
 
       {/* 이번진료 */}
       <div className="bg-white px-4 py-4 border-b border-[#eee]">
-        <p className="text-[16px] text-[#808080] mb-1">이번진료</p>
+        <p className="text-[16px] text-[#808080] mb-1">{t.realtime_memo.this_consultation}</p>
         <p className="text-[18px] font-medium text-[#161616]">{contextDate}</p>
         {contextLocation && (
           <p className="text-[18px] font-medium text-[#161616]">{contextLocation}</p>
@@ -368,7 +374,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
         >
           <img src={genderIcon} alt="" width={24} height={24} />
           <span className="text-[18px] font-medium text-[#161616]">{patientName}</span>
-          {ageStr && <span className="text-[18px] text-[#494949]">{ageStr}</span>}
+          {age !== null && <span className="text-[18px] text-[#494949]">{t.patient.age_years(age)}</span>}
           <img src="/icons/common/arrows/right.svg" alt="" width={20} height={20} className="ml-auto" />
         </Link>
         {patientRequest && (
@@ -384,7 +390,11 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           <textarea
             className="w-full min-h-[394px] resize-none focus:outline-none text-[18px] text-[#161616] leading-relaxed placeholder:text-[#808080]"
             value={remark}
-            onChange={e => setRemark(e.target.value)}
+            onChange={e => {
+              const v = e.target.value
+              setRemark(v)
+              try { sessionStorage.setItem(storageKey, v) } catch {}
+            }}
             placeholder={t.realtime_memo.placeholder}
             autoFocus
           />
@@ -394,8 +404,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           {/* 자동저장 표시 */}
           {lastSavedAt && (
             <div className="flex justify-end items-center gap-1">
-              <span className="text-[14px] text-[#808080]">{formatAutoSaveDate(lastSavedAt)}</span>
-              <span className="text-[14px] text-[#2592ff]">자동저장 되었습니다</span>
+              <span className="text-[14px] text-[#2592ff]">{t.realtime_memo.saved(formatAutoSaveDate(lastSavedAt))}</span>
             </div>
           )}
         </div>
@@ -424,9 +433,9 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
               : 'bg-[#f0f1f5] text-[#a1a1a1]'
           }`}
           onClick={handleGoToReport}
-          disabled={submitting || aiStatus === 'loading'}
+          disabled={submitting || aiStatus === 'loading' || !remark.trim()}
         >
-          {submitting ? t.realtime_memo.saving_btn : aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : '작성 완료'}
+          {submitting ? t.realtime_memo.saving_btn : aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : t.common.done}
         </button>
       </div>
     </AppShell>

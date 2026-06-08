@@ -178,7 +178,7 @@ export default function MyPage() {
       const uploadRes = await fetch('/api/upload/avatar', { method: 'POST', body: form })
       if (!uploadRes.ok) {
         const { error } = await uploadRes.json() as { error?: string }
-        throw new Error(error ?? '업로드 실패')
+        throw new Error(error ?? 'Upload failed')
       }
       const { url } = await uploadRes.json() as { url: string }
       await authApi.updateAvatar(url)
@@ -187,8 +187,8 @@ export default function MyPage() {
         old ? { ...old, avatarUrl: url } : old
       )
     } catch (err) {
-      console.error('아바타 업로드 실패:', err)
-      alert(err instanceof Error ? err.message : '프로필 사진 업로드에 실패했습니다.')
+      console.error('Avatar upload failed:', err)
+      alert(err instanceof Error ? err.message : t.mypage.err_profile)
     } finally {
       setAvatarUploading(false)
       e.target.value = ''
@@ -205,7 +205,7 @@ export default function MyPage() {
   async function handlePasswordChange(e: React.FormEvent) {
     e.preventDefault()
     setPwError(''); setPwSuccess(false)
-    if (!currentPassword) { setPwError('현재 비밀번호를 입력해주세요'); return }
+    if (!currentPassword) { setPwError(t.login.err_password); return }
     if (newPassword.length < 8) { setPwError(t.mypage.err_password_min); return }
     if (newPassword !== confirmPassword) { setPwError(t.mypage.err_password_confirm); return }
     setPwSaving(true)
@@ -214,7 +214,7 @@ export default function MyPage() {
       setPwSuccess(true)
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
     } catch (e) {
-      setPwError(e instanceof Error ? e.message : '비밀번호 변경에 실패했습니다')
+      setPwError(e instanceof Error ? e.message : t.mypage.delete_error)
     } finally {
       setPwSaving(false)
     }
@@ -278,7 +278,7 @@ export default function MyPage() {
             {avatarUrl ? (
               <img
                 src={avatarUrl}
-                alt="프로필"
+                alt="Profile"
                 width={56}
                 height={56}
                 className="w-14 h-14 rounded-full object-cover border-2 border-[#EEEEEE]"
@@ -313,7 +313,7 @@ export default function MyPage() {
             />
           </label>
           <div className="min-w-0">
-            <p className="text-xl font-bold text-[#161616] truncate">{me?.name ?? '이름 없음'}</p>
+            <p className="text-xl font-bold text-[#161616] truncate">{me?.name ?? t.chat.no_name}</p>
             <p className="text-sm text-[#808080] mt-0.5">
               {roleLabel}
               {me?.centerName ? ` · ${me.centerName}` : ''}
@@ -323,7 +323,7 @@ export default function MyPage() {
 
         {/* 프로필 정보 수정 */}
         {me?.role !== 'admin' && (
-          <Section title="프로필 정보">
+          <Section title={t.auth_complete.profile_title}>
             <form onSubmit={e => { e.preventDefault(); save() }} className="space-y-4">
               <Field label={t.mypage.name_label}>
                 <Input value={name} onChange={e => setName(e.target.value)} placeholder={t.mypage.name_placeholder} required />
@@ -419,8 +419,8 @@ export default function MyPage() {
         {/* 비밀번호 변경 */}
         <Section title={t.mypage.password_change}>
           <form onSubmit={handlePasswordChange} className="space-y-3">
-            <Field label="현재 비밀번호">
-              <PasswordInput value={currentPassword} onChange={setCurrentPassword} placeholder="현재 비밀번호 입력" autoComplete="current-password" className={INPUT_CLS} />
+            <Field label={t.auth.password}>
+              <PasswordInput value={currentPassword} onChange={setCurrentPassword} placeholder={t.login.password_placeholder} autoComplete="current-password" className={INPUT_CLS} />
             </Field>
             <Field label={t.mypage.new_password}>
               <PasswordInput value={newPassword} onChange={setNewPassword} placeholder={t.mypage.password_min_hint} autoComplete="new-password" className={INPUT_CLS} />
@@ -537,6 +537,7 @@ function LanguageToggleList({
   options: string[]
   onChange: (langs: string[]) => void
 }) {
+  const { t } = useTranslation()
   // 선택된 언어가 없으면 빈 슬롯 1개로 시작
   const rows = selected.length > 0 ? selected : ['']
 
@@ -583,7 +584,7 @@ function LanguageToggleList({
                   lang ? 'text-[#2592FF]' : 'text-[#808080]'
                 }`}
               >
-                {!lang && <option value="">언어 선택</option>}
+                {!lang && <option value="">{t.mypage.lang_select}</option>}
                 {available.map(o => (
                   <option key={o} value={o}>{o}</option>
                 ))}
@@ -625,7 +626,7 @@ function LanguageToggleList({
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
           </svg>
-          언어 추가
+          {t.mypage.lang_add}
         </button>
       )}
     </div>

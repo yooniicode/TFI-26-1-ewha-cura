@@ -62,11 +62,11 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation, unr
   if (me?.role === 'admin') {
     return [
       home,
-      { href: '/patients',      label: '이주민 관리',    inlineSvg: 'patients' },
-      { href: '/consultations', label: '보고서 조회',    inlineSvg: 'report' },
-      { href: '/members',       label: '회원 관리',      inlineSvg: 'members' },
-      { href: '/interpreters',  label: '통번역가',       inlineSvg: 'interpreters' },
-      { href: '/sheets',        label: '구글 시트',      inlineSvg: 'sheets' },
+      { href: '/patients',      label: t.nav.patients,      inlineSvg: 'patients' },
+      { href: '/consultations', label: t.nav.consultations, inlineSvg: 'report' },
+      { href: '/members',       label: t.nav.members,       inlineSvg: 'members' },
+      { href: '/interpreters',  label: t.nav.interpreters,  inlineSvg: 'interpreters' },
+      { href: '/sheets',        label: t.nav.sheets,        inlineSvg: 'sheets' },
       { ...chat },
       mypage,
     ]
@@ -200,9 +200,9 @@ export default function AppShell({ children, noPadding = false }: { children: Re
     }
   }
 
-  const roleLabel = me?.role === 'interpreter' ? '통번역가'
-    : me?.role === 'patient' ? '이주민'
-    : me?.role === 'admin' ? '센터장'
+  const roleLabel = me?.role === 'interpreter' ? t.dashboard.role_interpreter
+    : me?.role === 'patient' ? t.dashboard.role_patient
+    : me?.role === 'admin' ? t.dashboard.role_admin
     : ''
 
   return (
@@ -275,7 +275,7 @@ export default function AppShell({ children, noPadding = false }: { children: Re
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-base font-semibold text-[#161616] truncate">{me?.name ?? '이름 없음'}</p>
+              <p className="text-base font-semibold text-[#161616] truncate">{me?.name ?? t.chat.no_name}</p>
               <p className="text-xs text-[#808080] truncate">
                 {roleLabel}{me?.centerName ? ` · ${me.centerName}` : ''}
               </p>

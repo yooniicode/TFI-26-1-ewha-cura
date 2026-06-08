@@ -13,6 +13,7 @@ import type { AdminWorkLog, AdminWorkLogTask, Consultation, PageInfo } from '@/l
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { useMe } from '@/hooks/useMe'
+import { formatKoreanDate, formatKoreanDateTime } from '@/lib/dateFormat'
 
 type SortBy = 'consultationDate' | 'createdAt' | 'updatedAt'
 type SortDirection = 'asc' | 'desc'
@@ -334,7 +335,7 @@ function StaffWorkSection({
             <div key={log.id} className="bg-white rounded-xl px-4 py-4 space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-base font-semibold text-[#161616]">{log.workDate}</p>
+                  <p className="text-base font-semibold text-[#161616]">{formatKoreanDate(log.workDate)}</p>
                   {log.memo && <p className="mt-1 whitespace-pre-wrap text-sm text-[#808080]">{log.memo}</p>}
                 </div>
                 <button type="button" className="text-xs text-red-500 hover:text-red-700" onClick={() => onDelete(log.id)}>
@@ -386,20 +387,20 @@ function ReportList({
               <div className="min-w-0 flex-1">
                 <p className="text-base font-semibold text-[#161616]">{c.patientName}</p>
                 <p className="text-sm text-[#808080] mt-0.5">
-                  {c.consultationDate}
+                  {formatKoreanDateTime(c.consultationDate)}
                   {c.hospitalName && ` / ${c.hospitalName}`}
                 </p>
                 <p className="text-xs text-[#A0A0A0] mt-0.5">{labels.issue[c.issueType]}</p>
                 <p className="text-xs text-[#A0A0A0] mt-1">
                   {t.consultation.written_by}: {c.createdByName ?? c.interpreterName ?? '-'}
-                  {c.createdAt && ` / ${t.consultation.written_at}: ${formatDateTime(c.createdAt, locale)}`}
+                  {c.createdAt && ` / ${t.consultation.written_at}: ${formatKoreanDateTime(c.createdAt)}`}
                 </p>
               </div>
               {c.confirmed && <Badge variant="green">{t.common.confirmed}</Badge>}
             </div>
             {c.nextAppointmentDate && (
               <p className="text-xs text-[#2592FF] mt-2">
-                {t.consultation.next_appointment}: {c.nextAppointmentDate}
+                {t.consultation.next_appointment}: {formatKoreanDateTime(c.nextAppointmentDate)}
               </p>
             )}
           </Link>
@@ -459,14 +460,3 @@ function queryKeysForWorkLogs(page: number) {
   return ['admin', 'work-logs', page] as const
 }
 
-function formatDateTime(value: string, locale: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}

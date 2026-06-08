@@ -14,13 +14,13 @@ import type { Patient } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
 function calcAge(birthDate?: string | null) {
-  if (!birthDate) return ''
+  if (!birthDate) return null
   const b = new Date(birthDate)
-  if (isNaN(b.getTime())) return ''
+  if (isNaN(b.getTime())) return null
   const today = new Date()
   let age = today.getFullYear() - b.getFullYear()
   if (today.getMonth() < b.getMonth() || (today.getMonth() === b.getMonth() && today.getDate() < b.getDate())) age--
-  return `만 ${age}세`
+  return age
 }
 
 export default function SchedulePage() {
@@ -119,7 +119,7 @@ function ScheduleInner() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-base font-semibold text-[#161616] truncate">{p.name}</p>
-                        {age && <p className="text-sm text-[#808080]">{age}</p>}
+                        {age !== null && <p className="text-sm text-[#808080]">{t.patient.age_years(age)}</p>}
                       </div>
                       {isSelected && (
                         <div className="w-5 h-5 rounded-full bg-[#2592FF] flex items-center justify-center shrink-0">

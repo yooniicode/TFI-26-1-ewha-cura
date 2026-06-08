@@ -8,24 +8,29 @@ import PageHeader from '@/components/interpreter/PageHeader'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { useTTS } from '@/hooks/useTTS'
 
-// ─── 언어 코드 매핑 ────────────────────────────────────────────────────────────
 const LOCALE_TO_LANG: Record<string, string> = {
   'ko-KR': 'ko',
   'vi-VN': 'vi',
   'en-US': 'en',
+  'zh-TW': 'zh',
+  'zh-CN': 'zh',
+  'id-ID': 'id',
+  'th-TH': 'th',
+  'ne-NP': 'ne',
+  'mn-MN': 'mn',
+  'uz-UZ': 'uz',
+  'km-KH': 'km',
+  'my-MM': 'my',
+  'fil-PH': 'fil',
+  'si-LK': 'si',
+  'bn-BD': 'bn',
+  'ur-PK': 'ur',
 }
 
 function getLang(locale: string): string {
   return LOCALE_TO_LANG[locale] ?? locale.split('-')[0]
 }
 
-// ─── 부위 이름에 맞는 조사(이/가) ─────────────────────────────────────────────
-function getParticle(label: string): string {
-  const code = label.charCodeAt(label.length - 1)
-  return (code - 0xAC00) % 28 !== 0 ? '이' : '가'
-}
-
-// ─── 신체 부위 ─────────────────────────────────────────────────────────────────
 type BodyPartKey =
   | 'head' | 'eye' | 'nose' | 'mouth' | 'chest'
   | 'arm' | 'abdomen' | 'pelvis' | 'legs' | 'vertebrae' | 'ear'
@@ -38,20 +43,19 @@ interface BodyPart {
 }
 
 const BODY_PARTS: BodyPart[] = [
-  { key: 'head',      label: '머리',  src: '/icons/immigrant/medical-script/body/head.svg',    translations: { vi: 'Đầu', en: 'Head' } },
-  { key: 'eye',       label: '눈',    src: '/icons/immigrant/medical-script/body/eyes.svg',    translations: { vi: 'Mắt', en: 'Eye' } },
-  { key: 'nose',      label: '코',    src: '/icons/immigrant/medical-script/body/nose.svg',    translations: { vi: 'Mũi', en: 'Nose' } },
-  { key: 'mouth',     label: '입/목', src: '/icons/immigrant/medical-script/body/lip.svg',     translations: { vi: 'Miệng / Họng', en: 'Mouth / Throat' } },
-  { key: 'chest',     label: '가슴',  src: '/icons/immigrant/medical-script/body/chest.svg',   translations: { vi: 'Ngực', en: 'Chest' } },
-  { key: 'arm',       label: '팔',    src: '/icons/immigrant/medical-script/body/arm.svg',     translations: { vi: 'Tay', en: 'Arm' } },
-  { key: 'abdomen',   label: '배',    src: '/icons/immigrant/medical-script/body/stomach.svg', translations: { vi: 'Bụng', en: 'Abdomen' } },
-  { key: 'pelvis',    label: '골반',  src: '/icons/immigrant/medical-script/body/pelvis.svg',  translations: { vi: 'Hông', en: 'Pelvis' } },
-  { key: 'legs',      label: '다리',  src: '/icons/immigrant/medical-script/body/leg.svg',     translations: { vi: 'Chân', en: 'Leg' } },
-  { key: 'vertebrae', label: '척추',  src: '/icons/immigrant/medical-script/body/spine.svg',   translations: { vi: 'Cột sống', en: 'Spine' } },
-  { key: 'ear',       label: '귀',    src: '/icons/immigrant/medical-script/body/ear.svg',     translations: { vi: 'Tai', en: 'Ear' } },
+  { key: 'head',      label: '머리',  src: '/icons/immigrant/medical-script/body/head.svg',    translations: { vi: 'Đầu', en: 'Head', zh: '头', id: 'Kepala', th: 'ศีรษะ', ne: 'टाउको', mn: 'Толгой', uz: 'Bosh', km: 'ក្បាល', my: 'ဦးခေါင်း', fil: 'Ulo', si: 'හිස', bn: 'মাথা', ur: 'سر' } },
+  { key: 'eye',       label: '눈',    src: '/icons/immigrant/medical-script/body/eyes.svg',    translations: { vi: 'Mắt', en: 'Eye', zh: '眼睛', id: 'Mata', th: 'ตา', ne: 'आँखा', mn: 'Нүд', uz: 'Ko\'z', km: 'ភ្នែក', my: 'မျက်စိ', fil: 'Mata', si: 'ඇස', bn: 'চোখ', ur: 'آنکھ' } },
+  { key: 'nose',      label: '코',    src: '/icons/immigrant/medical-script/body/nose.svg',    translations: { vi: 'Mũi', en: 'Nose', zh: '鼻子', id: 'Hidung', th: 'จมูก', ne: 'नाक', mn: 'Хамар', uz: 'Burun', km: 'ច្រមុះ', my: 'နှာခေါင်း', fil: 'Ilong', si: 'නාසය', bn: 'নাক', ur: 'ناک' } },
+  { key: 'mouth',     label: '입/목', src: '/icons/immigrant/medical-script/body/lip.svg',     translations: { vi: 'Miệng / Họng', en: 'Mouth / Throat', zh: '嘴/喉咙', id: 'Mulut / Tenggorokan', th: 'ปาก / คอ', ne: 'मुख/घाँटी', mn: 'Ам/Хоолой', uz: 'Og\'iz / Tomoq', km: 'មាត់/បំពង់ក', my: 'ပါး/လည်ချောင်း', fil: 'Bibig / Lalamunan', si: 'කට/උගුර', bn: 'মুখ/গলা', ur: 'منہ/گلا' } },
+  { key: 'chest',     label: '가슴',  src: '/icons/immigrant/medical-script/body/chest.svg',   translations: { vi: 'Ngực', en: 'Chest', zh: '胸部', id: 'Dada', th: 'หน้าอก', ne: 'छाती', mn: 'Цээж', uz: 'Ko\'krak', km: 'ដើមទ្រូង', my: 'ရင်ဘတ်', fil: 'Dibdib', si: 'පපු', bn: 'বুক', ur: 'سینہ' } },
+  { key: 'arm',       label: '팔',    src: '/icons/immigrant/medical-script/body/arm.svg',     translations: { vi: 'Tay', en: 'Arm', zh: '手臂', id: 'Lengan', th: 'แขน', ne: 'हात', mn: 'Гар', uz: 'Qo\'l', km: 'ដៃ', my: 'လက်မောင်း', fil: 'Braso', si: 'අත', bn: 'হাত', ur: 'بازو' } },
+  { key: 'abdomen',   label: '배',    src: '/icons/immigrant/medical-script/body/stomach.svg', translations: { vi: 'Bụng', en: 'Abdomen', zh: '腹部', id: 'Perut', th: 'ท้อง', ne: 'पेट', mn: 'Гэдэс', uz: 'Qorin', km: 'ក្រពះ', my: 'ဝမ်းဗိုက်', fil: 'Tiyan', si: 'බඩ', bn: 'পেট', ur: 'پیٹ' } },
+  { key: 'pelvis',    label: '골반',  src: '/icons/immigrant/medical-script/body/pelvis.svg',  translations: { vi: 'Hông', en: 'Pelvis', zh: '骨盆', id: 'Panggul', th: 'กระดูกเชิงกราน', ne: 'कूल्हा', mn: 'Аарцаг', uz: 'Tos', km: 'ត្រគៀក', my: 'တင်ပါး', fil: 'Balakang', si: 'ශ්‍රෝණිය', bn: 'কোমর', ur: 'کولہا' } },
+  { key: 'legs',      label: '다리',  src: '/icons/immigrant/medical-script/body/leg.svg',     translations: { vi: 'Chân', en: 'Leg', zh: '腿', id: 'Kaki', th: 'ขา', ne: 'खुट्टा', mn: 'Хөл', uz: 'Oyoq', km: 'ជើង', my: 'ခြေထောက်', fil: 'Binti', si: 'කකුල', bn: 'পা', ur: 'پاؤں' } },
+  { key: 'vertebrae', label: '척추',  src: '/icons/immigrant/medical-script/body/spine.svg',   translations: { vi: 'Cột sống', en: 'Spine', zh: '脊椎', id: 'Tulang belakang', th: 'กระดูกสันหลัง', ne: 'मेरुदण्ड', mn: 'Нурuu', uz: 'Umurtqa', km: 'ឆ្អឹងខ្នង', my: 'ကျောရိုး', fil: 'Gulugod', si: 'කොඳු ඇට', bn: 'মেরুদণ্ড', ur: 'ریڑھ کی ہڈی' } },
+  { key: 'ear',       label: '귀',    src: '/icons/immigrant/medical-script/body/ear.svg',     translations: { vi: 'Tai', en: 'Ear', zh: '耳朵', id: 'Telinga', th: 'หู', ne: 'कान', mn: 'Чих', uz: 'Quloq', km: '귀ស', my: 'နား', fil: 'Tainga', si: 'කණ', bn: 'কান', ur: 'کان' } },
 ]
 
-// ─── 의료 표현 ─────────────────────────────────────────────────────────────────
 interface Phrase {
   ko: string
   translations: Record<string, string>
@@ -126,7 +130,6 @@ const PHRASES: Record<BodyPartKey, Phrase[]> = {
   ],
 }
 
-// ─── 페이지 ────────────────────────────────────────────────────────────────────
 type Step = 'select-part' | 'phrases'
 
 export default function ScriptPage() {
@@ -139,31 +142,29 @@ export default function ScriptPage() {
   const [selectedPhrase, setSelectedPhrase] = useState<Phrase | null>(null)
   const { speak, speaking } = useTTS()
 
-  function getTranslation(phrase: Phrase): string {
-    return phrase.translations[lang] ?? phrase.translations['vi'] ?? ''
+  function getTranslation(item: { translations: Record<string, string> }): string {
+    return item.translations[lang] ?? item.translations['en'] ?? item.translations['vi'] ?? ''
   }
 
-  // ── 대사 목록 + 모달 오버레이 ────────────────────────────────────────────────
   if (step === 'phrases' && selectedPart) {
     const phrases = PHRASES[selectedPart.key]
-    const particle = getParticle(selectedPart.label)
-    const phraseTitle = `${selectedPart.label}${particle} 아플 때 쓸 수 있는 표현이에요`
+    const partNameInLang = getTranslation(selectedPart)
+    const phraseTitle = partNameInLang
+      ? `${t.medical_script_ui.title}: ${partNameInLang}`
+      : selectedPart.label
 
     return (
       <AppShell noPadding>
-        <PageHeader title="의료대본" onBack={() => setStep('select-part')} />
+        <PageHeader title={t.medical_script_ui.title} onBack={() => setStep('select-part')} />
 
         <div className="bg-white px-4 pb-10 min-h-screen">
-          {/* 타이틀 */}
           <div className="flex flex-col gap-1 pt-4 pb-6">
             <p className="text-[24px] font-semibold text-[#161616] leading-[1.4]">{phraseTitle}</p>
-            <div className="text-[16px] text-[#808080] leading-[1.4]">
-              <p>표현을 들으며 따라 말해보거나,</p>
-              <p>필요한 문장을 의사나 간호사에게 직접 보여주세요.</p>
-            </div>
+            <p className="text-[16px] text-[#808080] leading-[1.4]">
+              {t.medical_script_ui.select_hint}
+            </p>
           </div>
 
-          {/* 표현 목록 */}
           <div className="flex flex-col gap-4">
             {phrases.map((phrase, i) => (
               <button
@@ -173,17 +174,17 @@ export default function ScriptPage() {
                 className="w-full text-left bg-white border border-[#eee] rounded-[16px] p-4 flex flex-col gap-2 active:opacity-70 transition-opacity"
               >
                 <p className="text-[20px] font-semibold text-[#2592ff] leading-[1.4]">{phrase.ko}</p>
-                <p className="text-[14px] text-[#161616] leading-[1.4]">{getTranslation(phrase)}</p>
+                {getTranslation(phrase) && (
+                  <p className="text-[14px] text-[#161616] leading-[1.4]">{getTranslation(phrase)}</p>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* 표현 상세 모달 오버레이 (Figma 957:2295) */}
         {selectedPhrase && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
             <div className="flex flex-col items-end gap-2 w-full max-w-[370px]">
-              {/* X 닫기 버튼 */}
               <button
                 type="button"
                 onClick={() => setSelectedPhrase(null)}
@@ -195,19 +196,18 @@ export default function ScriptPage() {
                 </svg>
               </button>
 
-              {/* 카드 */}
               <div className="bg-[#f3f9ff] border border-[#eee] rounded-[16px] p-4 flex flex-col gap-2 w-full">
-                {/* 텍스트 + 스피크 카드 */}
                 <div className="bg-white border border-[#eee] rounded-[20px] p-4 flex flex-col gap-6">
                   <div className="flex flex-col gap-2">
                     <p className="text-[24px] font-semibold text-[#2592ff] text-center leading-[1.4]">
                       {selectedPhrase.ko}
                     </p>
-                    <p className="text-[16px] text-[#494949] leading-[1.4]">
-                      {getTranslation(selectedPhrase)}
-                    </p>
+                    {getTranslation(selectedPhrase) && (
+                      <p className="text-[16px] text-[#494949] leading-[1.4]">
+                        {getTranslation(selectedPhrase)}
+                      </p>
+                    )}
                   </div>
-                  {/* 스피크 버튼 */}
                   <button
                     type="button"
                     onClick={() => speak(selectedPhrase.ko)}
@@ -225,7 +225,6 @@ export default function ScriptPage() {
                   </button>
                 </div>
 
-                {/* 신체 부위 이미지 */}
                 <div className="w-full h-[200px] rounded-[20px] bg-[#f0f1f5] flex items-center justify-center overflow-hidden">
                   <img
                     src={`/icons/common/body-parts/${selectedPart.key}.png`}
@@ -241,37 +240,36 @@ export default function ScriptPage() {
     )
   }
 
-  // ── 신체 부위 선택 (Figma 1032:2687) ─────────────────────────────────────────
   return (
     <AppShell noPadding>
-      <PageHeader title="의료대본" />
+      <PageHeader title={t.medical_script_ui.title} />
 
       <div className="bg-white px-4 pb-32">
-        {/* 타이틀 */}
         <div className="flex flex-col gap-1 pt-4 pb-6">
-          <p className="text-[24px] font-semibold text-[#161616] leading-[1.4]">어디가 아프신가요?</p>
-          <p className="text-[16px] text-[#808080] leading-[1.4]">
-            아픈 부위를 선택하면 바로 쓸 수 있는 표현을 보여드려요
-          </p>
+          <p className="text-[24px] font-semibold text-[#161616] leading-[1.4]">{t.medical_script_ui.subtitle}</p>
         </div>
 
-        {/* 부위 그리드 */}
         <div className="grid grid-cols-3 gap-4">
-          {BODY_PARTS.map(part => (
-            <button
-              key={part.key}
-              type="button"
-              onClick={() => { setSelectedPart(part); setStep('phrases') }}
-              className="flex flex-col items-center gap-1 bg-white border border-[#eee] rounded-[16px] py-3 px-5 overflow-hidden active:opacity-70 transition-opacity"
-            >
-              <img src={part.src} alt="" width={32} height={32} className="shrink-0" />
-              <p className="text-[18px] text-[#161616] leading-[1.4] whitespace-nowrap">{part.label}</p>
-            </button>
-          ))}
+          {BODY_PARTS.map(part => {
+            const translatedLabel = getTranslation(part)
+            return (
+              <button
+                key={part.key}
+                type="button"
+                onClick={() => { setSelectedPart(part); setStep('phrases') }}
+                className="flex flex-col items-center gap-1 bg-white border border-[#eee] rounded-[16px] py-3 px-5 overflow-hidden active:opacity-70 transition-opacity"
+              >
+                <img src={part.src} alt="" width={32} height={32} className="shrink-0" />
+                <p className="text-[18px] text-[#161616] leading-[1.4] whitespace-nowrap">{part.label}</p>
+                {translatedLabel && translatedLabel !== part.label && (
+                  <p className="text-[12px] text-[#808080] leading-[1.2] whitespace-nowrap">{translatedLabel}</p>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* 직접 입력하기 고정 버튼 */}
       <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto px-4 pb-8 pt-4 bg-white border-t border-[#EEEEEE]">
         <Link
           href={`/scripts/patient/${patientId}/custom`}
@@ -281,7 +279,7 @@ export default function ScriptPage() {
             <path d="M12 20h9" />
             <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
           </svg>
-          직접 입력하기
+          {t.medical_script_ui.custom_write_btn}
         </Link>
       </div>
     </AppShell>

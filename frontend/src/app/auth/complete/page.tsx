@@ -59,7 +59,7 @@ export default function AuthCompletePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!role) { setError('역할을 선택해주세요.'); return }
+    if (!role) { setError(t.login.account_type); return }
     if (!name.trim()) { setError(t.auth_complete.err_name); return }
     if (role === 'patient' && !phone.trim()) { setError(t.auth_complete.err_phone); return }
     if (!centerId && !centerName.trim()) { setError(t.auth_complete.err_center); return }
@@ -109,11 +109,11 @@ export default function AuthCompletePage() {
 
           {/* 역할 선택 */}
           <div>
-            <label className="label">역할 선택</label>
+            <label className="label">{t.login.account_type}</label>
             <div className="grid grid-cols-2 gap-2">
               {([
-                { value: 'patient' as ProfileRole, label: '이주민', desc: '의료 대본 · 진료 기록', icon: '/icons/immigrant/home/진료기록.svg' },
-                { value: 'interpreter' as ProfileRole, label: '통번역가', desc: '보고서 · 담당 환자', icon: '/icons/interpreter/home/담당환자.svg' },
+                { value: 'patient' as ProfileRole, label: t.login.type_patient, desc: t.login.type_patient_desc, icon: '/icons/immigrant/home/진료기록.svg' },
+                { value: 'interpreter' as ProfileRole, label: t.login.type_interpreter, desc: t.login.type_interpreter_desc, icon: '/icons/interpreter/home/담당환자.svg' },
               ] as const).map(({ value, label, desc, icon }) => (
                 <button
                   key={value}
@@ -142,7 +142,7 @@ export default function AuthCompletePage() {
             <input type="text" className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
           </div>
           <div>
-            <label className="label">{role === 'patient' ? '담당 센터' : t.auth_complete.work_center}</label>
+            <label className="label">{t.auth_complete.work_center}</label>
             <CenterSearchSelect
               valueName={centerName}
               placeholder={t.auth_complete.center_search_placeholder}

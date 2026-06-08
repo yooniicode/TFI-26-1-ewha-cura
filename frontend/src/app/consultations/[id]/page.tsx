@@ -22,6 +22,7 @@ import {
   useEnumLabels,
 } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
+import { formatKoreanDate, formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
 
 type ReportForm = {
   consultationDate: string
@@ -92,6 +93,7 @@ export default function ConsultationDetailPage() {
     try {
       const res = await consultationApi.update(id, {
         ...form,
+        consultationDate: form.consultationDate || null,
         hospitalId: form.hospitalId || undefined,
         method: form.method || null,
         processing: form.processing || null,
@@ -152,7 +154,7 @@ export default function ConsultationDetailPage() {
         </div>
         <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
           <div className="bg-white rounded-xl px-4 py-4 space-y-3">
-            <ReportRow label={t.consultation.visit_date_label} value={patientReport.consultationDate} />
+            <ReportRow label={t.consultation.visit_date_label} value={formatKoreanDateTime(patientReport.consultationDate)} />
             <ReportRow label={t.consultation.hospital} value={patientReport.hospitalName} />
             <ReportRow label={t.consultation.department} value={patientReport.department} />
             <ReportRow label={t.consultation.doctor} value={patientReport.doctorName} />
@@ -160,7 +162,7 @@ export default function ConsultationDetailPage() {
             <ReportBlock label={t.consultation.diagnosis_content} value={patientReport.diagnosisContent} />
             <ReportBlock label={t.consultation.treatment_result} value={patientReport.treatmentResult} />
             <ReportBlock label={t.consultation.medication} value={patientReport.medicationInstruction} />
-            <ReportRow label={t.consultation.next_appointment_date} value={patientReport.nextAppointmentDate} />
+            <ReportRow label={t.consultation.next_appointment_date} value={formatKoreanDateTime(patientReport.nextAppointmentDate)} />
             <ReportBlock label={t.consultation.interpreter_comment} value={patientReport.patientComment} />
           </div>
         </div>
@@ -204,10 +206,10 @@ export default function ConsultationDetailPage() {
       <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen space-y-3">
         {/* 작성 정보 */}
         <div className="bg-white rounded-xl px-4 py-4 space-y-2">
-          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-3">작성 정보</p>
+          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-3">{t.consultation.written_info}</p>
           <ReportRow label={t.consultation.first_author} value={data.createdByName ?? data.interpreterName} />
-          <ReportRow label={t.consultation.created_at} value={formatDateTime(data.createdAt, t.locale)} />
-          <ReportRow label={t.consultation.updated_at} value={formatDateTime(data.updatedAt, t.locale)} />
+          <ReportRow label={t.consultation.created_at} value={formatKoreanDateTime(data.createdAt)} />
+          <ReportRow label={t.consultation.updated_at} value={formatKoreanDateTime(data.updatedAt)} />
         </div>
 
         {editMode ? (
@@ -237,7 +239,7 @@ export default function ConsultationDetailPage() {
             {/* 진료 기록 */}
             <div className="bg-white rounded-xl px-4 py-4 space-y-3">
               <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-1">{t.consultation.work_log_section}</p>
-              <ReportRow label={t.consultation.visit_date_label} value={data.consultationDate} />
+              <ReportRow label={t.consultation.visit_date_label} value={formatKoreanDateTime(data.consultationDate)} />
               <ReportRow label={t.consultation.visit_hospital} value={data.hospitalName} />
               <ReportRow label={t.consultation.department} value={data.department} />
               <ReportRow label={t.consultation.doctor} value={data.doctorName} />
@@ -248,9 +250,9 @@ export default function ConsultationDetailPage() {
               <ReportRow label={t.consultation.counselor} value={data.counselorName} />
               <ReportRow label={t.consultation.interp_time} value={data.durationHours ? `${data.durationHours}h` : null} />
               <ReportRow label={t.consultation.fee} value={data.fee ? `${data.fee.toLocaleString()}원` : null} />
-              <ReportRow label={t.consultation.next_appointment_date} value={data.nextAppointmentDate} />
+              <ReportRow label={t.consultation.next_appointment_date} value={formatKoreanDateTime(data.nextAppointmentDate)} />
               <ReportRow label={t.consultation.confirm_by} value={data.confirmedBy} />
-              <ReportRow label={t.consultation.confirm_date} value={data.confirmedAt} />
+              <ReportRow label={t.consultation.confirm_date} value={formatKoreanDate(data.confirmedAt)} />
               <ReportBlock label={t.consultation.diagnosis_content} value={data.diagnosisContent} />
               <ReportBlock label={t.consultation.treatment_result} value={data.treatmentResult} />
               <ReportBlock label={t.consultation.medication} value={data.medicationInstruction} />
@@ -300,7 +302,7 @@ function EditForm({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.visit_date_label}</label>
-          <input type="date" className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.consultationDate} onChange={e => set('consultationDate', e.target.value)} />
+          <input type="datetime-local" className="w-full bg-[#F5F5F5] rounded-lg px-3 py-2.5 text-base outline-none text-[#161616]" value={form.consultationDate} onChange={e => set('consultationDate', e.target.value)} />
         </div>
         <div>
           <label className="text-sm font-medium text-[#161616] block mb-1">{t.consultation.issue_type}</label>
@@ -433,7 +435,7 @@ function ReportBlock({ label, value }: { label: string; value?: string | null })
 
 function toForm(data: Consultation): ReportForm {
   return {
-    consultationDate: data.consultationDate ?? '',
+    consultationDate: data.consultationDate ? data.consultationDate.slice(0, 16) : '',
     hospitalId: data.hospitalId ?? '',
     department: data.department ?? '',
     doctorName: data.doctorName ?? '',
@@ -445,7 +447,7 @@ function toForm(data: Consultation): ReportForm {
     diagnosisContent: data.diagnosisContent ?? '',
     diagnosisNameCode: data.diagnosisNameCode ?? '',
     medicationInstruction: data.medicationInstruction ?? '',
-    nextAppointmentDate: data.nextAppointmentDate ?? '',
+    nextAppointmentDate: toDateKey(data.nextAppointmentDate),
     counselorName: data.counselorName ?? '',
     durationHours: data.durationHours ? String(data.durationHours) : '',
     fee: data.fee ? String(data.fee) : '',
@@ -455,15 +457,3 @@ function toForm(data: Consultation): ReportForm {
   }
 }
 
-function formatDateTime(value?: string | null, locale = 'ko-KR') {
-  if (!value) return null
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString(locale, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}

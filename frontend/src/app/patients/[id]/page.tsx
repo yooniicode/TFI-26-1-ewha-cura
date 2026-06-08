@@ -12,22 +12,20 @@ import { adminApi, patientApi, centerApi } from '@/lib/api'
 import { useMe } from '@/hooks/useMe'
 import type { Patient, Consultation, CenterPatientMemo, Center } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
+import { formatKoreanDateTime } from '@/lib/dateFormat'
 
 function consultDateKo(dateStr: string) {
-  const d = new Date(dateStr + 'T00:00:00')
-  if (isNaN(d.getTime())) return dateStr
-  const dow = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()]
-  return `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${dow})`
+  return formatKoreanDateTime(dateStr)
 }
 
-function calcAge(birthDate?: string | null): string {
+function calcAge(birthDate: string | null | undefined, ageLabel: (age: number) => string): string {
   if (!birthDate) return ''
   const birth = new Date(birthDate)
   const today = new Date()
   let age = today.getFullYear() - birth.getFullYear()
   const m = today.getMonth() - birth.getMonth()
   if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return `만 ${age}세`
+  return ageLabel(age)
 }
 
 export default function PatientDetailPage() {
@@ -158,7 +156,7 @@ function PatientDetailInner() {
   )
   const isInterpreter = me?.role === 'interpreter'
   const flagSrc = getFlagSrc(patient.nationality)
-  const ageStr = calcAge(patient.birthDate)
+  const ageStr = calcAge(patient.birthDate, t.patient.age_years)
 
   return (
     <AppShell noPadding>
@@ -203,14 +201,14 @@ function PatientDetailInner() {
           <div className="flex flex-col gap-4">
             {patient.birthDate && (
               <div className="flex items-center gap-[10px]">
-                <span className="text-[18px] text-[#494949] w-20 shrink-0">생년월일</span>
+                <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.birth_date}</span>
                 <span className="text-[18px] font-medium text-[#161616]">
                   {patient.birthDate.replace(/-/g, '.')}
                 </span>
               </div>
             )}
             <div className="flex items-center gap-[10px]">
-              <span className="text-[18px] text-[#494949] w-20 shrink-0">성별</span>
+              <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.gender}</span>
               <div className="flex items-center gap-1">
                 <span className="text-[18px] font-medium text-[#161616]">{labels.gender[patient.gender]}</span>
                 <img
@@ -222,7 +220,7 @@ function PatientDetailInner() {
               </div>
             </div>
             <div className="flex items-center gap-[10px]">
-              <span className="text-[18px] text-[#494949] w-20 shrink-0">국적</span>
+              <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.nationality}</span>
               <div className="flex items-center gap-1">
                 <span className="text-[18px] font-medium text-[#161616]">{labels.nationality[patient.nationality]}</span>
                 {flagSrc && <img src={flagSrc} alt="" width={24} height={24} />}
@@ -262,13 +260,13 @@ function PatientDetailInner() {
           <div className="bg-white rounded-[8px] px-4 py-5 flex flex-col gap-4">
             {patient.visaType && (
               <div className="flex items-center gap-[10px]">
-                <span className="text-[18px] text-[#494949] w-20 shrink-0">비자</span>
+                <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.visa}</span>
                 <span className="text-[18px] font-medium text-[#161616]">{labels.visa[patient.visaType]}</span>
               </div>
             )}
             {patient.region && (
               <div className="flex items-center gap-[10px]">
-                <span className="text-[18px] text-[#494949] w-20 shrink-0">거주지</span>
+                <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.region}</span>
                 <span className="text-[18px] font-medium text-[#161616]">{patient.region}</span>
               </div>
             )}
@@ -297,7 +295,7 @@ function PatientDetailInner() {
               <div className="space-y-2">
                 {memos.map(memo => (
                   <div key={memo.id} className="rounded-lg bg-gray-50 p-3 text-sm space-y-1">
-                    <span className="text-xs text-gray-400">{new Date(memo.createdAt).toLocaleString(t.locale)}</span>
+                    <span className="text-xs text-gray-400">{formatKoreanDateTime(memo.createdAt)}</span>
                     {memo.publicMemo && <p className="whitespace-pre-wrap">{memo.publicMemo}</p>}
                   </div>
                 ))}
@@ -436,7 +434,7 @@ function ConsultationCard({
             <DetailBlock label={t.consultation.medication} value={c.medicationInstruction} />
           )}
           {c.nextAppointmentDate && (
-            <DetailRow label={t.consultation.next_appointment} value={c.nextAppointmentDate} accent />
+            <DetailRow label={t.consultation.next_appointment} value={formatKoreanDateTime(c.nextAppointmentDate)} accent />
           )}
           {c.workDescription && (
             <DetailBlock label="실시간 메모" value={c.workDescription} muted />

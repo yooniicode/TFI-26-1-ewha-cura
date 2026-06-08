@@ -8,31 +8,16 @@ import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
 import StepIndicator from '@/components/interpreter/StepIndicator'
 import { consultationApi } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Consultation } from '@/lib/types'
-
-function formatTime(dateStr: string) {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return ''
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-function getDateLabel(dateStr: string) {
-  const todayStr = new Date().toISOString().split('T')[0]
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().split('T')[0]
-  if (dateStr === todayStr) return '오늘'
-  if (dateStr === yesterdayStr) return '어제'
-  const d = new Date(dateStr + 'T00:00:00')
-  return `${d.getMonth() + 1}월 ${d.getDate()}일`
-}
+import { formatKoreanDateTime } from '@/lib/dateFormat'
 
 function GenderBadge({ gender }: { gender?: string | null }) {
   const src = gender === 'FEMALE'
     ? '/icons/common/gender/small-여성-배경o.svg'
     : '/icons/common/gender/small-남성-배경o.svg'
-  return <img src={src} alt={gender === 'FEMALE' ? '여성' : '남성'} width={20} height={20} />
+  return <img src={src} alt="" width={20} height={20} />
 }
 
 export default function RmSelectPage() {
@@ -45,6 +30,7 @@ export default function RmSelectPage() {
 
 function RmSelectInner() {
   const router = useRouter()
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const patientId = searchParams.get('patientId')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -75,15 +61,15 @@ function RmSelectInner() {
 
   return (
     <AppShell noPadding>
-      <PageHeader title="보고서 작성" showClose />
+      <PageHeader title={t.report_flow.title} showClose />
 
       <div className="bg-white px-4 pt-7 pb-6">
         <div className="mb-6">
-          <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4]">
-            보고서로 작성할<br />진료 메모를 선택합니다
+          <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
+            {t.report_flow.memo_list_title}
           </h2>
           <p className="mt-2 text-base font-medium text-[#808080]">
-            보고서로 쓰이지 않은 메모가 {rmList.length}개 있어요
+            {t.report_flow.memo_count(rmList.length)}
           </p>
         </div>
 
@@ -97,14 +83,14 @@ function RmSelectInner() {
           <div className="py-16 flex justify-center"><Spinner /></div>
         ) : rmList.length === 0 ? (
           <div className="py-16 text-center text-sm text-[#808080]">
-            작성된 진료 메모가 없어요
+            {t.report_flow.no_memo}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {rmList.map(c => {
               const isSelected = selectedId === c.id
               const location = [c.hospitalName, c.department].filter(Boolean).join(' ')
-              const timeStr = formatTime(c.createdAt)
+              const timeStr = formatKoreanDateTime(c.createdAt)
               const locationLine = [timeStr, location].filter(Boolean).join(' | ')
               return (
                 <button
@@ -159,7 +145,7 @@ function RmSelectInner() {
           disabled={!selected}
           className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-40 transition-opacity"
         >
-          다음으로
+          {t.report_flow.next_btn}
         </button>
       </div>
     </AppShell>

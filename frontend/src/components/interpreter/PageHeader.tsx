@@ -27,7 +27,7 @@ export default function PageHeader({ title, onBack, showClose = false, onClose }
       <button
         onClick={handleBack}
         className="w-6 flex items-center justify-center text-gray-400"
-        aria-label="뒤로"
+        aria-label="Back"
       >
         <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
           <path d="M10 2L2 10L10 18" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -38,7 +38,7 @@ export default function PageHeader({ title, onBack, showClose = false, onClose }
         <button
           onClick={handleClose}
           className="w-6 flex items-center justify-center"
-          aria-label="닫기"
+          aria-label="Close"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M1 1L13 13M13 1L1 13" stroke="#161616" strokeWidth="1.8" strokeLinecap="round" />

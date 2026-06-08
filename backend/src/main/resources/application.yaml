@@ -72,6 +72,8 @@ byby:
         - ${RAILWAY_STATIC_URL:}
         - ${RAILWAY_PUBLIC_DOMAIN:}
         - https://tfi-26-1-archive-production.up.railway.app
+        - https://cura-ewha.kr
+        - https://www.cura-ewha.kr
 
   supabase:
     url: ${SUPABASE_URL:}
@@ -99,6 +101,8 @@ byby:
 
   google:
     service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
+    export-spreadsheet-id: ${GOOGLE_EXPORT_SPREADSHEET_ID:}
+    export-spreadsheet-ids: ${GOOGLE_EXPORT_SPREADSHEET_IDS:}
 
 ---
 spring:

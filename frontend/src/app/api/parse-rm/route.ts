@@ -3,6 +3,7 @@ import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
 
 export interface ParsedRmFields {
+  patientComment: string
   diagnosisContent: string
   treatmentResult: string
   medicationInstruction: string
@@ -11,19 +12,40 @@ export interface ParsedRmFields {
   hospitalName: string
 }
 
-const SYSTEM_PROMPT = '당신은 의료 통번역사를 돕는 AI입니다. 실시간 메모(RM)에서 보고서 작성에 필요한 정보만 정확하게 추출합니다. 메모에 없는 내용은 빈 문자열로 남겨두세요.'
+const SYSTEM_PROMPT = `당신은 의료 통번역사를 돕는 AI입니다. 실시간 메모(RM)에서 보고서 작성에 필요한 각 필드 정보를 정확하게 추출합니다.
+
+각 필드 정의:
+- patientComment: 환자가 호소한 증상, 내원 이유, 환자 요청사항 (예: "복통있어서 내원", "어깨 통증 3일째")
+- diagnosisContent: 의사가 내린 진단명, 의사 소견, 권고 검사 (예: "위염 진단", "위내시경 검사 권고")
+- treatmentResult: 의사가 지시한 주의사항, 생활습관 지도, 식이 제한, 재검사 권고 (약 복용 방법 제외) (예: "자극적인 음식 피하기", "6개월 후 재검사")
+- medicationInstruction: 처방약 이름, 복용 방법, 용량, 복용 기간 (예: "처방약 2주동안 식후 30분 하루 3회 복용")
+- nextAppointmentDate: 구체적 날짜(YYYY-MM-DD)만 입력. "6개월 후", "다음 달" 같은 상대적 표현은 빈 문자열
+- department: 진료과 (예: 내과, 소화기내과, 정형외과). 명시 없으면 빈 문자열
+- hospitalName: 병원 이름. 명시 없으면 빈 문자열
+
+규칙: 메모에 명시된 내용만 채우고, 없는 내용은 반드시 빈 문자열("")로 남겨두세요. 한 정보를 여러 필드에 중복 입력하지 마세요.
+
+예시:
+메모: "복통있어서 내원함. 위염 진단, 위내시경 검사 권고, 처방약 2주동안 식후 30분, 하루 3회 복용, 자극적인 음식 피하기, 6개월 후 재검사 권고"
+→ patientComment: "복통으로 내원"
+→ diagnosisContent: "위염 진단, 위내시경 검사 권고"
+→ treatmentResult: "자극적인 음식 피하기, 6개월 후 재검사 권고"
+→ medicationInstruction: "처방약 2주동안 식후 30분, 하루 3회 복용"
+→ nextAppointmentDate: ""
+→ department: "", hospitalName: ""`
 
 const RESPONSE_SCHEMA: Schema = {
   type: SchemaType.OBJECT,
   properties: {
-    diagnosisContent:      { type: SchemaType.STRING, description: '진단 내용 — 병명, 증상, 소견. 없으면 빈 문자열.' },
-    treatmentResult:       { type: SchemaType.STRING, description: '치료 내용 및 처치 결과. 없으면 빈 문자열.' },
-    medicationInstruction: { type: SchemaType.STRING, description: '복약 지도 — 약 이름, 용법, 용량, 주의사항. 없으면 빈 문자열.' },
-    nextAppointmentDate:   { type: SchemaType.STRING, description: '다음 예약일 YYYY-MM-DD 형식. 없으면 빈 문자열.' },
-    department:            { type: SchemaType.STRING, description: '진료과 (예: 피부과, 내과). 없으면 빈 문자열.' },
+    patientComment:        { type: SchemaType.STRING, description: '환자 주호소/증상/내원 이유. 없으면 빈 문자열.' },
+    diagnosisContent:      { type: SchemaType.STRING, description: '의사 진단명 및 소견, 권고 검사. 없으면 빈 문자열.' },
+    treatmentResult:       { type: SchemaType.STRING, description: '주의사항, 생활습관 지도, 식이 제한, 재검사 권고 (약 복용법 제외). 없으면 빈 문자열.' },
+    medicationInstruction: { type: SchemaType.STRING, description: '처방약 이름, 복용 방법, 용량, 복용 기간. 없으면 빈 문자열.' },
+    nextAppointmentDate:   { type: SchemaType.STRING, description: '다음 예약일 YYYY-MM-DD. 구체적 날짜가 없으면 반드시 빈 문자열.' },
+    department:            { type: SchemaType.STRING, description: '진료과. 없으면 빈 문자열.' },
     hospitalName:          { type: SchemaType.STRING, description: '병원 이름. 없으면 빈 문자열.' },
   },
-  required: ['diagnosisContent', 'treatmentResult', 'medicationInstruction', 'nextAppointmentDate', 'department', 'hospitalName'],
+  required: ['patientComment', 'diagnosisContent', 'treatmentResult', 'medicationInstruction', 'nextAppointmentDate', 'department', 'hospitalName'],
 }
 
 // ─── Gemini ──────────────────────────────────────────────────────────────────
@@ -50,6 +72,7 @@ async function parseWithGemini(rmText: string): Promise<ParsedRmFields> {
   const text = result.response.text()
   const parsed = JSON.parse(text) as Partial<ParsedRmFields>
   return {
+    patientComment:        parsed.patientComment        ?? '',
     diagnosisContent:      parsed.diagnosisContent      ?? '',
     treatmentResult:       parsed.treatmentResult       ?? '',
     medicationInstruction: parsed.medicationInstruction ?? '',
@@ -72,8 +95,17 @@ async function parseWithGroq(rmText: string): Promise<ParsedRmFields> {
         role: 'user',
         content: `다음 실시간 메모(RM)에서 보고서 필드를 추출해서 반드시 아래 JSON 형식으로만 답하세요. 다른 말은 하지 마세요.
 
+각 필드 정의 (한 정보를 여러 필드에 중복 입력 금지):
+- patientComment: 환자가 호소한 증상, 내원 이유 (예: "복통으로 내원", "어깨 통증 3일째")
+- diagnosisContent: 의사 진단명, 소견, 권고 검사 (예: "위염 진단, 위내시경 검사 권고")
+- treatmentResult: 주의사항, 생활습관 지도, 식이 제한, 재검사 권고 — 약 복용법 제외 (예: "자극적인 음식 피하기, 6개월 후 재검사")
+- medicationInstruction: 처방약 이름, 복용 방법, 용량, 복용 기간 (예: "처방약 2주동안 식후 30분 하루 3회")
+- nextAppointmentDate: 구체적 날짜 YYYY-MM-DD만. "6개월 후" 같은 상대 표현은 "" (빈 문자열)
+- department: 진료과 (없으면 "")
+- hospitalName: 병원명 (없으면 "")
+
 형식:
-{"diagnosisContent":"...","treatmentResult":"...","medicationInstruction":"...","nextAppointmentDate":"","department":"..."}
+{"patientComment":"...","diagnosisContent":"...","treatmentResult":"...","medicationInstruction":"...","nextAppointmentDate":"","department":"","hospitalName":""}
 
 RM:
 ${rmText}`,
@@ -84,6 +116,7 @@ ${rmText}`,
   const raw = chat.choices[0]?.message?.content ?? '{}'
   const parsed = JSON.parse(raw) as Partial<ParsedRmFields>
   return {
+    patientComment:        parsed.patientComment        ?? '',
     diagnosisContent:      parsed.diagnosisContent      ?? '',
     treatmentResult:       parsed.treatmentResult       ?? '',
     medicationInstruction: parsed.medicationInstruction ?? '',

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authApi } from '@/lib/api'
 import { setAccessToken } from '@/lib/auth-token'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 
 export default function KakaoCallbackPage() {
   return (
@@ -16,6 +17,7 @@ export default function KakaoCallbackPage() {
 function KakaoCallbackInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useTranslation()
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -23,13 +25,13 @@ function KakaoCallbackInner() {
     const kakaoError = searchParams.get('error')
 
     if (kakaoError) {
-      setError('카카오 로그인이 취소되었습니다.')
+      setError(t.login.err_callback_failed)
       setTimeout(() => router.replace('/login'), 2000)
       return
     }
 
     if (!code) {
-      setError('인가 코드가 없습니다.')
+      setError(t.login.err_callback_failed)
       setTimeout(() => router.replace('/login'), 2000)
       return
     }
@@ -46,12 +48,12 @@ function KakaoCallbackInner() {
             router.replace('/dashboard')
           }
         } else {
-          setError('로그인에 실패했습니다.')
+          setError(t.login.err_auth_unknown)
           setTimeout(() => router.replace('/login'), 2000)
         }
       })
       .catch(e => {
-        setError(e instanceof Error ? e.message : '카카오 로그인 처리에 실패했습니다.')
+        setError(e instanceof Error ? e.message : t.login.err_auth_unknown)
         setTimeout(() => router.replace('/login'), 3000)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -67,7 +69,7 @@ function KakaoCallbackInner() {
               </svg>
             </div>
             <p className="text-base font-semibold text-[#161616]">{error}</p>
-            <p className="text-sm text-[#A0A0A0]">잠시 후 로그인 페이지로 이동합니다</p>
+            <p className="text-sm text-[#A0A0A0]">{t.login.back_to_login}</p>
           </>
         ) : (
           <>
@@ -77,8 +79,8 @@ function KakaoCallbackInner() {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
               </svg>
             </div>
-            <p className="text-base font-semibold text-[#161616]">카카오 로그인 처리 중...</p>
-            <p className="text-sm text-[#A0A0A0]">잠시만 기다려주세요</p>
+            <p className="text-base font-semibold text-[#161616]">{t.login.logging_in}</p>
+            <p className="text-sm text-[#A0A0A0]">{t.auth_complete.just_a_moment}</p>
           </>
         )}
       </div>

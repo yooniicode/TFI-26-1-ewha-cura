@@ -95,7 +95,7 @@ function ConsultationStartInner() {
           disabled={!selected}
           className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white disabled:opacity-40 transition-opacity"
         >
-          다음으로
+          {t.report_flow.next_btn}
         </button>
       </div>
     </AppShell>

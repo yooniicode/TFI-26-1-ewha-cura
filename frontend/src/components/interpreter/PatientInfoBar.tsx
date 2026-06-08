@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslation } from '@/lib/i18n/I18nContext'
 
 export const NATIONALITY_FLAG: Record<string, string> = {
   KOREA: '/icons/common/flag/flag_KR.svg',
@@ -21,6 +22,8 @@ interface PatientInfoBarProps {
 }
 
 export default function PatientInfoBar({ patientId, patientName, subtitle, flagSrc }: PatientInfoBarProps) {
+  const { t } = useTranslation()
+
   const inner = (
     <>
       <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
@@ -40,7 +43,7 @@ export default function PatientInfoBar({ patientId, patientName, subtitle, flagS
         </div>
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="text-[#161616] text-base font-semibold truncate">
-            {patientName || '환자 미선택'}
+            {patientName || t.consultation.patient_placeholder}
           </span>
           {subtitle && (
             <span className="text-[#808080] text-sm truncate">{subtitle}</span>
