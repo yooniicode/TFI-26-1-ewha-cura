@@ -10,6 +10,7 @@ import type { Gender, Nationality, VisaType } from '@/lib/types'
 import { GENDERS, NATIONALITIES, VISA_TYPES, useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import PasswordInput from '@/components/ui/PasswordInput'
+import Image from 'next/image'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 
 type SignupType = 'patient' | 'interpreter'
@@ -120,14 +121,7 @@ export default function LoginPage() {
       {/* 헤더 */}
       <header className="bg-white px-5 py-4 flex items-center justify-between border-b border-[#EEEEEE]">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#2592FF] flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 00-3-3.87" />
-              <path d="M16 3.13a4 4 0 010 7.75" />
-            </svg>
-          </div>
+          <Image src="/icons/cura.svg" alt="Cura" width={28} height={28} />
           <span className="text-base font-bold text-[#161616]">Cura</span>
         </div>
         <LanguageSwitcher />

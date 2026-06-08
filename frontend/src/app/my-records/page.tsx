@@ -44,7 +44,7 @@ function RecordDetailModal({ record, onClose }: { record: PatientReport; onClose
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-[24px] max-h-[90vh] overflow-y-auto pb-safe">
+      <div className="relative bg-white rounded-t-[24px] max-h-[90vh] overflow-y-auto pb-safe w-full max-w-lg mx-auto">
         {/* 핸들 + 닫기 */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <div className="flex-1" />
