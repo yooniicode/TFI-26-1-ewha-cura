@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
@@ -120,7 +121,7 @@ export default function PatientsPage() {
                   nationalityFilter === n ? 'bg-[#2592FF] text-white' : 'bg-[#F0F0F0] text-[#494949]'
                 }`}
               >
-                {flagSrc && <img src={flagSrc} alt="" width={14} height={14} />}
+                {flagSrc && <Image src={flagSrc} alt="" width={14} height={14} />}
                 {labels.nationality[n]}
               </button>
             )
@@ -219,15 +220,16 @@ function PatientCard({
       {/* 프로필 (아바타 or 성별 아이콘) */}
       <div className="relative shrink-0">
         {patient.avatarUrl ? (
-          <img
+          <Image
             src={patient.avatarUrl}
             alt=""
             width={36}
             height={36}
             className="w-9 h-9 rounded-full object-cover"
+            unoptimized
           />
         ) : (
-          <img
+          <Image
             src={patient.gender === 'FEMALE' ? '/icons/common/gender/small-여성-배경o.svg' : '/icons/common/gender/small-남성-배경o.svg'}
             alt={labels.gender[patient.gender]}
             width={36}
@@ -235,7 +237,7 @@ function PatientCard({
           />
         )}
         {flagSrc && (
-          <img src={flagSrc} alt={labels.nationality[patient.nationality]} width={14} height={14} className="absolute -bottom-0.5 -right-0.5" />
+          <Image src={flagSrc} alt={labels.nationality[patient.nationality]} width={14} height={14} className="absolute -bottom-0.5 -right-0.5" />
         )}
       </div>
 

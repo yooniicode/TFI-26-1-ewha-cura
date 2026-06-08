@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
@@ -182,15 +183,15 @@ function PatientDetailInner() {
         <div className="bg-white rounded-[8px] px-4 py-6 flex flex-col gap-5">
           {/* 프로필 사진 + 이름 */}
           <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full overflow-hidden shrink-0">
+            <div className="relative w-14 h-14 rounded-full overflow-hidden shrink-0">
               {patient.avatarUrl ? (
-                <img src={patient.avatarUrl} alt="" className="w-full h-full object-cover" />
+                <Image src={patient.avatarUrl} alt="" fill className="object-cover" unoptimized />
               ) : (
-                <img
+                <Image
                   src={patient.gender === 'FEMALE'
                     ? '/icons/common/gender/big-여성-배경o.svg'
                     : '/icons/common/gender/big-남성-배경o.svg'}
-                  alt="" className="w-full h-full object-cover"
+                  alt="" fill className="object-cover"
                 />
               )}
             </div>
@@ -211,7 +212,7 @@ function PatientDetailInner() {
               <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.gender}</span>
               <div className="flex items-center gap-1">
                 <span className="text-[18px] font-medium text-[#161616]">{labels.gender[patient.gender]}</span>
-                <img
+                <Image
                   src={patient.gender === 'FEMALE'
                     ? '/icons/common/gender/small-여성-배경x.svg'
                     : '/icons/common/gender/small-남성-배경x.svg'}
@@ -223,7 +224,7 @@ function PatientDetailInner() {
               <span className="text-[18px] text-[#494949] w-20 shrink-0">{t.patient.nationality}</span>
               <div className="flex items-center gap-1">
                 <span className="text-[18px] font-medium text-[#161616]">{labels.nationality[patient.nationality]}</span>
-                {flagSrc && <img src={flagSrc} alt="" width={24} height={24} />}
+                {flagSrc && <Image src={flagSrc} alt="" width={24} height={24} />}
               </div>
             </div>
           </div>
@@ -234,14 +235,14 @@ function PatientDetailInner() {
               href={`/rm/new?patientId=${id}${highlightCid ? `&cid=${highlightCid}` : ''}`}
               className="flex-1 px-3 py-4 bg-[#f0f1f5] rounded-[8px] flex flex-col items-center gap-2 active:opacity-70 transition-opacity"
             >
-              <img src="/icons/interpreter/patient-profile/실시간메모.svg" alt="" width={24} height={24} />
+              <Image src="/icons/interpreter/patient-profile/실시간메모.svg" alt="" width={24} height={24} />
               <span className="text-[16px] font-medium text-[#161616]">{tp.realtime_memo}</span>
             </Link>
             <Link
               href={`/consultations/start?patientId=${id}`}
               className="flex-1 px-3 py-4 bg-[#f0f1f5] rounded-[8px] flex flex-col items-center gap-2 active:opacity-70 transition-opacity"
             >
-              <img src="/icons/interpreter/patient-profile/보고서.svg" alt="" width={24} height={24} />
+              <Image src="/icons/interpreter/patient-profile/보고서.svg" alt="" width={24} height={24} />
               <span className="text-[16px] font-medium text-[#161616]">{tp.report}</span>
             </Link>
             <a
@@ -249,7 +250,7 @@ function PatientDetailInner() {
               onClick={!patient.phone ? e => e.preventDefault() : undefined}
               className={`flex-1 px-3 py-4 bg-[#f0f1f5] rounded-[8px] flex flex-col items-center gap-2 active:opacity-70 transition-opacity ${!patient.phone ? 'opacity-40' : ''}`}
             >
-              <img src="/icons/interpreter/patient-profile/전화.svg" alt="" width={24} height={24} />
+              <Image src="/icons/interpreter/patient-profile/전화.svg" alt="" width={24} height={24} />
               <span className="text-[16px] font-medium text-[#161616]">{tp.call}</span>
             </a>
           </div>
