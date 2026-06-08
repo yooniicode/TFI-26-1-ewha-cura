@@ -443,15 +443,14 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
 
 function KakaoButton({ label }: { label: string }) {
   const KAKAO_CLIENT_ID = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY
-  const REDIRECT_URI = process.env.NEXT_PUBLIC_KAKAO_REDIRECT_URI
-    ?? `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/kakao/callback`
 
   if (!KAKAO_CLIENT_ID) return null
 
   function handleKakao() {
+    const redirectUri = `${window.location.origin}/auth/kakao/callback`
     const params = new URLSearchParams({
       client_id: KAKAO_CLIENT_ID!,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       response_type: 'code',
     })
     window.location.href = `https://kauth.kakao.com/oauth/authorize?${params.toString()}`

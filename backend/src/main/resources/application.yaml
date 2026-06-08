@@ -74,6 +74,10 @@ byby:
         - https://tfi-26-1-archive-production.up.railway.app
         - https://cura-ewha.kr
         - https://www.cura-ewha.kr
+        - http://ewha-cura.kr
+        - https://ewha-cura.kr
+        - http://www.ewha-cura.kr
+        - https://www.ewha-cura.kr
 
   supabase:
     url: ${SUPABASE_URL:}
