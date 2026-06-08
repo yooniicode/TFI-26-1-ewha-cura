@@ -147,13 +147,14 @@ export const handoverSchema = z.object({
 })
 
 export const patientMatchSchema = z.object({
-  id:              z.string().uuid(),
-  patientId:       z.string().uuid(),
-  patientName:     z.string(),
-  interpreterId:   z.string().uuid(),
-  interpreterName: z.string(),
-  active:          z.boolean(),
-  createdAt:       z.string(),
+  id:               z.string().uuid(),
+  patientId:        z.string().uuid(),
+  patientName:      z.string(),
+  interpreterId:    z.string().uuid(),
+  interpreterName:  z.string(),
+  interpreterPhone: z.string().nullable().optional(),
+  active:           z.boolean(),
+  createdAt:        z.string(),
 })
 
 export const medicalScriptSchema = z.object({
