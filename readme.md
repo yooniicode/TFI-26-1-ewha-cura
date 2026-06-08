@@ -38,21 +38,16 @@
 사용자 (모바일 PWA)
         |
         v
-┌─────────────────┐       ┌──────────────────────────────────────────┐
-│  Vercel         │       │  Railway Project                         │
-│  (Next.js)      │──────▶│                                          │
-│  cura-ewha.kr   │ HTTPS │  ┌──────────────────┐                   │
-└─────────────────┘       │  │ Spring Boot API   │ (퍼블릭 URL 노출) │
-                          │  └────────┬─────────┘                   │
-        ┌─────────────────┤           │ *.railway.internal           │
-        │  외부 서비스     │           │ (프라이빗 네트워크)           │
-        │                 │  ┌────────▼─────────┐                   │
-        │  Supabase        │  │  PostgreSQL DB    │ (외부 비노출)    │
-        │  (파일 스토리지) │  └──────────────────┘                   │
-        │  Kakao OAuth     │                                          │
-        │  Gemini API      └──────────────────────────────────────────┘
-        │  Google Sheets
-        └─────────────────
+┌─────────────────┐       ┌──────────────────┐       ┌──────────────────────┐
+│  Vercel         │       │  Railway         │       │  Supabase            │
+│  (Next.js)      │──────▶│  Spring Boot API │──────▶│  PostgreSQL DB       │
+│  cura-ewha.kr   │ HTTPS │  (퍼블릭 URL)    │ HTTPS │  Auth (JWT)          │
+└─────────────────┘       └──────────────────┘       │  파일 스토리지       │
+                                                      └──────────────────────┘
+        외부 서비스
+        - Kakao OAuth
+        - Gemini API
+        - Google Sheets API
 
 [GitHub] ──push──▶ [GitHub Actions CI] ──테스트/빌드 통과──▶ Railway 자동 배포
                                                           └──▶ Vercel 자동 배포
