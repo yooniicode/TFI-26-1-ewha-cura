@@ -96,8 +96,8 @@ export default function AuthCompletePage() {
   if (!needsProfile) return null
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="card max-w-sm w-full">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+      <div className="card max-w-md w-full">
         <div className="mb-4 flex justify-end"><LanguageSwitcher /></div>
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-primary-700">{t.auth_complete.profile_title}</h1>
@@ -135,11 +135,11 @@ export default function AuthCompletePage() {
 
           <div>
             <label className="label">{t.auth_complete.name}</label>
-            <input type="text" className="input" value={name} onChange={e => setName(e.target.value)} required />
+            <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" value={name} onChange={e => setName(e.target.value)} required />
           </div>
           <div>
             <label className="label">{t.auth_complete.phone}</label>
-            <input type="text" className="input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
+            <input type="text" className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" value={phone} onChange={e => setPhone(e.target.value)} placeholder="010-0000-0000" />
           </div>
           <div>
             <label className="label">{t.auth_complete.work_center}</label>
@@ -170,7 +170,7 @@ export default function AuthCompletePage() {
               </div>
               <div>
                 <label className="label">{t.auth_complete.availability}</label>
-                <textarea className="input min-h-20 resize-none" value={availabilityNote} onChange={e => setAvailabilityNote(e.target.value)} placeholder={t.auth_complete.availability_placeholder} />
+                <textarea className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent min-h-20 resize-none" value={availabilityNote} onChange={e => setAvailabilityNote(e.target.value)} placeholder={t.auth_complete.availability_placeholder} />
               </div>
             </>
           )}
@@ -178,20 +178,38 @@ export default function AuthCompletePage() {
             <>
               <div>
                 <label className="label">{t.auth_complete.nationality}</label>
-                <select className="input" value={nationality} onChange={e => setNationality(e.target.value as Nationality)}>
-                  {NATIONALITIES.map(v => <option key={v} value={v}>{labels.nationality[v]}</option>)}
+                <select
+                  className={`w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${nationality === 'OTHER' ? 'text-gray-400' : 'text-gray-800'}`}
+                  value={nationality}
+                  onChange={e => setNationality(e.target.value as Nationality)}
+                >
+                  {NATIONALITIES.map(v => (
+                    <option key={v} value={v} className="text-gray-800">{labels.nationality[v]}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="label">{t.auth_complete.gender}</label>
-                <select className="input" value={gender} onChange={e => setGender(e.target.value as Gender)}>
-                  {GENDERS.map(v => <option key={v} value={v}>{labels.gender[v]}</option>)}
+                <select
+                  className={`w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${gender === 'OTHER' ? 'text-gray-400' : 'text-gray-800'}`}
+                  value={gender}
+                  onChange={e => setGender(e.target.value as Gender)}
+                >
+                  {GENDERS.map(v => (
+                    <option key={v} value={v} className="text-gray-800">{labels.gender[v]}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="label">{t.auth_complete.visa}</label>
-                <select className="input" value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
-                  {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
+                <select
+                  className={`w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${visaType === 'OTHER' ? 'text-gray-400' : 'text-gray-800'}`}
+                  value={visaType}
+                  onChange={e => setVisaType(e.target.value as VisaType)}
+                >
+                  {VISA_TYPES.map(v => (
+                    <option key={v} value={v} className="text-gray-800">{labels.visa[v]}</option>
+                  ))}
                 </select>
               </div>
             </>

@@ -20,6 +20,7 @@ export default function InterpretationRequestPage() {
   const [preferredDate, setPreferredDate] = useState('')
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const ti = t.interpretation_request
 
@@ -52,7 +53,8 @@ export default function InterpretationRequestPage() {
         processing: 'INTERPRETATION',
         patientComment,
       })
-      router.replace('/dashboard')
+      setSubmitted(true)
+      setTimeout(() => router.replace('/dashboard'), 1800)
     } catch (e) {
       setError(e instanceof Error ? e.message : ti.err_submit)
       setSubmitting(false)
@@ -61,6 +63,34 @@ export default function InterpretationRequestPage() {
 
   return (
     <AppShell noPadding>
+      {/* 제출 완료 애니메이션 오버레이 */}
+      {submitted && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div
+            style={{ animation: 'scaleIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}
+            className="w-32 h-32 rounded-full bg-[#2592FF] flex items-center justify-center shadow-2xl"
+          >
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+              <path
+                d="M16 32L27 43L48 20"
+                stroke="white"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="70"
+                style={{ animation: 'drawCheck 0.45s ease-out 0.3s forwards', strokeDashoffset: 70 }}
+              />
+            </svg>
+          </div>
+          <p
+            className="mt-6 text-white font-bold text-xl"
+            style={{ animation: 'fadeUp 0.3s ease-out 0.6s both' }}
+          >
+            {ti.submit_success}
+          </p>
+        </div>
+      )}
+
       <PageHeader title={ti.title} />
 
       <div className="bg-[#F5F5F5] px-4 py-4 pb-32 min-h-screen space-y-4">

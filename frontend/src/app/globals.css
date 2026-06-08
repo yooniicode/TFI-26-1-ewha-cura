@@ -25,7 +25,7 @@
     @apply bg-white rounded-xl shadow-sm border border-gray-100 p-4;
   }
   .input {
-    @apply w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+    @apply w-full border border-gray-300 rounded-lg px-3 py-3 text-sm
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
   .label {
@@ -34,4 +34,17 @@
   .badge {
     @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
   }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+@keyframes drawCheck {
+  from { stroke-dashoffset: 70; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

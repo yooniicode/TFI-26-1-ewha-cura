@@ -828,6 +828,7 @@ export const zh: AppTranslation = {
     err_save: '保存失败',
     patient_comment: '患者请求',
     no_comment: '未提供详情',
+    no_patients: 'No assigned patients',
   },
   patient_profile: {
     title: '详细资料',
@@ -888,6 +889,7 @@ export const zh: AppTranslation = {
     note_placeholder: '例：我目前正在服用高血压药物。\n例：我的预约在上午。',
     submit: '申请翻译',
     submitting: '提交中...',
+    submit_success: '申请已提交！',
     err_no_profile: '未找到移民档案，请在"我的页面"中设置。',
     err_no_symptom: '请至少选择一个症状。',
     err_no_date: '请选择希望日期。',

@@ -836,6 +836,7 @@ export const bn: AppTranslation = {
     err_save: 'সংরক্ষণ ব্যর্থ হয়েছে',
     patient_comment: 'রোগীর অনুরোধ',
     no_comment: 'কোনো বিবরণ নেই',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const bn: AppTranslation = {
     note_placeholder: 'যেমন: আমি বর্তমানে উচ্চ রক্তচাপের ওষুধ খাচ্ছি।\nযেমন: আমার অ্যাপয়েন্টমেন্ট সকালে।',
     submit: 'অনুবাদ অনুরোধ করুন',
     submitting: 'জমা দেওয়া হচ্ছে...',
+    submit_success: 'অনুরোধ জমা দেওয়া হয়েছে!',
     err_no_profile: 'অভিবাসী প্রোফাইল পাওয়া যায়নি। আমার পৃষ্ঠায় সেট আপ করুন।',
     err_no_symptom: 'অনুগ্রহ করে কমপক্ষে একটি লক্ষণ নির্বাচন করুন।',
     err_no_date: 'অনুগ্রহ করে পছন্দের তারিখ নির্বাচন করুন।',

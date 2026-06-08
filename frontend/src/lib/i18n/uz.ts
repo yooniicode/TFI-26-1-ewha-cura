@@ -836,6 +836,7 @@ export const uz: AppTranslation = {
     err_save: "Saqlash muvaffaqiyatsiz tugadi",
     patient_comment: "Bemor so'rovi",
     no_comment: "Tafsilot berilmagan",
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const uz: AppTranslation = {
     note_placeholder: "m: Hozir qon bosimi dori ichyapman.\nm: Uchrashuv ertalab.",
     submit: "Tarjima so'rash",
     submitting: "Yuborilmoqda...",
+    submit_success: "So'rov yuborildi!",
     err_no_profile: "Muhojir profili topilmadi. Mening sahifamda sozlang.",
     err_no_symptom: "Iltimos, kamida bitta alomatni tanlang.",
     err_no_date: "Iltimos, kerakli sanani tanlang.",

@@ -836,6 +836,7 @@ export const en: AppTranslation = {
     err_save: 'Failed to save',
     patient_comment: 'Patient\'s request',
     no_comment: 'No details provided',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const en: AppTranslation = {
     note_placeholder: 'e.g. I am currently taking blood pressure medication.\ne.g. My appointment is in the morning.',
     submit: 'Request interpretation',
     submitting: 'Submitting...',
+    submit_success: 'Request submitted!',
     err_no_profile: 'Migrant profile not found. Please set it up in My Page.',
     err_no_symptom: 'Please select at least one symptom.',
     err_no_date: 'Please select a preferred date.',

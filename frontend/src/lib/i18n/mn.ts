@@ -836,6 +836,7 @@ export const mn: AppTranslation = {
     err_save: 'Хадгалахад алдаа гарлаа',
     patient_comment: 'Өвчтөний хүсэлт',
     no_comment: 'Дэлгэрэнгүй мэдээлэл байхгүй',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const mn: AppTranslation = {
     note_placeholder: 'жш: Би одоо цусны даралтын эм уугаа.\nжш: Миний цаг уулзалт өглөө байна.',
     submit: 'Орчуулга хүсэх',
     submitting: 'Илгээж байна...',
+    submit_success: 'Хүсэлт илгээгдлээ!',
     err_no_profile: 'Цагаач профайл олдсонгүй. Миний хуудас дээр тохируулна уу.',
     err_no_symptom: 'Наад зах нь нэг шинж тэмдэг сонгоно уу.',
     err_no_date: 'Хүссэн огноо сонгоно уу.',

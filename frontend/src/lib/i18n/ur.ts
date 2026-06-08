@@ -836,6 +836,7 @@ export const ur: AppTranslation = {
     err_save: 'محفوظ کرنا ناکام ہوا',
     patient_comment: 'مریض کی درخواست',
     no_comment: 'کوئی تفصیل نہیں',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const ur: AppTranslation = {
     note_placeholder: 'مثال: میں ابھی بلڈ پریشر کی دوائی لے رہا ہوں۔\nمثال: میری اپوائنٹمنٹ صبح ہے۔',
     submit: 'ترجمانی کی درخواست کریں',
     submitting: 'جمع ہو رہا ہے...',
+    submit_success: 'درخواست جمع ہو گئی!',
     err_no_profile: 'تارک وطن کا پروفائل نہیں ملا۔ براہ کرم میرے صفحے میں سیٹ کریں۔',
     err_no_symptom: 'براہ کرم کم از کم ایک علامت منتخب کریں۔',
     err_no_date: 'براہ کرم پسندیدہ تاریخ منتخب کریں۔',

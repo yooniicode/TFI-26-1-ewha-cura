@@ -836,6 +836,7 @@ export const vi: AppTranslation = {
     err_save: 'Lưu thất bại',
     patient_comment: 'Yêu cầu của bệnh nhân',
     no_comment: 'Không có thông tin chi tiết',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const vi: AppTranslation = {
     note_placeholder: 'VD: Tôi đang uống thuốc cao huyết áp.\nVD: Lịch hẹn của tôi vào buổi sáng.',
     submit: 'Gửi yêu cầu phiên dịch',
     submitting: 'Đang gửi...',
+    submit_success: 'Yêu cầu đã được gửi!',
     err_no_profile: 'Không tìm thấy hồ sơ người di cư. Vui lòng thiết lập trong Trang cá nhân.',
     err_no_symptom: 'Vui lòng chọn ít nhất một triệu chứng.',
     err_no_date: 'Vui lòng chọn ngày mong muốn.',

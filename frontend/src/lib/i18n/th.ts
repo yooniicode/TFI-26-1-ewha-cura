@@ -828,6 +828,7 @@ export const th: AppTranslation = {
     err_save: 'บันทึกไม่สำเร็จ',
     patient_comment: 'คำขอของผู้ป่วย',
     no_comment: 'ไม่มีรายละเอียด',
+    no_patients: 'No assigned patients',
   },
   patient_profile: {
     title: 'รายละเอียดโปรไฟล์',
@@ -888,6 +889,7 @@ export const th: AppTranslation = {
     note_placeholder: 'เช่น ฉันกินยาความดันโลหิตสูงอยู่\nเช่น นัดของฉันอยู่ช่วงเช้า',
     submit: 'ส่งคำขอล่าม',
     submitting: 'กำลังส่ง...',
+    submit_success: 'ส่งคำขอสำเร็จ!',
     err_no_profile: 'ไม่พบโปรไฟล์ผู้อพยพ กรุณาตั้งค่าในหน้าของฉัน',
     err_no_symptom: 'กรุณาเลือกอาการอย่างน้อยหนึ่งอาการ',
     err_no_date: 'กรุณาเลือกวันที่ต้องการ',

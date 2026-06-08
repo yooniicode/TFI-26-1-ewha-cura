@@ -836,6 +836,7 @@ export const si: AppTranslation = {
     err_save: 'සුරැකීම අසාර්ථක විය',
     patient_comment: 'රෝගියාගේ ඉල්ලීම',
     no_comment: 'විස්තර ලබා දී නැත',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const si: AppTranslation = {
     note_placeholder: 'උදා: මම දැනට රුධිර පීඩනය ඖෂධ ගනිමි.\nඋදා: මගේ හමුව උදෑසන.',
     submit: 'පරිවර්තනය ඉල්ලීම',
     submitting: 'ඉදිරිපත් කිරීම...',
+    submit_success: 'ඉල්ලීම ඉදිරිපත් විය!',
     err_no_profile: 'සංක්‍රමණිකයාගේ ගොනුව හමු නොවීය. My Page හි සකසන්න.',
     err_no_symptom: 'කරුණාකර අවම වශයෙන් එක් රෝග ලක්ෂණයක් තෝරන්න.',
     err_no_date: 'කරුණාකර කැමති දිනයක් තෝරන්න.',

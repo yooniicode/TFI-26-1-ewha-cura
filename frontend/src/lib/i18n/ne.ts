@@ -828,6 +828,7 @@ export const ne: AppTranslation = {
     err_save: 'सुरक्षित गर्न असफल भयो',
     patient_comment: 'बिरामीको अनुरोध',
     no_comment: 'कुनै विवरण दिइएको छैन',
+    no_patients: 'No assigned patients',
   },
   patient_profile: {
     title: 'प्रोफाइल विवरण',
@@ -888,6 +889,7 @@ export const ne: AppTranslation = {
     note_placeholder: 'उदा: म अहिले उच्च रक्तचापको औषधि खाँदैछु।\nउदा: मेरो अपोइन्टमेन्ट बिहान छ।',
     submit: 'व्याख्या अनुरोध गर्नुस्',
     submitting: 'पेश हुँदै...',
+    submit_success: 'अनुरोध पेश भयो!',
     err_no_profile: 'आप्रवासी प्रोफाइल भेटिएन। कृपया मेरो पृष्ठमा सेट अप गर्नुस्।',
     err_no_symptom: 'कृपया कम्तिमा एक लक्षण चयन गर्नुस्।',
     err_no_date: 'कृपया मनपर्ने मिति चयन गर्नुस्।',

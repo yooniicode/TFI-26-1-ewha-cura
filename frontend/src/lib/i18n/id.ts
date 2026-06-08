@@ -828,6 +828,7 @@ export const id: AppTranslation = {
     err_save: 'Gagal menyimpan',
     patient_comment: 'Permintaan pasien',
     no_comment: 'Tidak ada detail yang diberikan',
+    no_patients: 'No assigned patients',
   },
   patient_profile: {
     title: 'Detail Profil',
@@ -888,6 +889,7 @@ export const id: AppTranslation = {
     note_placeholder: 'contoh: Saya sedang minum obat darah tinggi.\ncontoh: Janji saya di pagi hari.',
     submit: 'Ajukan permintaan interpretasi',
     submitting: 'Mengirim...',
+    submit_success: 'Permintaan berhasil dikirim!',
     err_no_profile: 'Profil migran tidak ditemukan. Silakan atur di Halaman Saya.',
     err_no_symptom: 'Pilih setidaknya satu gejala.',
     err_no_date: 'Pilih tanggal yang diinginkan.',

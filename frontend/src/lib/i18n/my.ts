@@ -836,6 +836,7 @@ export const my: AppTranslation = {
     err_save: 'သိမ်းခြင်း မအောင်မြင်ပါ',
     patient_comment: 'လူနာ တောင်းဆိုမှု',
     no_comment: 'အသေးစိတ် မပေးထားပါ',
+    no_patients: 'No assigned patients',
   },
 
   patient_profile: {
@@ -898,6 +899,7 @@ export const my: AppTranslation = {
     note_placeholder: 'e.g. I am currently taking blood pressure medication.\ne.g. My appointment is in the morning.',
     submit: 'Request interpretation',
     submitting: 'Submitting...',
+    submit_success: 'Request submitted!',
     err_no_profile: 'Migrant profile not found. Please set it up in My Page.',
     err_no_symptom: 'Please select at least one symptom.',
     err_no_date: 'Please select a preferred date.',
