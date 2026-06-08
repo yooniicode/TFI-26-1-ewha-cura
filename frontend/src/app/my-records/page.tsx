@@ -121,7 +121,7 @@ function RecordDetailModal({ record, onClose }: { record: PatientReport; onClose
 
           {record.interpreterName && (
             <div className="flex flex-col gap-0.5">
-              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">{t.mypage.interpreter_label}</p>
+              <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">{t.matching.interpreter_label}</p>
               <div className="flex items-center gap-1">
                 <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.interpreterName}님</p>
                 {record.interpreterId && (
