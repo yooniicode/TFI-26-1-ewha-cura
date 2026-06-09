@@ -56,12 +56,13 @@ export default function DashboardPage() {
     enabled: hasCenter,
   })
 
-  const { data: myMatch } = useQuery({
+  const { data: myMatches } = useQuery({
     queryKey: queryKeys.matching.myMatch(),
-    queryFn: () => matchApi.myMatch().then(r => r.payload ?? null),
+    queryFn: () => matchApi.myMatch().then(r => r.payload ?? []),
     enabled: isPatientWithEntity,
     retry: false,
   })
+  const myMatch = myMatches?.[0] ?? null
 
   const { data: myRecords } = useQuery({
     queryKey: queryKeys.patients.myRecords(me?.entityId ?? '', 0),

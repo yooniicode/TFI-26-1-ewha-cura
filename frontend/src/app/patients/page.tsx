@@ -25,6 +25,7 @@ export default function PatientsPage() {
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [nationalityFilter, setNationalityFilter] = useState<Nationality | ''>('')
   const [matchingPatientId, setMatchingPatientId] = useState<string | null>(null)
+  const [unmatchingPatientId, setUnmatchingPatientId] = useState<string | null>(null)
   const [matchError, setMatchError] = useState('')
   const [listError, setListError] = useState('')
 
@@ -60,6 +61,22 @@ export default function PatientsPage() {
       setMatchError(e instanceof Error ? e.message : t.patient.err_self_match)
     } finally {
       setMatchingPatientId(null)
+    }
+  }
+
+  async function handleSelfUnassign(patient: Patient) {
+    setUnmatchingPatientId(patient.id); setMatchError('')
+    try {
+      await matchApi.selfUnassign(patient.id)
+      setItems(cur => cur.map(p =>
+        p.id === patient.id
+          ? { ...p, assignedToMe: false, activeInterpreterId: undefined, activeInterpreterName: undefined }
+          : p
+      ))
+    } catch (e) {
+      setMatchError(e instanceof Error ? e.message : t.patient.err_self_unassign)
+    } finally {
+      setUnmatchingPatientId(null)
     }
   }
 
@@ -158,7 +175,7 @@ export default function PatientsPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {myPatients.map(p => <PatientCard key={p.id} patient={p} labels={labels} t={t} matchingPatientId={matchingPatientId} onSelfAssign={handleSelfAssign} showAssignedBadge={false} />)}
+                {myPatients.map(p => <PatientCard key={p.id} patient={p} labels={labels} t={t} matchingPatientId={matchingPatientId} unmatchingPatientId={unmatchingPatientId} onSelfAssign={handleSelfAssign} onSelfUnassign={handleSelfUnassign} showAssignedBadge={false} />)}
               </div>
             )}
           </section>
@@ -176,7 +193,7 @@ export default function PatientsPage() {
           {otherPatients.length > 0 && (
             <section className="space-y-2">
               {otherPatients.map(p => (
-                <PatientCard key={p.id} patient={p} labels={labels} t={t} matchingPatientId={matchingPatientId} onSelfAssign={handleSelfAssign} showAssignedBadge />
+                <PatientCard key={p.id} patient={p} labels={labels} t={t} matchingPatientId={matchingPatientId} unmatchingPatientId={unmatchingPatientId} onSelfAssign={handleSelfAssign} onSelfUnassign={handleSelfUnassign} showAssignedBadge />
               ))}
             </section>
           )}
@@ -202,13 +219,15 @@ export default function PatientsPage() {
 // ─── 환자 카드 컴포넌트 ────────────────────────────────────────────────────────
 
 function PatientCard({
-  patient, labels, t, matchingPatientId, onSelfAssign, showAssignedBadge,
+  patient, labels, t, matchingPatientId, unmatchingPatientId, onSelfAssign, onSelfUnassign, showAssignedBadge,
 }: {
   patient: Patient
   labels: ReturnType<typeof useEnumLabels>
   t: ReturnType<typeof useTranslation>['t']
   matchingPatientId: string | null
+  unmatchingPatientId: string | null
   onSelfAssign: (p: Patient) => void
+  onSelfUnassign: (p: Patient) => void
   showAssignedBadge: boolean
 }) {
   const flagSrc = getFlagSrc(patient.nationality)
@@ -252,25 +271,30 @@ function PatientCard({
         )}
       </div>
 
-      {/* 담당 배정 버튼 */}
+      {/* 담당 등록/해제 버튼 */}
       <div className="flex shrink-0 flex-col items-end gap-1.5">
         {showAssignedBadge && assignedElsewhere && (
           <span className="text-[10px] text-[#A0A0A0] truncate max-w-[72px]">{patient.activeInterpreterName}</span>
         )}
-        <button
-          type="button"
-          className="rounded-xl bg-[#2592FF] px-3 py-1.5 text-xs font-semibold text-white disabled:bg-gray-200 disabled:text-gray-500 transition-colors"
-          disabled={assignedToMe || matchingPatientId === patient.id}
-          onClick={() => onSelfAssign(patient)}
-        >
-          {matchingPatientId === patient.id
-            ? t.patient.self_matching
-            : assignedToMe
-              ? t.patient.self_matched
-              : assignedElsewhere
-                ? t.patient.self_match_takeover
-                : t.patient.self_match}
-        </button>
+        {assignedToMe ? (
+          <button
+            type="button"
+            className="rounded-xl bg-[#F0F0F0] px-3 py-1.5 text-xs font-semibold text-[#494949] disabled:opacity-50 transition-colors"
+            disabled={unmatchingPatientId === patient.id}
+            onClick={() => onSelfUnassign(patient)}
+          >
+            {unmatchingPatientId === patient.id ? t.patient.self_unassigning : t.patient.self_unassign}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="rounded-xl bg-[#2592FF] px-3 py-1.5 text-xs font-semibold text-white disabled:bg-gray-200 disabled:text-gray-500 transition-colors"
+            disabled={matchingPatientId === patient.id}
+            onClick={() => onSelfAssign(patient)}
+          >
+            {matchingPatientId === patient.id ? t.patient.self_matching : t.patient.self_match}
+          </button>
+        )}
       </div>
     </article>
   )

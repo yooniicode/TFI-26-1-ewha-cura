@@ -3,15 +3,11 @@ package com.byby.backend.domain.matching.controller;
 import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
-import com.byby.backend.domain.matching.dto.MatchRequest;
 import com.byby.backend.domain.matching.dto.MatchResponse;
 import com.byby.backend.domain.matching.service.PatientMatchService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -64,8 +60,8 @@ public class PatientMatchController {
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('patient')")
-    @Operation(summary = "내 담당 통번역가 조회 (환자)")
-    public ResponseEntity<Response<MatchResponse.Detail>> getMyMatch(
+    @Operation(summary = "내 담당 통번역가 목록 조회 (환자)")
+    public ResponseEntity<Response<List<MatchResponse.Detail>>> getMyMatch(
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(
                 Response.success(SuccessCode.OK, patientMatchService.getMyMatch(principal)));
@@ -88,6 +84,16 @@ public class PatientMatchController {
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(201)
                 .body(Response.success(SuccessCode.CREATED, patientMatchService.selfAssign(patientId, principal)));
+    }
+
+    @DeleteMapping("/self/{patientId}")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "내 담당 해제")
+    public ResponseEntity<Response<Void>> selfUnassign(
+            @PathVariable UUID patientId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        patientMatchService.selfUnassign(patientId, principal);
+        return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
 
     /*

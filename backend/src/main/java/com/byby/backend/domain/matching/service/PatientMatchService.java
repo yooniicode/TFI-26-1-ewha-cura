@@ -22,6 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -40,14 +41,17 @@ public class PatientMatchService {
         if (!principal.isAdmin()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         Center adminCenter = adminService.getAdminCenter(principal);
 
-        patientMatchRepository.deactivateAllActiveByPatientId(req.patientId());
-
         Patient patient = patientRepository.findById(req.patientId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
         Interpreter interpreter = interpreterRepository.findById(req.interpreterId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
         if (interpreter.getCenter() == null || !interpreter.getCenter().getId().equals(adminCenter.getId())) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN, "같은 센터 통번역가에게만 매칭할 수 있습니다");
+        }
+        if (patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())) {
+            return patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())
+                    .map(MatchResponse.Detail::from)
+                    .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND));
         }
 
         PatientMatch match = PatientMatch.builder()
@@ -64,14 +68,14 @@ public class PatientMatchService {
                 .map(MatchResponse.Detail::from);
     }
 
-    public MatchResponse.Detail getByPatient(UUID patientId, UserPrincipal principal) {
+    public List<MatchResponse.Detail> getByPatient(UUID patientId, UserPrincipal principal) {
         if (!principal.isAdmin()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         Center adminCenter = adminService.getAdminCenter(principal);
-        return patientMatchRepository.findByPatientIdAndActiveTrue(patientId)
+        return patientMatchRepository.findByPatientIdAndActiveTrue(patientId).stream()
                 .filter(match -> match.getInterpreter().getCenter() != null
                         && match.getInterpreter().getCenter().getId().equals(adminCenter.getId()))
                 .map(MatchResponse.Detail::from)
-                .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND));
+                .toList();
     }
 
     @Transactional
@@ -89,6 +93,16 @@ public class PatientMatchService {
 
     public boolean isAssigned(UUID patientId, UUID interpreterId) {
         return patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreterId);
+    }
+
+    @Transactional
+    public void selfUnassign(UUID patientId, UserPrincipal principal) {
+        if (!principal.isInterpreter()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND))
+                .deactivate();
     }
 
     @Transactional
@@ -110,27 +124,25 @@ public class PatientMatchService {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN, "같은 센터 이주민만 담당 등록할 수 있습니다");
         }
 
-        if (patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())) {
-            return patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId())
-                    .map(MatchResponse.Detail::from)
-                    .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND));
-        }
-
-        patientMatchRepository.deactivateAllActiveByPatientId(patient.getId());
-        PatientMatch newMatch = patientMatchRepository.saveAndFlush(PatientMatch.builder()
-                .patient(patient)
-                .interpreter(interpreter)
-                .build());
-        return MatchResponse.Detail.from(newMatch);
+        // 이미 나와 활성 매칭이면 그대로 반환 (idempotent)
+        return patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())
+                .map(MatchResponse.Detail::from)
+                .orElseGet(() -> {
+                    PatientMatch newMatch = patientMatchRepository.saveAndFlush(PatientMatch.builder()
+                            .patient(patient)
+                            .interpreter(interpreter)
+                            .build());
+                    return MatchResponse.Detail.from(newMatch);
+                });
     }
 
-    public MatchResponse.Detail getMyMatch(UserPrincipal principal) {
+    public List<MatchResponse.Detail> getMyMatch(UserPrincipal principal) {
         if (!principal.isPatient()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         Patient patient = patientRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
-        return patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId())
+        return patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId()).stream()
                 .map(MatchResponse.Detail::from)
-                .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_NOT_FOUND));
+                .toList();
     }
 
     public MatchResponse.AssignedCount getMyAssignedCount(UserPrincipal principal) {

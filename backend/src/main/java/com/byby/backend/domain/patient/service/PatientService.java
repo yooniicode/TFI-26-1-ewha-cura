@@ -11,6 +11,8 @@ import com.byby.backend.domain.center.repository.CenterRepository;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
 import com.byby.backend.domain.auth.repository.UserCredentialRepository;
+import com.byby.backend.domain.consultation.repository.ConsultationRepository;
+import com.byby.backend.domain.matching.entity.PatientMatch;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.dto.PatientRequest;
 import com.byby.backend.domain.patient.dto.PatientResponse;
@@ -35,6 +37,7 @@ public class PatientService {
     private final PatientCenterRepository patientCenterRepository;
     private final InterpreterRepository interpreterRepository;
     private final PatientMatchRepository patientMatchRepository;
+    private final ConsultationRepository consultationRepository;
     private final CenterRepository centerRepository;
     private final AdminService adminService;
     private final UserCredentialRepository userCredentialRepository;
@@ -95,11 +98,12 @@ public class PatientService {
                             compactCenterName(center.getName()),
                             query,
                             pageable)
-                    .map(patient -> PatientResponse.Summary.from(
-                            patient,
-                            patientMatchRepository.findByPatientIdAndActiveTrue(patient.getId()).orElse(null),
-                            interpreter.getId(),
-                            resolveAvatarUrl(patient)));
+                    .map(patient -> {
+                        PatientMatch myMatch = patientMatchRepository
+                                .findByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())
+                                .orElse(null);
+                        return PatientResponse.Summary.from(patient, myMatch, interpreter.getId(), resolveAvatarUrl(patient));
+                    });
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
     }
@@ -199,8 +203,11 @@ public class PatientService {
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                    patient.getId(), interpreter.getId())) {
+            boolean hasActiveMatch = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
+                    patient.getId(), interpreter.getId());
+            boolean hasConsultation = consultationRepository.existsByPatientIdAndInterpreterId(
+                    patient.getId(), interpreter.getId());
+            if (!hasActiveMatch && !hasConsultation) {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
             }
             return;

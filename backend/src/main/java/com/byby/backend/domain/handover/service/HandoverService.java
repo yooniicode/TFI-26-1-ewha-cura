@@ -97,8 +97,9 @@ public class HandoverService {
         }
         handover.assign(toInterpreter);
 
-        // PatientMatch 업데이트: 기존 매칭을 새 통번역가로 변경
-        patientMatchRepository.findByPatientIdAndActiveTrue(handover.getPatient().getId())
+        // PatientMatch 업데이트: fromInterpreter의 매칭을 새 통번역가로 변경
+        patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(
+                handover.getPatient().getId(), handover.getFromInterpreter().getId())
                 .ifPresent(match -> match.reassign(toInterpreter));
 
         return HandoverResponse.Detail.from(handover);
