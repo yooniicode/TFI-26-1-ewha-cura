@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/auth/', '/', '/ut']
+const PUBLIC_PATHS = ['/login', '/auth/', '/', '/signup', '/ut']
 const COOKIE_NAME = 'byby_auth'
 
 export function middleware(request: NextRequest) {
@@ -20,7 +20,9 @@ export function middleware(request: NextRequest) {
   if (!isAuthenticated && !isPublic) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
-  if (isAuthenticated && pathname === '/login') {
+
+  // 인증된 사용자가 인증 화면 접근 시 대시보드로
+  if (isAuthenticated && (pathname === '/' || pathname === '/login' || pathname === '/signup' || pathname.startsWith('/signup/'))) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

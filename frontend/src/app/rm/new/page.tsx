@@ -410,7 +410,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white px-4 pb-8 pt-3 z-10">
+      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white px-4 pb-8 pt-3 z-10">
         <button
           type="button"
           className={`w-full h-[60px] rounded-[8px] text-[18px] font-semibold transition-colors ${
