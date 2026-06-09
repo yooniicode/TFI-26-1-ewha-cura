@@ -201,7 +201,7 @@ public class ConsultationService {
                 req.doctorName(), req.patientComment(), req.treatmentResult(),
                 req.diagnosisContent(), req.diagnosisNameCode(), req.medicationInstruction(),
                 req.counselorName(), req.workDescription(), req.doctorConfirmationSignature(),
-                req.durationHours(), req.fee());
+                req.durationHours(), req.fee(), req.memoCompleted(), req.reportCompleted());
         Consultation updated = consultationRepository.save(c);
         return ConsultationResponse.Detail.from(updated, resolvePatientAvatarUrl(updated.getPatient()));
     }

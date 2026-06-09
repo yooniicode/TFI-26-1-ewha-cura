@@ -629,8 +629,14 @@ export const bn: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'রিয়েল-টাইম নোট লিখুন',
+    realtime_memo_edit: 'রিয়েল-টাইম নোট লিখুন',
+    realtime_memo_draft: 'রিয়েল-টাইম নোট লিখুন',
     realtime_memo_desc: 'বর্তমান চিকিৎসা রিয়েল-টাইমে নোট করুন',
     report: 'রিপোর্ট',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: 'দায়িত্বপ্রাপ্ত রোগীরা',
     my_activity: 'আমার কার্যক্রম',
     add_schedule: 'সময়সূচি যোগ করুন',

@@ -629,8 +629,14 @@ export const mn: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'Бодит цагийн тэмдэглэл бичих',
+    realtime_memo_edit: 'Бодит цагийн тэмдэглэл бичих',
+    realtime_memo_draft: 'Бодит цагийн тэмдэглэл бичих',
     realtime_memo_desc: 'Одоогийн үзлэгийг бодит цагт тэмдэглэнэ үү',
     report: 'Тайлан',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: 'Хариуцсан өвчтөнүүд',
     my_activity: 'Миний үйл ажиллагаа',
     add_schedule: 'Хуваарь нэмэх',

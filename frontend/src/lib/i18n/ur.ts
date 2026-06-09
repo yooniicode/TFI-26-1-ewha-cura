@@ -629,8 +629,14 @@ export const ur: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'ریئل ٹائم نوٹ لکھیں',
+    realtime_memo_edit: 'ریئل ٹائم نوٹ لکھیں',
+    realtime_memo_draft: 'ریئل ٹائم نوٹ لکھیں',
     realtime_memo_desc: 'موجودہ علاج کو ریئل ٹائم میں نوٹ کریں',
     report: 'رپورٹ',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: 'ذمہ دار مریض',
     my_activity: 'میری سرگرمیاں',
     add_schedule: 'شیڈول شامل کریں',

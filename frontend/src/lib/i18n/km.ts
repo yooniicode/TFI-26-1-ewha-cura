@@ -629,8 +629,14 @@ export const km: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'សរសេរកំណត់ចំណាំតាមពេលវេលាជាក់ស្តែង',
+    realtime_memo_edit: 'សរសេរកំណត់ចំណាំតាមពេលវេលាជាក់ស្តែង',
+    realtime_memo_draft: 'សរសេរកំណត់ចំណាំតាមពេលវេលាជាក់ស្តែង',
     realtime_memo_desc: 'កត់ត្រាការព្យាបាលបច្ចុប្បន្នតាមពេលវេលាជាក់ស្តែង',
     report: 'របាយការណ៍',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: 'អ្នកជំងឺទទួលខុសត្រូវ',
     my_activity: 'សកម្មភាពរបស់ខ្ញុំ',
     add_schedule: 'បន្ថែមកាលវិភាគ',

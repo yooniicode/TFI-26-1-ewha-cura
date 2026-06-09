@@ -629,8 +629,14 @@ export const uz: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'Real vaqt eslatmasi yozish',
+    realtime_memo_edit: 'Real vaqt eslatmasi yozish',
+    realtime_memo_draft: 'Real vaqt eslatmasi yozish',
     realtime_memo_desc: 'Joriy davolanishni real vaqtda yozib boring',
     report: 'Hisobot',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: "Mas'ul bemorlar",
     my_activity: 'Mening faoliyatim',
     add_schedule: "Jadval qo'shish",

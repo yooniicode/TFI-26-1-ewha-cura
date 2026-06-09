@@ -108,6 +108,8 @@ export interface Consultation {
   medicationInstruction?: string
   counselorName?: string
   workDescription?: string
+  memoCompleted: boolean
+  reportCompleted: boolean
   doctorConfirmationSignature?: string
   durationHours?: number
   fee?: number

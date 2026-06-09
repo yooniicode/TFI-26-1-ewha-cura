@@ -629,8 +629,14 @@ export const en: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'Real-time Memo',
+    realtime_memo_edit: 'Edit Memo',
+    realtime_memo_draft: 'Edit Draft Memo',
     realtime_memo_desc: 'Record the current consultation in real time',
     report: 'Report',
+    write_report_btn: 'Write Report',
+    edit_report_btn: 'Edit Report',
+    memo_done_badge: 'Memo Done',
+    report_done_badge: 'Report Done',
     my_patients: 'My Patients',
     my_activity: 'My Activity',
     add_schedule: 'Add Schedule',

@@ -629,8 +629,14 @@ export const my: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'တိုက်ရိုက် မှတ်စု ရေးမည်',
+    realtime_memo_edit: 'တိုက်ရိုက် မှတ်စု ရေးမည်',
+    realtime_memo_draft: 'တိုက်ရိုက် မှတ်စု ရေးမည်',
     realtime_memo_desc: 'လက်ရှိ ကုသမှုကို တိုက်ရိုက် မှတ်တမ်းတင်ပါ',
     report: 'အစီရင်ခံစာ',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: 'တာဝန်ယူ လူနာများ',
     my_activity: 'ကျွန်ုပ်၏ လှုပ်ရှားမှု',
     add_schedule: 'အချိန်ဇယား ထည့်ရန်',

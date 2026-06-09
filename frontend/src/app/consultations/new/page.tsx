@@ -117,7 +117,10 @@ function ReportWriteInner() {
   useEffect(() => {
     if (!patientId) return
     patientApi.get(patientId).then(r => setPatient(r.payload ?? null)).catch(() => {})
-    patientApi.history(patientId).then(r => setRecentHistory(r.payload ?? [])).catch(() => {})
+    // 활성 배정 없이도 본인 consultation 목록에서 해당 환자 기록 조회
+    consultationApi.list({ page: 0, sortBy: 'consultationDate', direction: 'desc' })
+      .then(r => setRecentHistory((r.payload ?? []).filter(c => c.patientId === patientId)))
+      .catch(() => {})
   }, [patientId])
 
   useEffect(() => {
@@ -199,9 +202,10 @@ function ReportWriteInner() {
           workDescription: workDescription || '',
           doctorConfirmationSignature: rmConsultation.doctorConfirmationSignature || '',
           memo: rmConsultation.memo || '',
+          reportCompleted: true,
         })
       } else {
-        await consultationApi.create({
+        const created = await consultationApi.create({
           patientId,
           consultationDate,
           issueType: 'MEDICAL',
@@ -216,6 +220,16 @@ function ReportWriteInner() {
           department: department || undefined,
           hospitalName: hospitalName || undefined,
         })
+        // 신규 생성 후 reportCompleted 표시
+        if (created.payload?.id) {
+          await consultationApi.update(created.payload.id, {
+            consultationDate,
+            patientId,
+            issueType: 'MEDICAL',
+            processing: 'INTERPRETATION',
+            reportCompleted: true,
+          })
+        }
       }
       setDone(true)
     } catch (e) {

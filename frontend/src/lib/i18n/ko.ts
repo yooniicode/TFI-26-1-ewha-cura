@@ -628,8 +628,14 @@
   // ── 통번역가 홈 ─────────────────────────────────────────────────────────────
   interpreter_home: {
     realtime_memo: '실시간 메모 작성',
+    realtime_memo_edit: '메모 수정',
+    realtime_memo_draft: '메모 편집 (임시저장)',
     realtime_memo_desc: '현재 진료를 실시간으로 기록하세요',
     report: '보고서',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: '담당 환자',
     my_activity: '나의 활동',
     add_schedule: '일정 추가',

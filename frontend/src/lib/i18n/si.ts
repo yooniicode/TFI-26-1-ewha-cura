@@ -629,8 +629,14 @@ export const si: AppTranslation = {
 
   interpreter_home: {
     realtime_memo: 'තත්‍ය කාල සටහන ලියන්න',
+    realtime_memo_edit: 'තත්‍ය කාල සටහන ලියන්න',
+    realtime_memo_draft: 'තත්‍ය කාල සටහන ලියන්න',
     realtime_memo_desc: 'වර්තමාන ප්‍රතිකාරය තත්‍ය කාලීනව සටහන් කරන්න',
     report: 'වාර්තාව',
+    write_report_btn: '보고서 작성',
+    edit_report_btn: '보고서 수정',
+    memo_done_badge: '메모 완료',
+    report_done_badge: '보고서 완료',
     my_patients: 'වගකිව යුතු රෝගීන්',
     my_activity: 'මගේ ක්‍රියාකාරකම්',
     add_schedule: 'කාලසටහනක් එක් කරන්න',

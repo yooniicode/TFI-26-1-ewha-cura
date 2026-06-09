@@ -86,7 +86,9 @@ public class ConsultationResponse {
             boolean confirmed,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
-            String patientAvatarUrl
+            String patientAvatarUrl,
+            boolean memoCompleted,
+            boolean reportCompleted
     ) {
         public static Detail from(Consultation c) {
             return from(c, null);
@@ -114,7 +116,8 @@ public class ConsultationResponse {
                     c.getDoctorConfirmationSignature(), c.getDurationHours(), c.getFee(), c.getNextAppointmentDate(),
                     c.getConfirmedAt(), c.getConfirmedBy(), c.getConfirmedByPhone(),
                     c.isConfirmed(),
-                    c.getCreatedAt(), c.getUpdatedAt(), patientAvatarUrl);
+                    c.getCreatedAt(), c.getUpdatedAt(), patientAvatarUrl,
+                    c.isMemoCompleted(), c.isReportCompleted());
         }
     }
 

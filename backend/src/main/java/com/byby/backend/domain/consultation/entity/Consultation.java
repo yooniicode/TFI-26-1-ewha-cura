@@ -86,6 +86,12 @@ public class Consultation extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String workDescription;
 
+    @Column(nullable = false)
+    private boolean memoCompleted = false;
+
+    @Column(nullable = false)
+    private boolean reportCompleted = false;
+
     @Column(columnDefinition = "TEXT")
     private String doctorConfirmationSignature;
 
@@ -162,7 +168,8 @@ public class Consultation extends BaseEntity {
                        String diagnosisContent, String diagnosisNameCode,
                        String medicationInstruction, String counselorName,
                        String workDescription, String doctorConfirmationSignature,
-                       BigDecimal durationHours, Integer fee) {
+                       BigDecimal durationHours, Integer fee,
+                       Boolean memoCompleted, Boolean reportCompleted) {
         if (consultationDate != null) this.consultationDate = consultationDate;
         this.hospital = hospital;
         if (hospitalName != null) this.hospitalName = hospitalName;
@@ -183,6 +190,8 @@ public class Consultation extends BaseEntity {
         if (doctorConfirmationSignature != null) this.doctorConfirmationSignature = doctorConfirmationSignature;
         if (durationHours != null) this.durationHours = durationHours;
         if (fee != null) this.fee = fee;
+        if (memoCompleted != null) this.memoCompleted = memoCompleted;
+        if (reportCompleted != null) this.reportCompleted = reportCompleted;
     }
 
     public boolean isConfirmed() {

@@ -56,7 +56,9 @@ public class ConsultationRequest {
             String workDescription,
             String doctorConfirmationSignature,
             BigDecimal durationHours,
-            Integer fee
+            Integer fee,
+            Boolean memoCompleted,
+            Boolean reportCompleted
     ) {}
 
     public record Confirm(

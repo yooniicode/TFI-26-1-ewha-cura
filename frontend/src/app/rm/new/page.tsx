@@ -234,8 +234,8 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
     }
   }, [patientId, cid, storageKey])
 
-  const autoSaveRef = useRef<() => Promise<void>>(async () => {})
-  autoSaveRef.current = async () => {
+  const autoSaveRef = useRef<(opts?: { markComplete?: boolean }) => Promise<void>>(async () => {})
+  autoSaveRef.current = async (opts) => {
     if (!patientId || !remark.trim()) return
     setAutoSaving(true)
     try {
@@ -261,6 +261,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           workDescription: remark,
           doctorConfirmationSignature: consultation?.doctorConfirmationSignature ?? '',
           memo: consultation?.memo ?? '',
+          memoCompleted: opts?.markComplete ?? null,
         })
       } else {
         const res = await consultationApi.create({
@@ -275,6 +276,18 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           savedCidRef.current = c.id
           setSavedCid(c.id)
           setConsultation(c)
+          // 신규 생성 후 완료 처리 필요 시 별도 update
+          if (opts?.markComplete) {
+            await consultationApi.update(c.id, {
+              consultationDate: c.consultationDate,
+              patientId: c.patientId,
+              hospitalId: null,
+              issueType: c.issueType,
+              processing: c.processing ?? 'INTERPRETATION',
+              workDescription: remark,
+              memoCompleted: true,
+            })
+          }
         }
       }
       setLastSavedAt(new Date())
@@ -291,7 +304,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
     setSubmitting(true)
     setError('')
     try {
-      await autoSaveRef.current()
+      await autoSaveRef.current({ markComplete: true })
 
       const targetCid = savedCidRef.current
 
@@ -335,7 +348,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
         sessionStorage.removeItem(storageKey)
         sessionStorage.removeItem(`${storageKey}_startedAt`)
       } catch {}
-      router.push(`/consultations/new?patientId=${patientId}${targetCid ? `&cid=${targetCid}` : ''}`)
+      router.push('/dashboard')
     } catch (e) {
       setError(e instanceof Error ? e.message : t.consultation.err_save)
       setSubmitting(false)

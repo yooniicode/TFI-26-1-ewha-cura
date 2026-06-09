@@ -104,6 +104,8 @@ export const consultationSchema = z.object({
   medicationInstruction: nullableString,
   counselorName:       nullableString,
   workDescription:     nullableString,
+  memoCompleted:       z.boolean().optional().default(false),
+  reportCompleted:     z.boolean().optional().default(false),
   doctorConfirmationSignature: nullableString,
   durationHours:       nullableNumber,
   fee:                 nullableNumber,
