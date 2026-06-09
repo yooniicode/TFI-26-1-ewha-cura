@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/auth/', '/']
+const PUBLIC_PATHS = ['/login', '/auth/', '/', '/ut']
 const COOKIE_NAME = 'byby_auth'
 
 export function middleware(request: NextRequest) {
