@@ -8,6 +8,47 @@ export type Nationality =
 export type Gender = 'MALE' | 'FEMALE' | 'OTHER'
 export type VisaType = 'E9' | 'E6' | 'F1' | 'F2' | 'F4' | 'F5' | 'F6' | 'H2' | 'D2' | 'U' | 'OTHER'
 export type IssueType = 'MEDICAL' | 'LEGAL' | 'LABOR' | 'IMMIGRATION' | 'OTHER'
+
+export const ISSUE_LABEL: Record<IssueType, string> = {
+  MEDICAL: '의료',
+  LEGAL: '법률',
+  LABOR: '노동',
+  IMMIGRATION: '출입국',
+  OTHER: '기타',
+}
+
+export const NATIONALITY_LABEL: Record<Nationality, string> = {
+  KOREA: '한국',
+  UNITED_STATES: '미국',
+  VIETNAM: '베트남',
+  CHINA: '중국',
+  CAMBODIA: '캄보디아',
+  MYANMAR: '미얀마',
+  PHILIPPINES: '필리핀',
+  INDONESIA: '인도네시아',
+  THAILAND: '태국',
+  NEPAL: '네팔',
+  MONGOLIA: '몽골',
+  UZBEKISTAN: '우즈베키스탄',
+  SRI_LANKA: '스리랑카',
+  BANGLADESH: '방글라데시',
+  PAKISTAN: '파키스탄',
+  OTHER: '기타',
+}
+
+export const VISA_LABEL: Record<VisaType, string> = {
+  E9: 'E-9 (비전문취업)',
+  E6: 'E-6 (예술흥행)',
+  F1: 'F-1 (방문동거)',
+  F2: 'F-2 (거주)',
+  F4: 'F-4 (재외동포)',
+  F5: 'F-5 (영주)',
+  F6: 'F-6 (결혼이민)',
+  H2: 'H-2 (방문취업)',
+  D2: 'D-2 (유학)',
+  U: 'U (미등록)',
+  OTHER: '기타',
+}
 export type ConsultationMethod = 'VISIT' | 'PHONE' | 'VIDEO' | 'OTHER'
 export type ProcessingType = 'INTERPRETATION' | 'TRANSLATION' | 'COUNSELING' | 'OTHER'
 export type InterpreterRole = 'ACTIVIST' | 'FREELANCER' | 'STAFF'
