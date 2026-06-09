@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { setAccessToken } from '@/lib/auth-token'
 import Image from 'next/image'
 
-export default function UtPage() {
+function UtAutoLogin() {
   const router = useRouter()
   const params = useSearchParams()
   const role = params.get('role')
@@ -43,5 +43,18 @@ export default function UtPage() {
       <p className="text-[#161616] font-semibold text-base">UT 세션 시작 중...</p>
       <div className="w-6 h-6 border-2 border-[#2592FF] border-t-transparent rounded-full animate-spin" />
     </div>
+  )
+}
+
+export default function UtPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
+        <Image src="/icons/cura.svg" alt="Cura" width={40} height={40} />
+        <div className="w-6 h-6 border-2 border-[#2592FF] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <UtAutoLogin />
+    </Suspense>
   )
 }
