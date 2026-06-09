@@ -13,7 +13,7 @@ export function useMe() {
       try {
         return await authApi.me().then(r => r.payload)
       } catch (e) {
-        if (e instanceof ApiError && e.isUnauthorized) {
+        if (e instanceof ApiError && (e.isUnauthorized || e.isForbidden)) {
           clearAccessToken()
           return null
         }
@@ -21,6 +21,7 @@ export function useMe() {
       }
     },
     retry: (failureCount, error) =>
-      !(error instanceof ApiError && error.isUnauthorized) && failureCount < 1,
+      !(error instanceof ApiError && (error.isUnauthorized || error.isForbidden)) && failureCount < 1,
+    refetchOnWindowFocus: false,
   })
 }
