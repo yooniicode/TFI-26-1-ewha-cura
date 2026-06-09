@@ -752,6 +752,7 @@ export const ur: AppTranslation = {
     placeholder: 'مثال\n\nچہرے پر پہلے درجے کی جلن کے ساتھ آئے۔ تجویز کردہ مرہم دن میں 3 بار لگانے کی ہدایت دی گئی۔',
     saving: 'محفوظ ہو رہا ہے...',
     saved: (time: string) => `${time} پر محفوظ کیا گیا`,
+    autosaved: 'خودکار محفوظ ہو گیا',
     save_now: 'ابھی محفوظ کریں',
     write_report: 'رپورٹ لکھیں →',
     ai_analyzing: 'AI نوٹ کا تجزیہ کر رہا ہے...',

@@ -1,6 +1,14 @@
 import type { PatientReport } from '@/lib/types'
 
-export function getBodyPartImage(record: PatientReport): string {
+export type BodyPartKey = 'ear' | 'eye' | 'mouth' | 'vertebrae' | 'pelvis' | 'head' | 'chest' | 'abdomen' | 'legs' | 'arm'
+
+export const BODY_PART_KEYS: BodyPartKey[] = ['ear', 'eye', 'mouth', 'vertebrae', 'pelvis', 'head', 'chest', 'abdomen', 'legs', 'arm']
+
+export function bodyPartImagePath(key: BodyPartKey): string {
+  return `/icons/common/body-parts/${key}.png`
+}
+
+export function getBodyPartKey(record: { diagnosisNameCode?: string | null; department?: string | null }): BodyPartKey {
   const code = record.diagnosisNameCode ?? ''
   const dept = (record.department ?? '').toLowerCase()
   const icdMatch = code.match(/\(([A-Z][0-9]+(?:\.[0-9]+)?)\)/)
@@ -8,28 +16,31 @@ export function getBodyPartImage(record: PatientReport): string {
   const icdNum = icd ? parseInt(icd.substring(1), 10) : -1
   const icdLetter = icd ? icd[0] : ''
 
-  if (dept.includes('이비인후')) return '/icons/common/body-parts/ear.png'
-  if (dept.includes('안과')) return '/icons/common/body-parts/eye.png'
-  if (dept.includes('치과') || dept.includes('구강')) return '/icons/common/body-parts/mouth.png'
-  if (dept.includes('정형') || dept.includes('재활')) return '/icons/common/body-parts/vertebrae.png'
-  if (dept.includes('산부인과') || dept.includes('비뇨')) return '/icons/common/body-parts/pelvis.png'
-  if (dept.includes('신경')) return '/icons/common/body-parts/head.png'
-  if (dept.includes('흉부') || dept.includes('호흡') || dept.includes('심장')) return '/icons/common/body-parts/chest.png'
-  if (dept.includes('소화') || dept.includes('위장')) return '/icons/common/body-parts/abdomen.png'
+  if (dept.includes('이비인후')) return 'ear'
+  if (dept.includes('안과')) return 'eye'
+  if (dept.includes('치과') || dept.includes('구강')) return 'mouth'
+  if (dept.includes('정형') || dept.includes('재활')) return 'vertebrae'
+  if (dept.includes('산부인과') || dept.includes('비뇨')) return 'pelvis'
+  if (dept.includes('신경')) return 'head'
+  if (dept.includes('흉부') || dept.includes('호흡') || dept.includes('심장')) return 'chest'
+  if (dept.includes('소화') || dept.includes('위장')) return 'abdomen'
 
-  if (icdLetter === 'H' && icdNum >= 60) return '/icons/common/body-parts/ear.png'
-  if (icdLetter === 'H') return '/icons/common/body-parts/eye.png'
-  if (icdLetter === 'K' && icdNum <= 14) return '/icons/common/body-parts/mouth.png'
-  if (icdLetter === 'K') return '/icons/common/body-parts/abdomen.png'
-  if (icdLetter === 'J') return '/icons/common/body-parts/chest.png'
-  if (icdLetter === 'I') return '/icons/common/body-parts/chest.png'
-  if (icdLetter === 'M') return '/icons/common/body-parts/vertebrae.png'
-  if (icdLetter === 'N') return '/icons/common/body-parts/pelvis.png'
-  if (icdLetter === 'G') return '/icons/common/body-parts/head.png'
-  if (icdLetter === 'S' && icdNum >= 70) return '/icons/common/body-parts/legs.png'
-  if (icdLetter === 'S' && icdNum >= 40) return '/icons/common/body-parts/arm.png'
+  if (icdLetter === 'H' && icdNum >= 60) return 'ear'
+  if (icdLetter === 'H') return 'eye'
+  if (icdLetter === 'K' && icdNum <= 14) return 'mouth'
+  if (icdLetter === 'K') return 'abdomen'
+  if (icdLetter === 'J' || icdLetter === 'I') return 'chest'
+  if (icdLetter === 'M') return 'vertebrae'
+  if (icdLetter === 'N') return 'pelvis'
+  if (icdLetter === 'G') return 'head'
+  if (icdLetter === 'S' && icdNum >= 70) return 'legs'
+  if (icdLetter === 'S' && icdNum >= 40) return 'arm'
 
-  return '/icons/common/body-parts/vertebrae.png'
+  return 'vertebrae'
+}
+
+export function getBodyPartImage(record: PatientReport): string {
+  return bodyPartImagePath(getBodyPartKey(record))
 }
 
 export function getDiseaseShortName(diagnosisNameCode: string | undefined): string {

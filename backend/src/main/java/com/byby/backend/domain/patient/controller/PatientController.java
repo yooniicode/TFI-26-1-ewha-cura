@@ -108,7 +108,7 @@ public class PatientController {
     @GetMapping("/{id}/history")
     @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "이주민 상담 이력 조회")
-    public ResponseEntity<Response<List<ConsultationResponse.Summary>>> getHistory(
+    public ResponseEntity<Response<List<ConsultationResponse.Detail>>> getHistory(
             @PathVariable UUID id,
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {

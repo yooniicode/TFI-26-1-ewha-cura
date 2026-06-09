@@ -756,6 +756,7 @@
     placeholder: '예시\n\n얼굴에 1도 화상으로 내원함. 처방받은 연고를 하루 3회 도포하도록 안내함.',
     saving: '저장 중...',
     saved: (time: string) => `저장됨 ${time}`,
+    autosaved: '자동저장 되었습니다',
     save_now: '지금 저장',
     write_report: '보고서 쓰기 →',
     ai_analyzing: 'AI가 메모를 분석하는 중...',

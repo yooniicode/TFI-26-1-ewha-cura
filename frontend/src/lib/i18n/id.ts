@@ -746,6 +746,7 @@ export const id: AppTranslation = {
     placeholder: 'Contoh\n\nPasien datang dengan luka bakar tingkat 1 di wajah. Diberitahu untuk mengoleskan salep yang diresepkan 3 kali sehari.',
     saving: 'Menyimpan...',
     saved: (time: string) => `Disimpan ${time}`,
+    autosaved: 'Tersimpan otomatis',
     save_now: 'Simpan sekarang',
     write_report: 'Tulis laporan →',
     ai_analyzing: 'AI sedang menganalisis memo...',

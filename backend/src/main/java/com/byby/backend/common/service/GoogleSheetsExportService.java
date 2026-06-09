@@ -27,7 +27,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -35,12 +34,6 @@ public class GoogleSheetsExportService {
 
     @Value("${byby.google.service-account-json:}")
     private String serviceAccountJson;
-
-    @Value("${byby.google.export-spreadsheet-id:}")
-    private String exportSpreadsheetId;
-
-    @Value("${byby.google.export-spreadsheet-ids:}")
-    private String exportSpreadsheetIds;
 
     static final String TOKEN_URL = "https://oauth2.googleapis.com/token";
     static final String SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -53,26 +46,35 @@ public class GoogleSheetsExportService {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    public String createSheet(String title, List<ConsultationResponse.Summary> rows) {
-        return createSheet(title, null, null, rows);
-    }
+    public record ExportResult(String url, String spreadsheetId) {}
 
-    public String createSheet(String title, UUID centerId, String centerName, List<ConsultationResponse.Summary> rows) {
+    /**
+     * 센터에 기존 스프레드시트가 있으면 새 탭을 추가하고, 없으면 새 스프레드시트를 생성한다.
+     *
+     * @param title                보고서 제목
+     * @param centerName           센터 이름 (스프레드시트 제목에 사용)
+     * @param existingSpreadsheetId Center 엔티티에 저장된 시트 ID. null이면 새로 생성.
+     * @param rows                 내보낼 데이터
+     * @return url + spreadsheetId (신규 생성 시 spreadsheetId를 DB에 저장해야 함)
+     */
+    public ExportResult createSheet(String title, String centerName, String existingSpreadsheetId,
+                                    List<ConsultationResponse.Summary> rows) {
         if (!StringUtils.hasText(serviceAccountJson)) {
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
                     "GOOGLE_SERVICE_ACCOUNT_JSON 이 설정되지 않았습니다");
         }
         String token = fetchAccessToken();
         String exportTitle = buildExportTitle(title, centerName);
-        String existingSpreadsheetId = resolveExistingSpreadsheetId(centerId);
 
         if (StringUtils.hasText(existingSpreadsheetId)) {
-            return appendSheetToExistingSpreadsheet(token, existingSpreadsheetId, exportTitle, rows);
+            String url = appendSheetToExistingSpreadsheet(token, existingSpreadsheetId, exportTitle, rows);
+            return new ExportResult(url, existingSpreadsheetId);
         }
 
         String spreadsheetId = createSpreadsheet(token, exportTitle);
         writeRows(token, spreadsheetId, "Sheet1", rows);
-        return "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
+        String url = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
+        return new ExportResult(url, spreadsheetId);
     }
 
     private String fetchAccessToken() {
@@ -268,46 +270,6 @@ public class GoogleSheetsExportService {
             return baseTitle;
         }
         return centerName.trim() + " " + baseTitle;
-    }
-
-    private String resolveExistingSpreadsheetId(UUID centerId) {
-        if (centerId != null && StringUtils.hasText(exportSpreadsheetIds)) {
-            String spreadsheetId = findMappedSpreadsheetId(centerId.toString());
-            if (StringUtils.hasText(spreadsheetId)) {
-                return spreadsheetId.trim();
-            }
-            throw new GeneralException(GeneralErrorCode.BAD_REQUEST,
-                    "센터별 Google export 스프레드시트 설정이 없습니다. centerId=" + centerId
-                            + " 값을 GOOGLE_EXPORT_SPREADSHEET_IDS에 추가해주세요.");
-        }
-        if (StringUtils.hasText(exportSpreadsheetId)) {
-            return exportSpreadsheetId.trim();
-        }
-        return null;
-    }
-
-    private String findMappedSpreadsheetId(String centerId) {
-        String raw = exportSpreadsheetIds.trim();
-        try {
-            if (raw.startsWith("{")) {
-                JsonNode node = objectMapper.readTree(raw).path(centerId);
-                return node.isMissingNode() ? null : node.asText(null);
-            }
-
-            for (String entry : raw.split("[,;]")) {
-                String[] pair = entry.split("=", 2);
-                if (pair.length < 2) {
-                    pair = entry.split(":", 2);
-                }
-                if (pair.length == 2 && pair[0].trim().equalsIgnoreCase(centerId)) {
-                    return pair[1].trim();
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
-                    "GOOGLE_EXPORT_SPREADSHEET_IDS 형식이 올바르지 않습니다: " + e.getMessage());
-        }
     }
 
     private String quoteSheetName(String sheetTitle) {

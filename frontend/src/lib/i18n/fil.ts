@@ -746,6 +746,7 @@ export const fil: AppTranslation = {
     placeholder: 'Halimbawa\n\nDumating ang pasyente para sa unang antas na sunog sa mukha. Inutusan na mag-apply ng iniresetang pamahid 3 beses sa isang araw.',
     saving: 'Sine-save...',
     saved: (time: string) => `Na-save ${time}`,
+    autosaved: 'Awtomatikong na-save',
     save_now: 'I-save ngayon',
     write_report: 'Sumulat ng ulat →',
     ai_analyzing: 'Sinusuri ng AI ang memo...',

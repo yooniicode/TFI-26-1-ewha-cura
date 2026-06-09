@@ -746,6 +746,7 @@ export const zh: AppTranslation = {
     placeholder: '示例\n\n患者因面部一度灼伤就诊。已告知按处方涂抹药膏，每日3次。',
     saving: '保存中...',
     saved: (time: string) => `已保存 ${time}`,
+    autosaved: '已自动保存',
     save_now: '立即保存',
     write_report: '写报告 →',
     ai_analyzing: 'AI正在分析备注...',

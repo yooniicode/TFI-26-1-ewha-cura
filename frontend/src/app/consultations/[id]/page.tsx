@@ -23,6 +23,7 @@ import {
 } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { formatKoreanDate, formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
+import { type BodyPartKey, BODY_PART_KEYS, bodyPartImagePath, getBodyPartKey } from '@/lib/bodyPartUtils'
 
 type ReportForm = {
   consultationDate: string
@@ -61,6 +62,7 @@ export default function ConsultationDetailPage() {
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
+  const [bodyPart, setBodyPart] = useState<BodyPartKey | null>(null)
 
   useEffect(() => {
     authApi.me()
@@ -75,9 +77,30 @@ export default function ConsultationDetailPage() {
           consultationApi.get(id),
           hospitalApi.search(),
         ])
-        setData(cRes.payload)
-        setForm(toForm(cRes.payload))
+        const c = cRes.payload
+        setData(c)
+        setForm(toForm(c))
         setHospitals(hRes.payload ?? [])
+
+        // 룰 기반으로 즉시 초기화한 뒤 AI로 업데이트
+        setBodyPart(getBodyPartKey(c))
+        fetch('/api/body-part', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            department: c.department,
+            patientComment: c.patientComment,
+            diagnosisNameCode: c.diagnosisNameCode,
+            diagnosisContent: c.diagnosisContent,
+          }),
+        })
+          .then(r => r.json())
+          .then((d: { bodyPart?: string }) => {
+            if (d.bodyPart && BODY_PART_KEYS.includes(d.bodyPart as BodyPartKey)) {
+              setBodyPart(d.bodyPart as BodyPartKey)
+            }
+          })
+          .catch(() => {})
       })
       .finally(() => setLoading(false))
   }, [id])
@@ -238,7 +261,16 @@ export default function ConsultationDetailPage() {
 
             {/* 진료 기록 */}
             <div className="bg-white rounded-xl px-4 py-4 space-y-3">
-              <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-1">{t.consultation.work_log_section}</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide">{t.consultation.work_log_section}</p>
+                {bodyPart && (
+                  <img
+                    src={bodyPartImagePath(bodyPart)}
+                    alt={bodyPart}
+                    className="w-10 h-10 object-contain opacity-80"
+                  />
+                )}
+              </div>
               <ReportRow label={t.consultation.visit_date_label} value={formatKoreanDateTime(data.consultationDate)} />
               <ReportRow label={t.consultation.visit_hospital} value={data.hospitalName} />
               <ReportRow label={t.consultation.department} value={data.department} />
@@ -262,20 +294,13 @@ export default function ConsultationDetailPage() {
               <ReportBlock label={t.consultation.doctor_signature} value={data.doctorConfirmationSignature} />
             </div>
 
-            {/* Admin report edit/confirm actions disabled.
-            {me?.role === 'admin' && (
+            {(me?.role === 'interpreter' || me?.role === 'admin') && !data.confirmed && (
               <div className="space-y-2">
                 <button type="button" onClick={() => setEditMode(true)} className="btn-secondary w-full">
                   {t.consultation.edit_report}
                 </button>
-                {!data.confirmed && (
-                  <button onClick={handleConfirm} disabled={confirming} className="btn-primary w-full">
-                    {confirming ? t.consultation.confirming : t.consultation.confirm_report}
-                  </button>
-                )}
               </div>
             )}
-            */}
           </>
         )}
       </div>

@@ -9,6 +9,7 @@ import com.byby.backend.domain.admin.service.AdminService;
 import com.byby.backend.domain.auth.entity.UserCredential;
 import com.byby.backend.domain.auth.repository.UserCredentialRepository;
 import com.byby.backend.domain.center.entity.Center;
+import com.byby.backend.domain.center.repository.CenterRepository;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
 import com.byby.backend.domain.consultation.dto.ConsultationRequest;
@@ -44,6 +45,7 @@ public class ConsultationService {
     private final AdminService adminService;
     private final PatientCenterRepository patientCenterRepository;
     private final UserCredentialRepository userCredentialRepository;
+    private final CenterRepository centerRepository;
 
     private String resolvePatientAvatarUrl(Patient patient) {
         if (patient.getAuthUserId() == null) return null;
@@ -55,6 +57,7 @@ public class ConsultationService {
     public record ExportData(
             UUID centerId,
             String centerName,
+            String existingSpreadsheetId,
             List<ConsultationResponse.Summary> rows
     ) {}
 
@@ -214,7 +217,7 @@ public class ConsultationService {
         return ConsultationResponse.Detail.from(confirmed, resolvePatientAvatarUrl(confirmed.getPatient()));
     }
 
-    public Page<ConsultationResponse.Summary> getByPatient(UUID patientId, Pageable pageable, UserPrincipal principal) {
+    public Page<ConsultationResponse.Detail> getByPatient(UUID patientId, Pageable pageable, UserPrincipal principal) {
         if (principal.isPatient()) {
             Patient p = patientRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
@@ -234,7 +237,7 @@ public class ConsultationService {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
         return consultationRepository.findByPatientId(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
-                .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
+                .map(c -> ConsultationResponse.Detail.from(c, resolvePatientAvatarUrl(c.getPatient())));
     }
 
     public Page<ConsultationResponse.Summary> getByInterpreter(UUID interpreterId, Pageable pageable, UserPrincipal principal) {
@@ -283,7 +286,7 @@ public class ConsultationService {
             Center center = adminService.getAdminCenter(principal);
             List<ConsultationResponse.Summary> rows = consultationRepository.searchByCenter(center.getId(), null, all)
                     .map(ConsultationResponse.Summary::from).getContent();
-            return new ExportData(center.getId(), center.getName(), rows);
+            return new ExportData(center.getId(), center.getName(), center.getSpreadsheetId(), rows);
         }
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
@@ -295,9 +298,14 @@ public class ConsultationService {
             Center center = interpreter.getCenter();
             List<ConsultationResponse.Summary> rows = consultationRepository.searchByInterpreter(interpreter.getId(), null, all)
                     .map(ConsultationResponse.Summary::from).getContent();
-            return new ExportData(center.getId(), center.getName(), rows);
+            return new ExportData(center.getId(), center.getName(), center.getSpreadsheetId(), rows);
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+    }
+
+    @Transactional
+    public void saveCenterSpreadsheetId(UUID centerId, String spreadsheetId) {
+        centerRepository.findById(centerId).ifPresent(center -> center.updateSpreadsheetId(spreadsheetId));
     }
 
     private Consultation findConsultation(UUID id) {

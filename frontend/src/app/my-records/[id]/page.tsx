@@ -9,7 +9,7 @@ import { patientApi, chatApi } from '@/lib/api'
 import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { getBodyPartImage, getDiseaseShortName, getIcdCode } from '@/lib/bodyPartUtils'
+import { type BodyPartKey, BODY_PART_KEYS, bodyPartImagePath, getBodyPartKey, getDiseaseShortName, getIcdCode } from '@/lib/bodyPartUtils'
 import { formatKoreanDateTime } from '@/lib/dateFormat'
 
 function consultDateKo(dateStr: string) {
@@ -25,14 +25,37 @@ export default function MyRecordDetailPage() {
   const [record, setRecord] = useState<PatientReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [chatLoading, setChatLoading] = useState(false)
+  const [bodyPart, setBodyPart] = useState<BodyPartKey | null>(null)
 
   useEffect(() => {
     const patientId = me?.entityId
     if (!patientId) return
     patientApi.myRecords(patientId)
       .then(r => {
-        const found = (r.payload ?? []).find(c => c.id === id)
-        setRecord(found ?? null)
+        const found = (r.payload ?? []).find(c => c.id === id) ?? null
+        setRecord(found)
+        if (found) {
+          // 룰 기반으로 즉시 초기화
+          setBodyPart(getBodyPartKey(found))
+          // AI로 업데이트
+          fetch('/api/body-part', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              department: found.department,
+              patientComment: found.patientComment,
+              diagnosisNameCode: found.diagnosisNameCode,
+              diagnosisContent: found.diagnosisContent,
+            }),
+          })
+            .then(res => res.json())
+            .then((d: { bodyPart?: string }) => {
+              if (d.bodyPart && BODY_PART_KEYS.includes(d.bodyPart as BodyPartKey)) {
+                setBodyPart(d.bodyPart as BodyPartKey)
+              }
+            })
+            .catch(() => {})
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -69,7 +92,7 @@ export default function MyRecordDetailPage() {
 
   const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
   const icdCode = getIcdCode(record.diagnosisNameCode)
-  const bodyImage = getBodyPartImage(record)
+  const bodyImage = bodyPart ? bodyPartImagePath(bodyPart) : bodyPartImagePath(getBodyPartKey(record))
   const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
 
   return (

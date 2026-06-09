@@ -105,8 +105,6 @@ byby:
 
   google:
     service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
-    export-spreadsheet-id: ${GOOGLE_EXPORT_SPREADSHEET_ID:}
-    export-spreadsheet-ids: ${GOOGLE_EXPORT_SPREADSHEET_IDS:}
 
 ---
 spring:

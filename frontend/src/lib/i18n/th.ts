@@ -746,6 +746,7 @@ export const th: AppTranslation = {
     placeholder: 'ตัวอย่าง\n\nผู้ป่วยมาพบแพทย์เนื่องจากไฟไหม้ระดับ 1 ที่ใบหน้า แนะนำให้ทายาที่สั่งจ่าย 3 ครั้งต่อวัน',
     saving: 'กำลังบันทึก...',
     saved: (time: string) => `บันทึกแล้ว ${time}`,
+    autosaved: 'บันทึกอัตโนมัติแล้ว',
     save_now: 'บันทึกตอนนี้',
     write_report: 'เขียนรายงาน →',
     ai_analyzing: 'AI กำลังวิเคราะห์บันทึก...',

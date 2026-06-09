@@ -118,7 +118,7 @@ public class ConsultationController {
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasAnyRole('interpreter', 'patient')")
     @Operation(summary = "환자별 상담/통역 보고서 조회")
-    public ResponseEntity<Response<List<ConsultationResponse.Summary>>> getByPatient(
+    public ResponseEntity<Response<List<ConsultationResponse.Detail>>> getByPatient(
             @PathVariable UUID patientId,
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -132,9 +132,13 @@ public class ConsultationController {
             description = "내 상담 보고서 전체를 Google Sheets 에 작성하고 URL 을 반환합니다. (최대 5,000건)")
     public ResponseEntity<Response<String>> exportToSheets(@AuthenticationPrincipal UserPrincipal principal) {
         ConsultationService.ExportData exportData = consultationService.getExportData(principal);
-        String url = googleSheetsExportService.createSheet(
-                "상담보고서", exportData.centerId(), exportData.centerName(), exportData.rows());
-        return ResponseEntity.ok(Response.success(SuccessCode.OK, url));
+        GoogleSheetsExportService.ExportResult result = googleSheetsExportService.createSheet(
+                "상담보고서", exportData.centerName(), exportData.existingSpreadsheetId(), exportData.rows());
+        // 새 스프레드시트가 생성된 경우 센터에 ID 저장
+        if (exportData.existingSpreadsheetId() == null) {
+            consultationService.saveCenterSpreadsheetId(exportData.centerId(), result.spreadsheetId());
+        }
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, result.url()));
     }
 
     @GetMapping("/interpreter/{interpreterId}")

@@ -1,0 +1,1 @@
+ALTER TABLE center ADD COLUMN IF NOT EXISTS spreadsheet_id VARCHAR(100);

@@ -36,6 +36,9 @@ public class Center extends BaseEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(length = 100)
+    private String spreadsheetId;
+
     @Builder
     public Center(String name, String address, String phone) {
         this.name = name;
@@ -49,5 +52,9 @@ public class Center extends BaseEntity {
         if (address != null) this.address = address;
         if (phone != null) this.phone = phone;
         if (active != null) this.active = active;
+    }
+
+    public void updateSpreadsheetId(String spreadsheetId) {
+        this.spreadsheetId = spreadsheetId;
     }
 }

@@ -752,6 +752,7 @@ export const vi: AppTranslation = {
     placeholder: 'Ví dụ\n\nBệnh nhân đến khám bỏng độ 1 vùng mặt. Hướng dẫn bôi thuốc mỡ được kê 3 lần mỗi ngày.',
     saving: 'Đang lưu...',
     saved: (time: string) => `Đã lưu lúc ${time}`,
+    autosaved: 'Đã tự động lưu',
     save_now: 'Lưu ngay',
     write_report: 'Viết báo cáo →',
     ai_analyzing: 'AI đang phân tích ghi chú...',

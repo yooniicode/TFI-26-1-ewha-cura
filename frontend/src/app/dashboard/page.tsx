@@ -3,15 +3,16 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
-import { adminApi, announcementApi, consultationApi, matchApi, patientApi } from '@/lib/api'
+import { adminApi, announcementApi, chatApi, consultationApi, matchApi, patientApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
 import { useMe } from '@/hooks/useMe'
 import type { Announcement, AnnouncementCategory, Consultation } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { daysBetweenDateKeys, formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
+import { daysBetweenDateKeys, formatKoreanDateTime, parseAppDate, toDateKey } from '@/lib/dateFormat'
 import PatientAvatar from '@/components/interpreter/PatientAvatar'
 
 function formatToday(locale: string) {
@@ -25,8 +26,10 @@ function formatToday(locale: string) {
 
 export default function DashboardPage() {
   const queryClient = useQueryClient()
+  const router = useRouter()
   const { data: me, isLoading: meLoading } = useMe()
   const { t } = useTranslation()
+  const [chatLoading, setChatLoading] = useState(false)
 
   const isAdmin = me?.role === 'admin'
   const hasCenter = isAdmin && !!(me?.centerId || me?.centerName)
@@ -110,7 +113,20 @@ export default function DashboardPage() {
     const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000)
     return kst.toISOString().split('T')[0]
   })()
-  const recentConsultations = (consultations ?? []).filter(c => toDateKey(c.consultationDate) === todayStr)
+  const recentConsultations = (consultations ?? [])
+    .filter(c => {
+      if (toDateKey(c.consultationDate) !== todayStr) return false
+      const d = parseAppDate(c.consultationDate)
+      if (!d) return true
+      const hasTime = /T\d{2}:\d{2}|^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(c.consultationDate)
+      if (!hasTime) return true
+      return d.getTime() > Date.now()
+    })
+    .sort((a, b) => {
+      const aTime = parseAppDate(a.consultationDate)?.getTime() ?? 0
+      const bTime = parseAppDate(b.consultationDate)?.getTime() ?? 0
+      return aTime - bTime
+    })
 
   // 통번역가가 등록한 미래 consultationDate 레코드를 우선으로 찾고,
   // 없으면 과거 진료에 기록된 nextAppointmentDate를 폴백으로 사용
@@ -162,6 +178,17 @@ export default function DashboardPage() {
       ? [nextScheduledRecord.hospitalName, nextScheduledRecord.department].filter(Boolean).join(' ')
       : ''
     const interpreterName = myMatch?.interpreterName ?? null
+
+    async function handleOpenChat() {
+      if (!myMatch?.interpreterId) return
+      setChatLoading(true)
+      try {
+        const res = await chatApi.roomWithInterpreter(myMatch.interpreterId)
+        if (res.payload) router.push(`/chat/${res.payload.id}`)
+      } catch { /* ignore */ } finally {
+        setChatLoading(false)
+      }
+    }
 
     return (
       <AppShell noPadding>
@@ -221,6 +248,18 @@ export default function DashboardPage() {
                         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 13.6a19.79 19.79 0 01-3.07-8.67A2 2 0 012 2.84h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 10.91a16 16 0 006.72 6.72l1.25-1.25a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 18.92v-2z" />
                       </svg>
                     </a>
+                  )}
+                  {interpreterName && myMatch?.interpreterId && (
+                    <button
+                      type="button"
+                      onClick={handleOpenChat}
+                      disabled={chatLoading}
+                      className="w-[24px] h-[24px] rounded-full bg-[#f0f1f5] flex items-center justify-center shrink-0 disabled:opacity-50"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#808080" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                      </svg>
+                    </button>
                   )}
                 </div>
               </div>
@@ -368,11 +407,18 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4">
             {recentConsultations.map((c, idx) => {
               const location = [c.hospitalName, c.department].filter(Boolean).join(' ') || '-'
+              const dateObj = parseAppDate(c.consultationDate)
+              const hasTime = dateObj && /T\d{2}:\d{2}|^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/.test(c.consultationDate)
+              const timeStr = hasTime
+                ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
+                : ''
 
               if (idx === 0) {
                 return (
                   <div key={c.id} className="flex items-start">
-                    <div className="w-16 shrink-0" />
+                    <div className="w-16 shrink-0 pt-5 text-[14px] font-medium text-[#2592FF]">
+                      {timeStr}
+                    </div>
                     <div className="flex-1 bg-[#f3f9ff] rounded-[8px] flex flex-col gap-[15px] p-5">
                       <Link href={`/patients/${c.patientId}?cid=${c.id}`}
                         className="flex items-center justify-between active:opacity-70 transition-opacity">
@@ -399,7 +445,9 @@ export default function DashboardPage() {
 
               return (
                 <div key={c.id} className="flex items-center">
-                  <div className="w-16 shrink-0" />
+                  <div className="w-16 shrink-0 text-[14px] font-medium text-[#808080]">
+                    {timeStr}
+                  </div>
                   <Link
                     href={`/patients/${c.patientId}?cid=${c.id}`}
                     className="flex-1 bg-[#f7f7f7] border border-[#eee] rounded-[16px] px-4 py-5 flex items-center justify-between active:opacity-70 transition-opacity"

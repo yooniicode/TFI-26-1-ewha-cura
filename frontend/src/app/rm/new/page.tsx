@@ -35,6 +35,12 @@ function calcAge(birthDate?: string | null): number | null {
   return age
 }
 
+function extractRequestNote(comment?: string | null): string {
+  if (!comment) return ''
+  const match = comment.match(/\[요청사항\]\s*([\s\S]+?)(?:\n\[|$)/)
+  return match ? match[1].trim() : comment.trim()
+}
+
 function formatAutoSaveDate(date: Date) {
   const y = date.getFullYear()
   const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -335,7 +341,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
   const patientName = patient?.name ?? consultation?.patientName ?? ''
   const age = calcAge(patient?.birthDate)
 
-  const patientRequest = consultation?.patientComment?.trim()
+  const patientRequest = extractRequestNote(consultation?.patientComment)
   const patientAvatarUrl = patient?.avatarUrl ?? consultation?.patientAvatarUrl
   const patientGender = patient?.gender ?? consultation?.patientGender
 
@@ -390,7 +396,8 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
           {/* 자동저장 표시 */}
           {lastSavedAt && (
             <div className="flex justify-end items-center gap-1">
-              <span className="text-[14px] text-[#2592ff]">{t.realtime_memo.saved(formatAutoSaveDate(lastSavedAt))}</span>
+              <span className="text-[14px] text-[#808080]">{formatAutoSaveDate(lastSavedAt)}</span>
+              <span className="text-[14px] text-[#2592ff]">{t.realtime_memo.autosaved}</span>
             </div>
           )}
         </div>

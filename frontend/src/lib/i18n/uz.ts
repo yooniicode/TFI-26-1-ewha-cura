@@ -752,6 +752,7 @@ export const uz: AppTranslation = {
     placeholder: 'Masalan\n\nYuzida 1-darajali kuyish bilan keldi. Retsept bo\'yicha berilgan malhamni kuniga 3 marta surtishni tavsiya qilindi.',
     saving: 'Saqlanmoqda...',
     saved: (time: string) => `Saqlandi ${time}`,
+    autosaved: 'Avtomatik saqlandi',
     save_now: 'Hozir saqlash',
     write_report: 'Hisobot yozish →',
     ai_analyzing: 'AI eslatmani tahlil qilmoqda...',

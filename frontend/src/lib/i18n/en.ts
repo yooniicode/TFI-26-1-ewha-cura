@@ -752,6 +752,7 @@ export const en: AppTranslation = {
     placeholder: 'Example\n\nPatient visited for 1st-degree facial burn. Instructed to apply prescribed ointment 3 times daily.',
     saving: 'Saving...',
     saved: (time: string) => `Saved ${time}`,
+    autosaved: 'Autosaved',
     save_now: 'Save now',
     write_report: 'Write report →',
     ai_analyzing: 'AI is analyzing the memo...',
