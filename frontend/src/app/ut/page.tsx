@@ -29,7 +29,7 @@ function UtAutoLogin() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center px-6 gap-4">
+      <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center px-6 gap-4 max-w-[402px] mx-auto">
         <Image src="/icons/cura.svg" alt="Cura" width={40} height={40} />
         <p className="text-[#161616] font-semibold text-base text-center">UT 로그인 오류</p>
         <p className="text-red-500 text-sm text-center">{error}</p>
@@ -38,7 +38,7 @@ function UtAutoLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4 max-w-[402px] mx-auto">
       <Image src="/icons/cura.svg" alt="Cura" width={40} height={40} />
       <p className="text-[#161616] font-semibold text-base">UT 세션 시작 중...</p>
       <div className="w-6 h-6 border-2 border-[#2592FF] border-t-transparent rounded-full animate-spin" />
@@ -49,7 +49,7 @@ function UtAutoLogin() {
 export default function UtPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-4 max-w-[402px] mx-auto">
         <Image src="/icons/cura.svg" alt="Cura" width={40} height={40} />
         <div className="w-6 h-6 border-2 border-[#2592FF] border-t-transparent rounded-full animate-spin" />
       </div>

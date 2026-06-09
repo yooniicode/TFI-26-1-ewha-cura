@@ -180,7 +180,7 @@ export default function SignupPage() {
               </h1>
               <div className="flex items-center gap-1 mt-1">
                 <div className="relative w-[116px] h-[40px] shrink-0">
-                  <Image src="/icons/cura.svg" alt="Cura" fill className="object-contain object-left" />
+                  <Image src="/icons/curawithfont.svg" alt="Cura" fill className="object-contain object-left" />
                 </div>
                 <span className="text-[28px] font-semibold text-[#161616] leading-[1.4]">입니다</span>
               </div>

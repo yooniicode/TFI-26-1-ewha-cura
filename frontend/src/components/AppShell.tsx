@@ -208,7 +208,7 @@ export default function AppShell({ children, noPadding = false }: { children: Re
   return (
     <div className={clsx(
       'min-h-screen bg-gray-50',
-      !isDesktopMode && 'max-w-lg mx-auto bg-white shadow-sm',
+      !isDesktopMode && 'max-w-[402px] mx-auto bg-white shadow-sm',
     )}>
       <AuthGateOverlays me={me} pathname={pathname} />
 

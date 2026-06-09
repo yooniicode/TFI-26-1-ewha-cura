@@ -59,7 +59,7 @@ export default function SplashPage() {
       <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4">
         <div className="relative w-[240px] h-[84px]">
           <Image
-            src="/icons/cura.svg"
+            src="/icons/curawithfont.svg"
             alt="Cura"
             fill
             className="object-contain"

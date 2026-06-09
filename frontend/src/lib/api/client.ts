@@ -30,8 +30,8 @@ instance.interceptors.response.use(
   (err) => {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status ?? 0
-      // 401 응답이면 토큰을 지우고 로그인 페이지로 (클라이언트 사이드에서)
-      if (status === 401) {
+      // 401/403 + 토큰 없음: Spring Security는 미인증 요청에 403을 반환하기도 함
+      if (status === 401 || (status === 403 && !getAccessToken())) {
         clearAccessToken()
         if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           window.location.href = '/login'
