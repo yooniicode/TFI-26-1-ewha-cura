@@ -24,7 +24,7 @@ export default function AuthGateOverlays({ me, pathname }: AuthGateOverlaysProps
 
   async function handleLogout() {
     clearAccessToken()
-    router.replace('/login')
+    router.replace('/')
     router.refresh()
   }
 

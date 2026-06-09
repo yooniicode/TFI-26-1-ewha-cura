@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -57,7 +57,7 @@ function RmSelectInner() {
     <AppShell noPadding>
       <PageHeader title={t.report_flow.title} showClose />
 
-      <div className="bg-white px-4 pt-7 pb-6">
+      <div className="bg-white px-4 pt-7 pb-36">
         <div className="mb-6">
           <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
             {t.report_flow.memo_list_title}
@@ -132,7 +132,7 @@ function RmSelectInner() {
       </div>
 
       {/* 하단 바 */}
-      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
         <button
           type="button"
           onClick={handleNext}

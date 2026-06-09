@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
@@ -270,7 +270,7 @@ export default function ScriptPage() {
         </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto px-4 pb-8 pt-4 bg-white border-t border-[#EEEEEE]">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto px-4 pb-8 pt-4 bg-white border-t border-[#EEEEEE]">
         <Link
           href={`/scripts/patient/${patientId}/custom`}
           className="flex items-center justify-center w-full h-[56px] rounded-2xl bg-[#F0F1F5] text-[#494949] text-base font-semibold gap-2 active:opacity-70 transition-opacity"

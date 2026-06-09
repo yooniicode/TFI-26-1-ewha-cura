@@ -195,7 +195,7 @@ export default function AppShell({ children, noPadding = false }: { children: Re
     } finally {
       clearAccessToken()
       queryClient.clear()
-      router.replace('/login')
+      router.replace('/')
       router.refresh()
     }
   }

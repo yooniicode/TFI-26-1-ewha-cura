@@ -247,7 +247,7 @@ function ReportWriteInner() {
           </p>
           <p className="mt-2 text-base text-[#808080]">{tc.well_done}</p>
         </div>
-        <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
+        <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
           <button
             onClick={() => router.replace('/dashboard')}
             className="w-full h-[60px] bg-[#2592FF] rounded-lg text-lg font-semibold text-white"
@@ -354,7 +354,7 @@ function ReportWriteInner() {
       </div>
 
       {/* 하단 네비게이션 */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
         {step > 1 && (
           <button
             onClick={() => setStep(s => s - 1)}

@@ -237,7 +237,7 @@ export default function MyPage() {
     } finally {
       clearAccessToken()
       queryClient.clear()
-      window.location.href = '/login'
+      window.location.href = '/'
     }
   }
 

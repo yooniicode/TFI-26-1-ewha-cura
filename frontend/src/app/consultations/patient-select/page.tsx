@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -170,7 +170,7 @@ function PatientSelectInner() {
         {isLoading ? (
           <div className="py-16 flex justify-center"><Spinner /></div>
         ) : (
-          <div className="space-y-7 pb-6">
+          <div className="space-y-7 pb-36">
             {/* 최근 진료 */}
             {recentPatients.length > 0 && (
               <div className="px-4">
@@ -240,7 +240,7 @@ function PatientSelectInner() {
       </div>
 
       {/* 하단 바 */}
-      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
         <button
           type="button"
           onClick={() => selectedId && router.push(`/consultations/new?patientId=${selectedId}`)}

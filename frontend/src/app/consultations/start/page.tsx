@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -35,7 +35,7 @@ function ConsultationStartInner() {
     <AppShell noPadding>
       <PageHeader title={t.report_flow.title} showClose />
 
-      <div className="bg-white px-4 pt-8 pb-6">
+      <div className="bg-white px-4 pt-8 pb-36">
         <div className="mb-7">
           <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4]">{t.report_flow.select_title}</h2>
           <p className="mt-2 text-base font-medium text-[#808080] leading-relaxed">
@@ -88,7 +88,7 @@ function ConsultationStartInner() {
       </div>
 
       {/* 하단 바 */}
-      <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
         <button
           type="button"
           onClick={handleNext}

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import Badge from '@/components/ui/Badge'
-import Spinner from '@/components/ui/Spinner'
+import CuraSpinner from '@/components/ui/CuraSpinner'
 import { adminApi, announcementApi, chatApi, consultationApi, matchApi, patientApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
 import { useMe } from '@/hooks/useMe'
@@ -104,7 +104,7 @@ export default function DashboardPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['announcements'] }),
   })
 
-  if (meLoading) return <AppShell><Spinner /></AppShell>
+  if (meLoading) return <CuraSpinner />
 
   const today = formatToday(t.locale)
   // 한국 표준시(UTC+9) 기준 오늘 날짜
@@ -179,7 +179,7 @@ export default function DashboardPage() {
       : ''
     const interpreterName = myMatch?.interpreterName ?? null
 
-    async function handleOpenChat() {
+    const handleOpenChat = async () => {
       if (!myMatch?.interpreterId) return
       setChatLoading(true)
       try {

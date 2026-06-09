@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
@@ -235,7 +235,7 @@ export default function CustomScriptPage() {
       </div>
 
       {/* 하단 고정 생성 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto px-4 pb-8 pt-4 bg-white border-t border-[#EEEEEE]">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto px-4 pb-8 pt-4 bg-white border-t border-[#EEEEEE]">
         <button
           type="button"
           onClick={handleGenerate}

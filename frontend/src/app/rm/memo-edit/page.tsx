@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -146,7 +146,7 @@ function RmMemoEditInner() {
       </div>
 
       {/* 하단 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-white px-4 pb-8 pt-3 flex gap-2.5 z-10">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white px-4 pb-8 pt-3 flex gap-2.5 z-10">
         <button
           type="button"
           onClick={() => router.back()}
