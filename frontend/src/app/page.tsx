@@ -41,7 +41,7 @@ export default function SplashPage() {
         setIdx(i => (i + 1) % TAGLINES.length)
         setVisible(true)
       }, 600)
-    }, 1000)
+    }, 2000)
     return () => clearInterval(interval)
   }, [])
 

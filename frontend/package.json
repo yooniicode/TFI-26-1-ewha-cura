@@ -12,6 +12,7 @@
     "@anthropic-ai/sdk": "^0.97.1",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@google/generative-ai": "^0.24.1",
+    "@rrweb/browser-client": "^2.0.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-query": "^5.100.1",
