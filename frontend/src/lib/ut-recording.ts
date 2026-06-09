@@ -1,5 +1,3 @@
-import { start, stop, getRecordingId } from '@rrweb/browser-client'
-
 type RecordingState = {
   recording: boolean
   role: string | null
@@ -20,6 +18,8 @@ export async function startRecording(role: string): Promise<void> {
     console.warn('[ut-recording] NEXT_PUBLIC_RRWEB_PUBLIC_KEY not set')
     return
   }
+
+  const { start } = await import('@rrweb/browser-client')
 
   currentRole = role
   recordingStartedAt = new Date()
@@ -43,6 +43,7 @@ export async function startRecording(role: string): Promise<void> {
 
 export async function stopRecording(): Promise<void> {
   if (!isRecording) return
+  const { stop } = await import('@rrweb/browser-client')
   stop(false)
   isRecording = false
 }
@@ -58,12 +59,11 @@ export function getRecordingState(): RecordingState {
 
 export async function stopAndUpload(): Promise<string | null> {
   if (!isRecording) return null
-
+  const { stop, getRecordingId } = await import('@rrweb/browser-client')
   const recordingId = getRecordingId()
   stop(true)
   isRecording = false
   currentRole = null
   recordingStartedAt = null
-
   return recordingId
 }
