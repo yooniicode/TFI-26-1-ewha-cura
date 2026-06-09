@@ -34,7 +34,7 @@ export default function CuraSpinner({ message }: { message?: string }) {
 
         {/* cura 로고 */}
         <img
-          src="/icons/cura.svg"
+          src="/icons/curawithoutbg.svg"
           alt=""
           width={48}
           height={48}

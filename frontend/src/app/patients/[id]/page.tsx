@@ -150,6 +150,7 @@ function PatientDetailInner() {
   if (loading) return <AppShell><Spinner /></AppShell>
   if (!patient) return <AppShell><p className="text-center py-10 text-gray-400">{t.patient.not_found}</p></AppShell>
 
+  const confirmedHistory = history.filter(c => c.confirmed)
   const highlightedConsultation = highlightCid ? history.find(c => c.id === highlightCid) ?? null : null
   const registeredCenterIds = new Set((patient.centers ?? []).map(c => c.id))
   const filteredCenters = allCenters.filter(c =>
@@ -310,13 +311,13 @@ function PatientDetailInner() {
 
         {historyError ? (
           <p className="text-sm text-red-500 text-center py-4">{historyError}</p>
-        ) : history.length === 0 ? (
+        ) : confirmedHistory.length === 0 ? (
           <div className="bg-white rounded-[8px] px-5 py-8 text-center">
             <p className="text-sm text-gray-400">{t.patient.no_consultation}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {history.map(c => (
+            {confirmedHistory.map(c => (
               <ConsultationCard key={c.id} c={c} t={t} />
             ))}
           </div>

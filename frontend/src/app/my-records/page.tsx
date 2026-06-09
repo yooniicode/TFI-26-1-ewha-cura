@@ -181,12 +181,12 @@ export default function MyRecordsPage() {
   }
 
   const todayKST = getTodayKST()
-  const upcoming = records.filter(c => toDateKey(c.consultationDate) >= todayKST)
-  const past = records.filter(c => toDateKey(c.consultationDate) < todayKST)
-  const sorted = [
-    ...upcoming.sort((a, b) => a.consultationDate.localeCompare(b.consultationDate)),
-    ...past.sort((a, b) => b.consultationDate.localeCompare(a.consultationDate)),
-  ]
+  const sorted = records
+    .filter(c =>
+      toDateKey(c.consultationDate) <= todayKST &&
+      (c.hospitalName || c.diagnosisNameCode || c.diagnosisContent || c.treatmentResult)
+    )
+    .sort((a, b) => b.consultationDate.localeCompare(a.consultationDate))
 
   const groups: { date: string; items: PatientReport[] }[] = []
   for (const r of sorted) {
