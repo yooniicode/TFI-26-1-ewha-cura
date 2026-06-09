@@ -419,9 +419,9 @@ export default function DashboardPage() {
                 : c.workDescription
                 ? t.interpreter_home.realtime_memo_draft
                 : t.interpreter_home.realtime_memo
-              const reportHref = c.workDescription
+              const reportHref = c.reportCompleted
                 ? `/consultations/new?patientId=${c.patientId}&cid=${c.id}`
-                : `/consultations/new?patientId=${c.patientId}`
+                : `/consultations/start?patientId=${c.patientId}`
               const reportLabel = c.reportCompleted
                 ? t.interpreter_home.edit_report_btn
                 : t.interpreter_home.write_report_btn

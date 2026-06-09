@@ -125,7 +125,9 @@ public class MedicalScriptService {
         if (!principal.isInterpreter()) return;
         Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-        if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())) {
+        boolean hasActiveMatch = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId());
+        boolean hasConsultation = consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
+        if (!hasActiveMatch && !hasConsultation) {
             throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         }
     }

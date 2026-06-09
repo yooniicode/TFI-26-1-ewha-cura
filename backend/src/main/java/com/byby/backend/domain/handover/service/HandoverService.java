@@ -71,9 +71,9 @@ public class HandoverService {
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())) {
-                throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
-            }
+            boolean isAssigned = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
+            if (!isAssigned) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         }
         return handoverRepository.findByPatientIdOrderByCreatedAtDesc(patientId, PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()))
                 .map(HandoverResponse.Detail::from);

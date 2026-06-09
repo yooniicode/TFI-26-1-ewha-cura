@@ -41,7 +41,7 @@ function RmSelectInner() {
 
   const rmList = useMemo(
     () => consultations
-      .filter(c => !!c.workDescription?.trim())
+      .filter(c => !!c.workDescription?.trim() && !c.reportCompleted)
       .sort((a, b) => b.consultationDate.localeCompare(a.consultationDate)),
     [consultations],
   )

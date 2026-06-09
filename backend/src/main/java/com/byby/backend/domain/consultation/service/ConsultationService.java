@@ -87,7 +87,9 @@ public class ConsultationService {
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
         Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-        if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())) {
+        boolean hasActiveMatch = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId());
+        boolean hasConsultation = consultationRepository.existsByPatientIdAndInterpreterId(patient.getId(), interpreter.getId());
+        if (!hasActiveMatch && !hasConsultation) {
             throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         }
         Hospital hospital = req.hospitalId() != null
@@ -226,7 +228,8 @@ public class ConsultationService {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
             boolean isAssigned = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                    patientId, interpreter.getId());
+                    patientId, interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
             if (!isAssigned) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         } else if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
@@ -270,9 +273,9 @@ public class ConsultationService {
         } else if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())) {
-                throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
-            }
+            boolean isAssigned = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
+            if (!isAssigned) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         } else if (!principal.isAdmin()) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
@@ -325,7 +328,8 @@ public class ConsultationService {
             boolean isOwnConsultation = c.getInterpreter() != null
                     && c.getInterpreter().getId().equals(interpreter.getId());
             boolean isAssignedToPatient = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                    c.getPatient().getId(), interpreter.getId());
+                    c.getPatient().getId(), interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(c.getPatient().getId(), interpreter.getId());
             if (!isOwnConsultation && !isAssignedToPatient) {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
             }
