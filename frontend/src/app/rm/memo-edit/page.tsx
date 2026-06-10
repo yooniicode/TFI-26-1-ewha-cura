@@ -40,6 +40,7 @@ function RmMemoEditInner() {
 
   const [patient, setPatient] = useState<Patient | null>(null)
   const [consultation, setConsultation] = useState<Consultation | null>(null)
+  const [memoText, setMemoText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle')
 
@@ -49,23 +50,30 @@ function RmMemoEditInner() {
     }
     if (cid) {
       consultationApi.get(cid).then(r => {
-        setConsultation(r.payload ?? null)
+        const c = r.payload ?? null
+        setConsultation(c)
+        setMemoText(c?.workDescription ?? '')
       }).catch(() => {})
     }
   }, [patientId, cid])
 
   async function handleNext() {
     if (!cid || !patientId) return
-    const memo = consultation?.workDescription ?? ''
     setSubmitting(true)
 
-    if (memo.trim()) {
+    try {
+      await consultationApi.update(cid, { workDescription: memoText })
+    } catch {
+      // 저장 실패해도 다음 단계 진행
+    }
+
+    if (memoText.trim()) {
       setAiStatus('loading')
       try {
         const res = await fetch('/api/parse-rm', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rmText: memo }),
+          body: JSON.stringify({ rmText: memoText }),
         })
         if (res.ok) {
           const data = await res.json() as { fields: Record<string, string> | null }
@@ -90,8 +98,8 @@ function RmMemoEditInner() {
   const age = calcAge(patient?.birthDate)
   const gender = patient?.gender ?? consultation?.patientGender
   const avatarUrl = patient?.avatarUrl ?? consultation?.patientAvatarUrl
-  const createdAtStr = consultation?.createdAt
-    ? `${t.consultation.written_at} ${formatKoreanDateTime(consultation.createdAt)}`
+  const updatedAtStr = consultation?.updatedAt
+    ? `${t.consultation.written_at} ${formatKoreanDateTime(consultation.updatedAt)}`
     : ''
 
   return (
@@ -103,8 +111,8 @@ function RmMemoEditInner() {
           <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
             {t.report_flow.edit_memo_title}
           </h2>
-          {createdAtStr && (
-            <p className="mt-2 text-[16px] text-[#808080]">{createdAtStr}</p>
+          {updatedAtStr && (
+            <p className="mt-2 text-[16px] text-[#808080]">{updatedAtStr}</p>
           )}
         </div>
 
@@ -126,13 +134,16 @@ function RmMemoEditInner() {
         </Link>
       </div>
 
-      {/* 메모 텍스트 (읽기 전용) */}
+      {/* 메모 텍스트 편집 */}
       <div className="bg-[#f7f7f7] px-4 py-4 pb-36 min-h-screen">
         <div className="bg-white border border-[#eee] rounded-[8px] p-4">
           {consultation ? (
-            <p className="text-[18px] text-[#494949] leading-relaxed whitespace-pre-wrap min-h-[200px]">
-              {consultation.workDescription || t.report_flow.memo_placeholder}
-            </p>
+            <textarea
+              value={memoText}
+              onChange={e => setMemoText(e.target.value)}
+              placeholder={t.report_flow.memo_placeholder}
+              className="w-full text-[18px] text-[#494949] leading-relaxed resize-none outline-none min-h-[300px]"
+            />
           ) : (
             <div className="flex justify-center py-8"><Spinner /></div>
           )}

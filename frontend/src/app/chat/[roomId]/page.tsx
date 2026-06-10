@@ -25,6 +25,7 @@ export default function ChatRoomPage() {
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const sendingRef = useRef(false)
 
   const { data: initialMessages, isLoading } = useQuery({
     queryKey: queryKeys.chat.messages(roomId ?? ''),
@@ -109,6 +110,7 @@ export default function ChatRoomPage() {
   const { mutate: send, isPending: sending } = useMutation({
     mutationFn: (content: string) => chatApi.send(roomId!, content),
     onSuccess: (res) => {
+      sendingRef.current = false
       const msg = res.payload
       if (msg) {
         setMessages(prev => prev.some(m => m.id === msg.id) ? prev : [...prev, msg])
@@ -118,11 +120,15 @@ export default function ChatRoomPage() {
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.rooms() })
       queryClient.invalidateQueries({ queryKey: queryKeys.chat.unreadCount() })
     },
+    onError: () => {
+      sendingRef.current = false
+    },
   })
 
   function handleSend() {
     const content = input.trim()
-    if (!content || sending || !roomId) return
+    if (!content || sendingRef.current || !roomId) return
+    sendingRef.current = true
     send(content)
   }
 

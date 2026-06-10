@@ -84,8 +84,8 @@ function RmSelectInner() {
             {rmList.map(c => {
               const isSelected = selectedId === c.id
               const location = [c.hospitalName, c.department].filter(Boolean).join(' ')
-              const timeStr = formatKoreanDateTime(c.createdAt)
-              const locationLine = [timeStr, location].filter(Boolean).join(' | ')
+              const timeStr = formatKoreanDateTime(c.updatedAt)
+              const locationLine = [location, timeStr].filter(Boolean).join(' | ')
               return (
                 <button
                   key={c.id}

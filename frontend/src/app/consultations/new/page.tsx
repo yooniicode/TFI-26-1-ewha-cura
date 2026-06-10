@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
@@ -12,6 +12,7 @@ import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { formatKoreanDate, parseAppDate } from '@/lib/dateFormat'
+import { useSpeechToText } from '@/hooks/useSpeechToText'
 
 function calcAge(birthDate?: string | null): string {
   if (!birthDate) return ''
@@ -448,6 +449,18 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
 }) {
   const { t } = useTranslation()
   const tc = t.consultation
+
+  const workDescriptionRef = useRef(workDescription)
+  workDescriptionRef.current = workDescription
+  const handleFinalTranscript = useCallback((text: string) => {
+    const prev = workDescriptionRef.current
+    const separator = prev && !prev.endsWith('\n') ? '\n' : ''
+    onChange(prev + separator + text)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onChange])
+
+  const stt = useSpeechToText(handleFinalTranscript)
+
   return (
     <div className="flex flex-col gap-3">
       {aiParsing && (
@@ -459,7 +472,7 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
           <span className="text-sm text-blue-600">{tc.ai_parsing}</span>
         </div>
       )}
-      <div className="bg-white border border-[#eee] rounded-[8px] p-4">
+      <div className="bg-white border border-[#eee] rounded-[8px] p-4 flex flex-col gap-3">
         <textarea
           value={workDescription}
           onChange={e => onChange(e.target.value)}
@@ -467,6 +480,43 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
           className="w-full min-h-[394px] resize-none outline-none text-[18px] text-[#161616] leading-relaxed placeholder:text-[#a1a1a1]"
           autoFocus
         />
+
+        {stt.supported && (
+          <div className="flex flex-col items-center gap-2 pt-2 border-t border-[#f0f0f0]">
+            {stt.interim && (
+              <p className="w-full text-[15px] text-[#808080] leading-relaxed px-1 text-left">
+                {stt.interim}
+                <span className="inline-block w-1 h-4 ml-0.5 bg-[#2592FF] animate-pulse align-middle" />
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={stt.recording ? stt.stop : stt.start}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shrink-0 ${
+                  stt.recording ? 'bg-red-500' : 'bg-[#2592FF]'
+                }`}
+              >
+                {stt.recording ? (
+                  <span className="w-4 h-4 rounded-sm bg-white" />
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+                    <path d="M19 10v2a7 7 0 01-14 0v-2" />
+                    <line x1="12" y1="19" x2="12" y2="23" />
+                    <line x1="8" y1="23" x2="16" y2="23" />
+                  </svg>
+                )}
+              </button>
+              <span className={`text-[13px] font-medium ${stt.recording ? 'text-red-500' : 'text-[#A0A0A0]'}`}>
+                {stt.recording ? '녹음 중... (탭하여 중지)' : '탭하여 음성 입력'}
+              </span>
+              {stt.recording && (
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
