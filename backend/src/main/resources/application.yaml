@@ -134,7 +134,11 @@ spring:
     url: ${DATABASE_URL}
     hikari:
       maximum-pool-size: 10
-      connection-timeout: 5000
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      keepalive-time: 120000
       data-source-properties:
         sslmode: require
         sslrootcert: system
