@@ -817,6 +817,10 @@ export const bn: AppTranslation = {
     no_rm: 'লেখা RM নেই। অনুগ্রহ করে সরাসরি লিখুন।',
     rm_loaded: 'সাম্প্রতিক RM আনা হয়েছে। সম্পাদনা করে পরবর্তী ধাপে যান।',
     write_placeholder: 'একটি উদাহরণ লিখুন...',
+    exit_modal_title: 'লেখা বন্ধ করে বের হবেন?',
+    exit_modal_desc: 'সমস্ত ইনপুট মুছে যাবে',
+    exit_stay: 'ফিরে যান',
+    exit_leave: 'বের হন',
   },
 
   schedule: {

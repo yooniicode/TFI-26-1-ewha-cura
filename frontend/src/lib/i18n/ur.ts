@@ -817,6 +817,10 @@ export const ur: AppTranslation = {
     no_rm: 'کوئی RM نہیں لکھا گیا۔ براہ کرم براہ راست لکھیں۔',
     rm_loaded: 'حالیہ RM لایا گیا ہے۔ ترمیم کر کے اگلے مرحلے پر جائیں۔',
     write_placeholder: 'ایک مثال درج کریں...',
+    exit_modal_title: 'لکھنا بند کر کے نکلیں؟',
+    exit_modal_desc: 'تمام درج مواد مٹ جائے گا',
+    exit_stay: 'واپس جائیں',
+    exit_leave: 'نکلیں',
   },
 
   schedule: {

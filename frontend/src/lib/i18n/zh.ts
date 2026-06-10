@@ -810,6 +810,10 @@ export const zh: AppTranslation = {
     no_rm: '没有RM，请手动输入。',
     rm_loaded: '已加载最近的RM，请修改后继续。',
     write_placeholder: '示例输入...',
+    exit_modal_title: '停止作成并退出？',
+    exit_modal_desc: '输入的内容将全部消失',
+    exit_stay: '返回',
+    exit_leave: '退出',
   },
   schedule: {
     title: '添加日程',

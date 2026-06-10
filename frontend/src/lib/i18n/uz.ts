@@ -817,6 +817,10 @@ export const uz: AppTranslation = {
     no_rm: "Yozilgan RM yo'q. To'g'ridan-to'g'ri kiriting.",
     rm_loaded: "So'nggi RM yuklandi. Tahrirlab, keyingi bosqichga o'ting.",
     write_placeholder: 'Masalan kiriting...',
+    exit_modal_title: "Yozishni to'xtatib chiqasizmi?",
+    exit_modal_desc: "Barcha kiritilgan ma'lumotlar o'chib ketadi",
+    exit_stay: 'Qaytish',
+    exit_leave: 'Chiqish',
   },
 
   schedule: {

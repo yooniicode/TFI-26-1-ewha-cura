@@ -7,6 +7,7 @@ import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
 import StepIndicator from '@/components/interpreter/StepIndicator'
+import ReportExitModal from '@/components/ui/ReportExitModal'
 import { consultationApi } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
@@ -28,6 +29,7 @@ function RmSelectInner() {
   const searchParams = useSearchParams()
   const patientId = searchParams.get('patientId')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [showExitModal, setShowExitModal] = useState(false)
 
   const { data: consultations = [], isLoading } = useQuery<Consultation[]>({
     queryKey: patientId
@@ -55,7 +57,7 @@ function RmSelectInner() {
 
   return (
     <AppShell noPadding>
-      <PageHeader title={t.report_flow.title} showClose />
+      <PageHeader title={t.report_flow.title} showClose onClose={() => setShowExitModal(true)} />
 
       <div className="bg-white px-4 pt-7 pb-36">
         <div className="mb-6">
@@ -142,6 +144,12 @@ function RmSelectInner() {
           {t.report_flow.next_btn}
         </button>
       </div>
+      {showExitModal && (
+        <ReportExitModal
+          onStay={() => setShowExitModal(false)}
+          onLeave={() => router.replace('/dashboard')}
+        />
+      )}
     </AppShell>
   )
 }

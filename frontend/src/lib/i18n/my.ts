@@ -817,6 +817,10 @@ export const my: AppTranslation = {
     no_rm: 'ရေးသားထားသော RM မရှိပါ။ ကိုယ်တိုင် ထည့်ပါ။',
     rm_loaded: 'မကြာသေးမီက RM ကို ရယူပါပြီ။ ပြင်ဆင်ပြီးနောက် နောက်တစ်ဆင့်သို့ ဆက်သွားပါ။',
     write_placeholder: 'ဥပမာ ထည့်ပါ...',
+    exit_modal_title: 'ရေးသားခြင်းရပ်ပြီး ထွက်မလား?',
+    exit_modal_desc: 'ထည့်သွင်းသည့် အကြောင်းအရာများ ဖျက်သွားမည်',
+    exit_stay: 'နောက်ပြန်',
+    exit_leave: 'ထွက်',
   },
 
   schedule: {

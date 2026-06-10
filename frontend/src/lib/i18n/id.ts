@@ -810,6 +810,10 @@ export const id: AppTranslation = {
     no_rm: 'Belum ada RM. Masukkan secara manual.',
     rm_loaded: 'RM terbaru dimuat. Edit dan lanjutkan.',
     write_placeholder: 'Masukkan contoh...',
+    exit_modal_title: 'Berhenti dan keluar?',
+    exit_modal_desc: 'Semua konten akan dihapus',
+    exit_stay: 'Kembali',
+    exit_leave: 'Keluar',
   },
   schedule: {
     title: 'Tambah Jadwal',

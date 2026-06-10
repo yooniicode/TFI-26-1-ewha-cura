@@ -817,6 +817,10 @@ export const mn: AppTranslation = {
     no_rm: 'Бичигдсэн RM байхгүй байна. Шууд оруулна уу.',
     rm_loaded: 'Сүүлийн RM-ийг ачааллаа. Засварласны дараа дараагийн алхам руу шилжинэ үү.',
     write_placeholder: 'Жишээ оруулах...',
+    exit_modal_title: 'Бичихийг зогсоож гарах уу?',
+    exit_modal_desc: 'Оруулсан мэдээлэл бүгд устана',
+    exit_stay: 'Буцах',
+    exit_leave: 'Гарах',
   },
 
   schedule: {

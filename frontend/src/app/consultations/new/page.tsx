@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
+import ReportExitModal from '@/components/ui/ReportExitModal'
 import PatientInfoBar, { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
 import StepIndicator from '@/components/interpreter/StepIndicator'
 import { consultationApi, patientApi } from '@/lib/api'
@@ -67,6 +68,7 @@ function ReportWriteInner() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [aiParsing, setAiParsing] = useState(false)
+  const [showExitModal, setShowExitModal] = useState(false)
 
   // 메모에서 온 경우 step 1 건너뜀
   const fromMemo = !!rmCid
@@ -283,7 +285,7 @@ function ReportWriteInner() {
 
   return (
     <AppShell noPadding>
-      <PageHeader title={tc.write_report} showClose />
+      <PageHeader title={tc.write_report} showClose onClose={() => setShowExitModal(true)} />
 
       {/* 환자 정보 바 */}
       <PatientInfoBar
@@ -394,6 +396,13 @@ function ReportWriteInner() {
           {aiParsing ? tc.ai_analyzing : step < TOTAL_STEPS ? tc.next_step : submitting ? t.common.saving : tc.save_btn}
         </button>
       </div>
+
+      {showExitModal && (
+        <ReportExitModal
+          onStay={() => setShowExitModal(false)}
+          onLeave={() => router.replace('/dashboard')}
+        />
+      )}
     </AppShell>
   )
 }

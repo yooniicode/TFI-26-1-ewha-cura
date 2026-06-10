@@ -817,6 +817,10 @@ export const en: AppTranslation = {
     no_rm: 'No RM yet. Please enter manually.',
     rm_loaded: 'Recent RM loaded. Edit and continue.',
     write_placeholder: 'Enter example...',
+    exit_modal_title: 'Stop writing and exit?',
+    exit_modal_desc: 'All progress will be lost',
+    exit_stay: 'Stay',
+    exit_leave: 'Leave',
   },
 
   schedule: {

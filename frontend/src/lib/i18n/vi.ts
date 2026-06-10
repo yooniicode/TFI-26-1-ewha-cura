@@ -817,6 +817,10 @@ export const vi: AppTranslation = {
     no_rm: 'Chưa có RM. Vui lòng nhập thủ công.',
     rm_loaded: 'Đã tải RM gần nhất. Chỉnh sửa và tiếp tục.',
     write_placeholder: 'Nhập ví dụ...',
+    exit_modal_title: 'Dừng viết và thoát?',
+    exit_modal_desc: 'Tất cả nội dung sẽ bị xóa',
+    exit_stay: 'Ở lại',
+    exit_leave: 'Thoát',
   },
 
   schedule: {

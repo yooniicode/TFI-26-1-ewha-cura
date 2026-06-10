@@ -817,6 +817,10 @@ export const si: AppTranslation = {
     no_rm: 'ලියන ලද RM එකක් නොමැත. කරුණාකර සෘජුවම ඇතුළත් කරන්න.',
     rm_loaded: 'මෑත RM එක ලබාගන්නා ලදී. සංස්කරණය කර ඊළඟ පියවරට යන්න.',
     write_placeholder: 'උදාහරණයක් ඇතුළත් කරන්න...',
+    exit_modal_title: 'ලිවීම නවත්වා පිටවෙන්නද?',
+    exit_modal_desc: 'ඇතුළත් කළ සියල්ල නැතිවේ',
+    exit_stay: 'ආපසු',
+    exit_leave: 'පිටවෙන්න',
   },
 
   schedule: {

@@ -810,6 +810,10 @@ export const fil: AppTranslation = {
     no_rm: 'Wala pang RM. Mangyaring ilagay nang mano-mano.',
     rm_loaded: 'Na-load ang pinakabagong RM. I-edit at magpatuloy.',
     write_placeholder: 'Ilagay ang halimbawa...',
+    exit_modal_title: 'Ihinto at lumabas?',
+    exit_modal_desc: 'Mawawala ang lahat ng input',
+    exit_stay: 'Bumalik',
+    exit_leave: 'Lumabas',
   },
   schedule: {
     title: 'Magdagdag ng Iskedyul',

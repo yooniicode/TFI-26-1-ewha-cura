@@ -7,6 +7,7 @@ import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
 import StepIndicator from '@/components/interpreter/StepIndicator'
+import ReportExitModal from '@/components/ui/ReportExitModal'
 import { consultationApi, patientApi } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import type { Consultation, Patient } from '@/lib/types'
@@ -43,6 +44,7 @@ function RmMemoEditInner() {
   const [memoText, setMemoText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle')
+  const [showExitModal, setShowExitModal] = useState(false)
 
   useEffect(() => {
     if (patientId) {
@@ -104,7 +106,7 @@ function RmMemoEditInner() {
 
   return (
     <AppShell noPadding>
-      <PageHeader title={t.report_flow.title} showClose />
+      <PageHeader title={t.report_flow.title} showClose onClose={() => setShowExitModal(true)} />
 
       <div className="bg-white px-4 pt-7 pb-4">
         <div className="mb-6">
@@ -174,6 +176,13 @@ function RmMemoEditInner() {
           {aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : submitting ? t.common.saving : t.report_flow.next_btn}
         </button>
       </div>
+
+      {showExitModal && (
+        <ReportExitModal
+          onStay={() => setShowExitModal(false)}
+          onLeave={() => router.replace('/dashboard')}
+        />
+      )}
     </AppShell>
   )
 }

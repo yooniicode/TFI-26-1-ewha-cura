@@ -810,6 +810,10 @@ export const th: AppTranslation = {
     no_rm: 'ยังไม่มี RM กรุณากรอกด้วยตนเอง',
     rm_loaded: 'โหลด RM ล่าสุดแล้ว แก้ไขและดำเนินการต่อ',
     write_placeholder: 'กรอกตัวอย่าง...',
+    exit_modal_title: 'หยุดเขียนและออก?',
+    exit_modal_desc: 'เนื้อหาทั้งหมดจะถูกลบ',
+    exit_stay: 'กลับ',
+    exit_leave: 'ออก',
   },
   schedule: {
     title: 'เพิ่มตาราง',

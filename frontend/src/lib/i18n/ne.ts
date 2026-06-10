@@ -810,6 +810,10 @@ export const ne: AppTranslation = {
     no_rm: 'अहिलेसम्म कुनै RM छैन। कृपया म्यानुअल रूपमा प्रविष्ट गर्नुस्।',
     rm_loaded: 'नवीनतम RM लोड भयो। सम्पादन गरी अगाडि बढ्नुस्।',
     write_placeholder: 'उदाहरण प्रविष्ट गर्नुस्...',
+    exit_modal_title: 'लेखन रोकेर बाहिर जाने?',
+    exit_modal_desc: 'सबै इनपुट मेटिनेछ',
+    exit_stay: 'फर्कनुस्',
+    exit_leave: 'बाहिर जानुस्',
   },
   schedule: {
     title: 'तालिका थप्नुस्',

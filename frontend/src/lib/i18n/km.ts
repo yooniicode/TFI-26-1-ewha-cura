@@ -817,6 +817,10 @@ export const km: AppTranslation = {
     no_rm: 'គ្មាន RM ដែលបានសរសេរទេ។ សូមបញ្ចូលដោយផ្ទាល់។',
     rm_loaded: 'បានទាញយក RM ថ្មីៗ។ សូមកែប្រែ ហើយបន្តទៅជំហានបន្ទាប់។',
     write_placeholder: 'ឧទាហរណ៍ បញ្ចូល...',
+    exit_modal_title: 'ឈប់សរសេរហើយចាកចេញ?',
+    exit_modal_desc: 'មាតិកាទាំងអស់នឹងត្រូវលុប',
+    exit_stay: 'ត្រឡប់',
+    exit_leave: 'ចាកចេញ',
   },
 
   schedule: {
