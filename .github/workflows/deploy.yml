@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -6,24 +6,48 @@ on:
   pull_request:
     branches: [main]
 
+# ─── Concurrency ───────────────────────────────────────────────────────────────
+# PR  : 같은 브랜치에 새 커밋이 오면 이전 실행 즉시 취소 (빠른 피드백)
+# main: 동시 배포 금지, 순서대로 큐 처리 (cancel-in-progress: false)
+#       → 두 번 연속 push 시 첫 배포가 끝난 뒤 두 번째 배포 시작
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ─── 백엔드 테스트 ────────────────────────────────────────
-  # Railway가 GitHub 소스에서 직접 Dockerfile 빌드 & 자동 배포
-  # CI 역할: 배포 전 테스트 통과 여부 확인 (Railway는 테스트 미실행)
+  # ─── 변경 파일 감지 ──────────────────────────────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'railway.toml'
+              - '.github/workflows/**'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/**'
+
+  # ─── 백엔드 CI ───────────────────────────────────────────────────────────────
   backend-ci:
     name: Backend CI
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
-
     steps:
       - uses: actions/checkout@v4
 
@@ -32,24 +56,23 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: gradle
 
       - name: Grant execute permission
         run: chmod +x gradlew
 
       - name: Run tests
         run: ./gradlew test --no-daemon
-        # 테스트 설정: backend/src/test/resources/application.yaml
 
-  # ─── 프론트엔드 린트 & 빌드 체크 ─────────────────────────
-  # Vercel이 main push마다 자동 배포
-  # CI 역할: PR 단계에서 lint 오류 및 빌드 실패 조기 감지
+  # ─── 프론트엔드 CI ────────────────────────────────────────────────────────────
   frontend-ci:
     name: Frontend CI
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
-
     steps:
       - uses: actions/checkout@v4
 
@@ -66,9 +89,72 @@ jobs:
       - name: Lint
         run: npm run lint --if-present
 
-      - name: Build
+      - name: Build check
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8080
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+
+  # ─── 백엔드 배포 → Railway (무중단) ──────────────────────────────────────────
+  # 무중단 원리: railway up 은 새 컨테이너의 healthcheck(/actuator/health) 통과 후
+  #             트래픽을 전환하고 종료 → 구 컨테이너는 신규가 healthy 될 때까지 유지
+  #
+  # ⚠️  Railway 대시보드에서 GitHub 자동배포(Source → GitHub)를 반드시 Disable 할 것
+  #     활성화된 상태로 두면 push 마다 GitHub Actions + Railway 자동배포 이중 실행됨
+  deploy-backend:
+    name: Deploy Backend → Railway
+    needs: backend-ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: deploy-backend-main
+      cancel-in-progress: false   # 배포 중 취소하면 구 컨테이너가 내려감 → 무조건 큐 처리
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy (healthcheck 통과 시까지 대기)
+        run: railway up --service "${{ secrets.RAILWAY_SERVICE_NAME }}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+  # ─── 프론트엔드 배포 → Vercel (무중단) ──────────────────────────────────────
+  # 무중단 원리: Vercel 은 새 배포 빌드가 완료된 뒤 atomic 으로 프로덕션 URL 전환
+  #             → 구 버전은 빌드 완료 전까지 그대로 서빙
+  #
+  # ⚠️  vercel.json 에 "git": {"deploymentEnabled": false} 가 설정되어 있으므로
+  #     Vercel Git 자동배포는 비활성화됨 → 이 액션에서만 배포됨 (중복 없음)
+  deploy-frontend:
+    name: Deploy Frontend → Vercel
+    needs: frontend-ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: deploy-frontend-main
+      cancel-in-progress: false   # 배포 중 취소하면 구 버전과 신 버전 혼재 가능 → 큐 처리
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Deploy to Vercel (빌드 완료 후 atomic 전환)
+        run: npx vercel --prod --token "${{ secrets.VERCEL_TOKEN }}" --yes
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
