@@ -92,9 +92,9 @@ jobs:
       - name: Build check
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8080
-          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
   # ─── 백엔드 배포 → Railway (무중단) ──────────────────────────────────────────
   # 무중단 원리: railway up 은 새 컨테이너의 healthcheck(/actuator/health) 통과 후
@@ -118,16 +118,19 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy (healthcheck 통과 시까지 대기)
-        run: railway up --service "${{ secrets.RAILWAY_SERVICE_NAME }}"
+        run: railway up
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENV_ID }}
 
   # ─── 프론트엔드 배포 → Vercel (무중단) ──────────────────────────────────────
   # 무중단 원리: Vercel 은 새 배포 빌드가 완료된 뒤 atomic 으로 프로덕션 URL 전환
   #             → 구 버전은 빌드 완료 전까지 그대로 서빙
   #
-  # ⚠️  vercel.json 에 "git": {"deploymentEnabled": false} 가 설정되어 있으므로
-  #     Vercel Git 자동배포는 비활성화됨 → 이 액션에서만 배포됨 (중복 없음)
+  # vercel.json 에 "git": {"deploymentEnabled": false} 설정 → Vercel Git 자동배포 비활성화
+  # 이 액션에서만 배포됨 (이중 배포 없음)
   deploy-frontend:
     name: Deploy Frontend → Vercel
     needs: frontend-ci
