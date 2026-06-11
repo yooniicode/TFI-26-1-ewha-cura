@@ -108,6 +108,9 @@ public class Consultation extends BaseEntity {
     private String translatedMedicationInstruction;
 
     @Column(columnDefinition = "TEXT")
+    private String translatedDiagnosisNameCode;
+
+    @Column(columnDefinition = "TEXT")
     private String doctorConfirmationSignature;
 
     @Column(precision = 4, scale = 1)
@@ -210,12 +213,14 @@ public class Consultation extends BaseEntity {
     }
 
     public void applyTranslation(String langCode, String patientComment, String diagnosisContent,
-                                  String treatmentResult, String medicationInstruction) {
+                                  String treatmentResult, String medicationInstruction,
+                                  String diagnosisNameCode) {
         this.translationLang = langCode;
         this.translatedPatientComment = patientComment;
         this.translatedDiagnosisContent = diagnosisContent;
         this.translatedTreatmentResult = treatmentResult;
         this.translatedMedicationInstruction = medicationInstruction;
+        this.translatedDiagnosisNameCode = diagnosisNameCode;
     }
 
     public boolean isConfirmed() {

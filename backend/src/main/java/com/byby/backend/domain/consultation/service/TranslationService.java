@@ -32,7 +32,8 @@ public class TranslationService {
             String patientComment,
             String diagnosisContent,
             String treatmentResult,
-            String medicationInstruction
+            String medicationInstruction,
+            String diagnosisNameCode
     ) {}
 
     /**
@@ -44,6 +45,7 @@ public class TranslationService {
             String diagnosisContent,
             String treatmentResult,
             String medicationInstruction,
+            String diagnosisNameCode,
             String targetLangCode) {
 
         if (!StringUtils.hasText(openAiApiKey)) {
@@ -57,17 +59,18 @@ public class TranslationService {
         boolean hasContent = StringUtils.hasText(patientComment)
                 || StringUtils.hasText(diagnosisContent)
                 || StringUtils.hasText(treatmentResult)
-                || StringUtils.hasText(medicationInstruction);
+                || StringUtils.hasText(medicationInstruction)
+                || StringUtils.hasText(diagnosisNameCode);
         if (!hasContent) return null;
 
         String langName = languageName(targetLangCode);
         String prompt = buildTranslationPrompt(patientComment, diagnosisContent,
-                treatmentResult, medicationInstruction, langName);
+                treatmentResult, medicationInstruction, diagnosisNameCode, langName);
 
         try {
             String raw = callOpenAi(prompt);
             return parseTranslation(raw, patientComment, diagnosisContent,
-                    treatmentResult, medicationInstruction);
+                    treatmentResult, medicationInstruction, diagnosisNameCode);
         } catch (Exception e) {
             log.error("[translation] 번역 실패 lang={}: {}", targetLangCode, e.getMessage());
             return null;
@@ -76,18 +79,20 @@ public class TranslationService {
 
     private String buildTranslationPrompt(String patientComment, String diagnosisContent,
                                           String treatmentResult, String medicationInstruction,
-                                          String langName) {
+                                          String diagnosisNameCode, String langName) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are a medical translation assistant. Translate the following Korean medical record fields into ")
           .append(langName)
           .append(". Keep medical terms accurate. Return ONLY the translated text for each field, in the exact same format as below.\n\n");
 
+        sb.append("DIAGNOSIS_NAME: ").append(StringUtils.hasText(diagnosisNameCode) ? diagnosisNameCode : "").append("\n");
         sb.append("PATIENT_COMMENT: ").append(StringUtils.hasText(patientComment) ? patientComment : "").append("\n");
         sb.append("DIAGNOSIS_CONTENT: ").append(StringUtils.hasText(diagnosisContent) ? diagnosisContent : "").append("\n");
         sb.append("TREATMENT_RESULT: ").append(StringUtils.hasText(treatmentResult) ? treatmentResult : "").append("\n");
         sb.append("MEDICATION_INSTRUCTION: ").append(StringUtils.hasText(medicationInstruction) ? medicationInstruction : "").append("\n\n");
 
         sb.append("Respond in exactly this format:\n");
+        sb.append("DIAGNOSIS_NAME: <translated text or empty>\n");
         sb.append("PATIENT_COMMENT: <translated text or empty>\n");
         sb.append("DIAGNOSIS_CONTENT: <translated text or empty>\n");
         sb.append("TREATMENT_RESULT: <translated text or empty>\n");
@@ -125,18 +130,20 @@ public class TranslationService {
                                                  String origPatientComment,
                                                  String origDiagnosisContent,
                                                  String origTreatmentResult,
-                                                 String origMedicationInstruction) {
+                                                 String origMedicationInstruction,
+                                                 String origDiagnosisNameCode) {
+        String dn = extractField(raw, "DIAGNOSIS_NAME");
         String pc = extractField(raw, "PATIENT_COMMENT");
         String dc = extractField(raw, "DIAGNOSIS_CONTENT");
         String tr = extractField(raw, "TREATMENT_RESULT");
         String mi = extractField(raw, "MEDICATION_INSTRUCTION");
 
-        // 원문이 비어있으면 번역도 비워둠
         return new MedicalTranslation(
                 StringUtils.hasText(origPatientComment) ? pc : null,
                 StringUtils.hasText(origDiagnosisContent) ? dc : null,
                 StringUtils.hasText(origTreatmentResult) ? tr : null,
-                StringUtils.hasText(origMedicationInstruction) ? mi : null
+                StringUtils.hasText(origMedicationInstruction) ? mi : null,
+                StringUtils.hasText(origDiagnosisNameCode) ? dn : null
         );
     }
 

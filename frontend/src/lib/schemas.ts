@@ -138,6 +138,7 @@ export const patientReportSchema = z.object({
   translatedDiagnosisContent:           nullableString,
   translatedTreatmentResult:            nullableString,
   translatedMedicationInstruction:      nullableString,
+  translatedDiagnosisNameCode:          nullableString,
 })
 
 export const handoverSchema = z.object({

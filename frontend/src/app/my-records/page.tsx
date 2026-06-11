@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AppShell from '@/components/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/interpreter/PageHeader'
@@ -16,29 +16,32 @@ function getTodayKST() {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().split('T')[0]
 }
 
-function formatDateGroup(dateStr: string): string {
-  return formatKoreanDate(dateStr)
+// ─── 번역 캐시 타입 ────────────────────────────────────────────────────────────
+
+interface ListTranslation {
+  diagnosisNameCode?: string   // 번역된 전체 문자열 (getDiseaseShortName 적용 가능)
+  diagnosisContent?: string
 }
 
-// 번역된 내용 또는 원본 반환
-function resolveContent(
-  stored: string | null | undefined,
-  storedLang: string | null | undefined,
-  original: string | null | undefined,
-  currentLang: string,
-): string | undefined {
-  if (!original) return undefined
-  if (currentLang === 'ko') return original
-  if (storedLang === currentLang && stored) return stored
-  return original // on-the-fly 번역 전까지 원본 표시
-}
+// ─── 모달 on-the-fly 번역 타입 ────────────────────────────────────────────────
 
 interface TranslatedFields {
+  diagnosisNameCode?: string
   patientComment?: string
   diagnosisContent?: string
   treatmentResult?: string
   medicationInstruction?: string
 }
+
+// ─── 인라인 스피너 ────────────────────────────────────────────────────────────
+
+function InlineSpinner() {
+  return (
+    <div className="w-4 h-4 border-2 border-[#2592ff] border-t-transparent rounded-full animate-spin shrink-0" />
+  )
+}
+
+// ─── 진료 상세 모달 ───────────────────────────────────────────────────────────
 
 function RecordDetailModal({
   record,
@@ -55,25 +58,18 @@ function RecordDetailModal({
   const [onTheFlyTranslation, setOnTheFlyTranslation] = useState<TranslatedFields | null>(null)
   const [translating, setTranslating] = useState(false)
 
-  const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
   const icdCode = getIcdCode(record.diagnosisNameCode)
   const bodyImage = getBodyPartImage(record)
   const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
 
-  // 언어 변경 시 번역 결정
+  // 언어 변경 시 on-the-fly 번역
   useEffect(() => {
-    if (currentLang === 'ko') {
-      setOnTheFlyTranslation(null)
-      return
-    }
-    // 저장된 번역이 현재 언어와 일치하면 그대로 사용
-    if (record.translationLang === currentLang) {
-      setOnTheFlyTranslation(null)
-      return
-    }
-    // 번역 내용이 있을 때만 on-the-fly 번역 요청
+    setOnTheFlyTranslation(null)
+    if (currentLang === 'ko') return
+    if (record.translationLang === currentLang) return  // 저장된 번역 사용
+
     const hasContent = record.patientComment || record.diagnosisContent
-      || record.treatmentResult || record.medicationInstruction
+      || record.treatmentResult || record.medicationInstruction || record.diagnosisNameCode
     if (!hasContent) return
 
     setTranslating(true)
@@ -82,6 +78,7 @@ function RecordDetailModal({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fields: {
+          diagnosisNameCode: record.diagnosisNameCode,
           patientComment: record.patientComment,
           diagnosisContent: record.diagnosisContent,
           treatmentResult: record.treatmentResult,
@@ -106,6 +103,13 @@ function RecordDetailModal({
     if (record.translationLang === currentLang && stored) return stored
     return original
   }
+
+  const rawDiseaseName = getField(
+    onTheFlyTranslation?.diagnosisNameCode,
+    record.translatedDiagnosisNameCode,
+    record.diagnosisNameCode,
+  )
+  const displayDiseaseName = getDiseaseShortName(rawDiseaseName) || getDiseaseShortName(record.diagnosisNameCode)
 
   const displayPatientComment = getField(
     onTheFlyTranslation?.patientComment,
@@ -163,7 +167,7 @@ function RecordDetailModal({
           {/* 병명 + ICD 코드 */}
           <div className="flex items-center justify-between">
             <span className="text-[20px] font-semibold text-[#2592ff] leading-[1.4]">
-              {diseaseName || hospitalDisplay || '-'}
+              {displayDiseaseName || hospitalDisplay || '-'}
             </span>
             {icdCode && (
               <div className="bg-[#f0f1f5] rounded-full px-3 h-8 flex items-center shrink-0">
@@ -176,7 +180,7 @@ function RecordDetailModal({
 
           {translating && (
             <div className="flex items-center gap-2 py-1">
-              <Spinner />
+              <InlineSpinner />
               <span className="text-[13px] text-[#2592ff]">번역 중...</span>
             </div>
           )}
@@ -259,6 +263,8 @@ function RecordDetailModal({
   )
 }
 
+// ─── 메인 페이지 ──────────────────────────────────────────────────────────────
+
 export default function MyRecordsPage() {
   const { data: me, isLoading: meLoading } = useMe()
   const { t, lang } = useTranslation()
@@ -266,6 +272,13 @@ export default function MyRecordsPage() {
   const [loading, setLoading] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<PatientReport | null>(null)
 
+  // 목록 번역 캐시 — lang + records 변경 시 갱신
+  const [listTranslations, setListTranslations] = useState<Record<string, ListTranslation>>({})
+  const [listLoading, setListLoading] = useState(false)
+  // 마지막으로 배치 번역한 언어 추적 (불필요한 재요청 방지)
+  const lastTranslatedLang = useRef<string | null>(null)
+
+  // 진료 기록 로드
   useEffect(() => {
     const patientId = me?.entityId
     if (!patientId) return
@@ -275,6 +288,68 @@ export default function MyRecordsPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [me?.entityId])
+
+  // 언어 변경 or 기록 로드 시 목록 번역
+  useEffect(() => {
+    if (!records.length) return
+
+    // 한국어는 원본 표시
+    if (lang === 'ko') {
+      setListTranslations({})
+      lastTranslatedLang.current = 'ko'
+      return
+    }
+
+    // 이미 해당 언어로 번역된 캐시가 있으면 스킵
+    if (lastTranslatedLang.current === lang) return
+
+    // 저장된 번역 vs. 배치 번역 필요 레코드 분류
+    const preBuilt: Record<string, ListTranslation> = {}
+    const toTranslate: { id: string; diagnosisNameCode?: string; diagnosisContent?: string }[] = []
+
+    for (const r of records) {
+      if (r.translationLang === lang) {
+        // 저장된 번역 사용 — API 불필요
+        preBuilt[r.id] = {
+          diagnosisNameCode: r.translatedDiagnosisNameCode ?? undefined,
+          diagnosisContent: r.translatedDiagnosisContent ?? undefined,
+        }
+      } else if (r.diagnosisNameCode || r.diagnosisContent) {
+        toTranslate.push({
+          id: r.id,
+          diagnosisNameCode: r.diagnosisNameCode ?? undefined,
+          diagnosisContent: r.diagnosisContent ?? undefined,
+        })
+      }
+    }
+
+    if (!toTranslate.length) {
+      setListTranslations(preBuilt)
+      lastTranslatedLang.current = lang
+      return
+    }
+
+    setListLoading(true)
+    fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ records: toTranslate, targetLang: lang }),
+    })
+      .then(r => r.json())
+      .then((results: { id: string; diagnosisNameCode?: string; diagnosisContent?: string }[]) => {
+        const merged: Record<string, ListTranslation> = { ...preBuilt }
+        for (const item of results) {
+          merged[item.id] = {
+            diagnosisNameCode: item.diagnosisNameCode,
+            diagnosisContent: item.diagnosisContent,
+          }
+        }
+        setListTranslations(merged)
+        lastTranslatedLang.current = lang
+      })
+      .catch(() => {})
+      .finally(() => setListLoading(false))
+  }, [lang, records])
 
   if (meLoading || loading) {
     return (
@@ -313,6 +388,14 @@ export default function MyRecordsPage() {
           {t.medical_record.click_hint}
         </p>
 
+        {/* 목록 번역 중 표시 */}
+        {listLoading && (
+          <div className="flex items-center justify-center gap-2 py-2 mb-2">
+            <div className="w-4 h-4 border-2 border-[#2592ff] border-t-transparent rounded-full animate-spin" />
+            <span className="text-[13px] text-[#2592ff]">번역 중...</span>
+          </div>
+        )}
+
         {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center pt-16 gap-3">
             <div className="w-16 h-16 rounded-full bg-[#f5f5f5] flex items-center justify-center">
@@ -325,19 +408,24 @@ export default function MyRecordsPage() {
             {groups.map(({ date, items }) => (
               <div key={date} className="flex flex-col">
                 <div className="py-1">
-                  <p className="text-[16px] font-medium text-[#494949]">{formatDateGroup(date)}</p>
+                  <p className="text-[16px] font-medium text-[#494949]">{formatKoreanDate(date)}</p>
                 </div>
                 {items.map(record => {
-                  const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
                   const bodyImage = getBodyPartImage(record)
                   const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
-                  // 목록에서는 진단 내용 미리보기를 현재 언어 번역으로 표시
-                  const previewDiagnosis = resolveContent(
-                    record.translatedDiagnosisContent,
-                    record.translationLang,
-                    record.diagnosisContent,
-                    lang,
-                  )
+
+                  // 목록 파란 병명
+                  const translatedNameCode = listTranslations[record.id]?.diagnosisNameCode
+                  const displayDiseaseName = lang === 'ko'
+                    ? getDiseaseShortName(record.diagnosisNameCode)
+                    : getDiseaseShortName(translatedNameCode) || getDiseaseShortName(record.diagnosisNameCode)
+
+                  // 목록 회색 진단 미리보기
+                  const translatedContent = listTranslations[record.id]?.diagnosisContent
+                  const displayPreview = lang === 'ko'
+                    ? record.diagnosisContent
+                    : (translatedContent || record.diagnosisContent)
+
                   return (
                     <button
                       key={record.id}
@@ -351,11 +439,11 @@ export default function MyRecordsPage() {
                       <div className="flex flex-col justify-between self-stretch flex-1 min-w-0 py-0.5">
                         <div className="flex flex-col gap-0.5">
                           <p className="text-[20px] font-semibold text-[#2592ff] leading-[1.4]">
-                            {diseaseName || hospitalDisplay || '-'}
+                            {displayDiseaseName || hospitalDisplay || '-'}
                           </p>
-                          {previewDiagnosis && (
+                          {displayPreview && (
                             <p className="text-[16px] font-medium text-[#161616] leading-[1.4] line-clamp-1">
-                              {previewDiagnosis}
+                              {displayPreview}
                             </p>
                           )}
                         </div>

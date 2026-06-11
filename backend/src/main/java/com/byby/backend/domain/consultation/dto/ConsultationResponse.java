@@ -165,7 +165,8 @@ public class ConsultationResponse {
             String translatedPatientComment,
             String translatedDiagnosisContent,
             String translatedTreatmentResult,
-            String translatedMedicationInstruction
+            String translatedMedicationInstruction,
+            String translatedDiagnosisNameCode
     ) {
         public static PatientView from(Consultation c) {
             return new PatientView(
@@ -180,7 +181,8 @@ public class ConsultationResponse {
                     c.getTranslatedPatientComment(),
                     c.getTranslatedDiagnosisContent(),
                     c.getTranslatedTreatmentResult(),
-                    c.getTranslatedMedicationInstruction());
+                    c.getTranslatedMedicationInstruction(),
+                    c.getTranslatedDiagnosisNameCode());
         }
     }
 }

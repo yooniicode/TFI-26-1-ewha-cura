@@ -183,6 +183,7 @@ export interface PatientReport {
   translatedDiagnosisContent?: string | null
   translatedTreatmentResult?: string | null
   translatedMedicationInstruction?: string | null
+  translatedDiagnosisNameCode?: string | null
 }
 
 export interface Handover {

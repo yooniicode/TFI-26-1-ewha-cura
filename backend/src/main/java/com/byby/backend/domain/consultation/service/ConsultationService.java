@@ -378,16 +378,18 @@ public class ConsultationService {
         boolean hasContent = StringUtils.hasText(c.getDiagnosisContent())
                 || StringUtils.hasText(c.getTreatmentResult())
                 || StringUtils.hasText(c.getMedicationInstruction())
-                || StringUtils.hasText(c.getPatientComment());
+                || StringUtils.hasText(c.getPatientComment())
+                || StringUtils.hasText(c.getDiagnosisNameCode());
         if (!hasContent) return;
 
         try {
             TranslationService.MedicalTranslation t = translationService.translateMedicalFields(
                     c.getPatientComment(), c.getDiagnosisContent(),
-                    c.getTreatmentResult(), c.getMedicationInstruction(), langCode);
+                    c.getTreatmentResult(), c.getMedicationInstruction(),
+                    c.getDiagnosisNameCode(), langCode);
             if (t != null) {
                 c.applyTranslation(langCode, t.patientComment(), t.diagnosisContent(),
-                        t.treatmentResult(), t.medicationInstruction());
+                        t.treatmentResult(), t.medicationInstruction(), t.diagnosisNameCode());
             }
         } catch (Exception e) {
             log.warn("[translation] 번역 실패 — 원본 한국어 유지: {}", e.getMessage());
