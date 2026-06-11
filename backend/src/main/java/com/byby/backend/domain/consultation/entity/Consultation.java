@@ -92,6 +92,21 @@ public class Consultation extends BaseEntity {
     @Column(nullable = false)
     private boolean reportCompleted = false;
 
+    @Column(length = 10)
+    private String translationLang;
+
+    @Column(columnDefinition = "TEXT")
+    private String translatedPatientComment;
+
+    @Column(columnDefinition = "TEXT")
+    private String translatedDiagnosisContent;
+
+    @Column(columnDefinition = "TEXT")
+    private String translatedTreatmentResult;
+
+    @Column(columnDefinition = "TEXT")
+    private String translatedMedicationInstruction;
+
     @Column(columnDefinition = "TEXT")
     private String doctorConfirmationSignature;
 
@@ -192,6 +207,15 @@ public class Consultation extends BaseEntity {
         if (fee != null) this.fee = fee;
         if (memoCompleted != null) this.memoCompleted = memoCompleted;
         if (reportCompleted != null) this.reportCompleted = reportCompleted;
+    }
+
+    public void applyTranslation(String langCode, String patientComment, String diagnosisContent,
+                                  String treatmentResult, String medicationInstruction) {
+        this.translationLang = langCode;
+        this.translatedPatientComment = patientComment;
+        this.translatedDiagnosisContent = diagnosisContent;
+        this.translatedTreatmentResult = treatmentResult;
+        this.translatedMedicationInstruction = medicationInstruction;
     }
 
     public boolean isConfirmed() {

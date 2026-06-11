@@ -160,7 +160,12 @@ public class ConsultationResponse {
             String diagnosisContent,
             String diagnosisNameCode,
             String medicationInstruction,
-            LocalDate nextAppointmentDate
+            LocalDate nextAppointmentDate,
+            String translationLang,
+            String translatedPatientComment,
+            String translatedDiagnosisContent,
+            String translatedTreatmentResult,
+            String translatedMedicationInstruction
     ) {
         public static PatientView from(Consultation c) {
             return new PatientView(
@@ -170,7 +175,12 @@ public class ConsultationResponse {
                     c.getResolvedHospitalName(),
                     c.getDepartment(), c.getDoctorName(), c.getPatientComment(),
                     c.getTreatmentResult(), c.getDiagnosisContent(), c.getDiagnosisNameCode(),
-                    c.getMedicationInstruction(), c.getNextAppointmentDate());
+                    c.getMedicationInstruction(), c.getNextAppointmentDate(),
+                    c.getTranslationLang(),
+                    c.getTranslatedPatientComment(),
+                    c.getTranslatedDiagnosisContent(),
+                    c.getTranslatedTreatmentResult(),
+                    c.getTranslatedMedicationInstruction());
         }
     }
 }

@@ -20,15 +20,113 @@ function formatDateGroup(dateStr: string): string {
   return formatKoreanDate(dateStr)
 }
 
-function RecordDetailModal({ record, onClose }: { record: PatientReport; onClose: () => void }) {
+// 번역된 내용 또는 원본 반환
+function resolveContent(
+  stored: string | null | undefined,
+  storedLang: string | null | undefined,
+  original: string | null | undefined,
+  currentLang: string,
+): string | undefined {
+  if (!original) return undefined
+  if (currentLang === 'ko') return original
+  if (storedLang === currentLang && stored) return stored
+  return original // on-the-fly 번역 전까지 원본 표시
+}
+
+interface TranslatedFields {
+  patientComment?: string
+  diagnosisContent?: string
+  treatmentResult?: string
+  medicationInstruction?: string
+}
+
+function RecordDetailModal({
+  record,
+  currentLang,
+  onClose,
+}: {
+  record: PatientReport
+  currentLang: string
+  onClose: () => void
+}) {
   const router = useRouter()
   const { t } = useTranslation()
   const [chatLoading, setChatLoading] = useState(false)
+  const [onTheFlyTranslation, setOnTheFlyTranslation] = useState<TranslatedFields | null>(null)
+  const [translating, setTranslating] = useState(false)
 
   const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
   const icdCode = getIcdCode(record.diagnosisNameCode)
   const bodyImage = getBodyPartImage(record)
   const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
+
+  // 언어 변경 시 번역 결정
+  useEffect(() => {
+    if (currentLang === 'ko') {
+      setOnTheFlyTranslation(null)
+      return
+    }
+    // 저장된 번역이 현재 언어와 일치하면 그대로 사용
+    if (record.translationLang === currentLang) {
+      setOnTheFlyTranslation(null)
+      return
+    }
+    // 번역 내용이 있을 때만 on-the-fly 번역 요청
+    const hasContent = record.patientComment || record.diagnosisContent
+      || record.treatmentResult || record.medicationInstruction
+    if (!hasContent) return
+
+    setTranslating(true)
+    fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields: {
+          patientComment: record.patientComment,
+          diagnosisContent: record.diagnosisContent,
+          treatmentResult: record.treatmentResult,
+          medicationInstruction: record.medicationInstruction,
+        },
+        targetLang: currentLang,
+      }),
+    })
+      .then(r => r.json())
+      .then((d: TranslatedFields) => setOnTheFlyTranslation(d))
+      .catch(() => {})
+      .finally(() => setTranslating(false))
+  }, [currentLang, record])
+
+  function getField(
+    onTheFly: string | undefined,
+    stored: string | null | undefined,
+    original: string | undefined,
+  ): string | undefined {
+    if (currentLang === 'ko') return original
+    if (onTheFly) return onTheFly
+    if (record.translationLang === currentLang && stored) return stored
+    return original
+  }
+
+  const displayPatientComment = getField(
+    onTheFlyTranslation?.patientComment,
+    record.translatedPatientComment,
+    record.patientComment,
+  )
+  const displayDiagnosisContent = getField(
+    onTheFlyTranslation?.diagnosisContent,
+    record.translatedDiagnosisContent,
+    record.diagnosisContent,
+  )
+  const displayTreatmentResult = getField(
+    onTheFlyTranslation?.treatmentResult,
+    record.translatedTreatmentResult,
+    record.treatmentResult,
+  )
+  const displayMedicationInstruction = getField(
+    onTheFlyTranslation?.medicationInstruction,
+    record.translatedMedicationInstruction,
+    record.medicationInstruction,
+  )
 
   async function handleOpenChat() {
     if (!record.interpreterId) return
@@ -76,28 +174,35 @@ function RecordDetailModal({ record, onClose }: { record: PatientReport; onClose
 
           <div className="border-t border-[#eee]" />
 
+          {translating && (
+            <div className="flex items-center gap-2 py-1">
+              <Spinner />
+              <span className="text-[13px] text-[#2592ff]">번역 중...</span>
+            </div>
+          )}
+
           <div className="flex flex-col gap-4">
-            {record.treatmentResult && (
+            {record.treatmentResult && displayTreatmentResult && (
               <div className="bg-[#f3f9ff] rounded-[16px] px-3 py-2">
-                <p className="text-[16px] font-medium text-[#2592ff] leading-[1.4]">{record.treatmentResult}</p>
+                <p className="text-[16px] font-medium text-[#2592ff] leading-[1.4]">{displayTreatmentResult}</p>
               </div>
             )}
-            {record.patientComment && (
+            {record.patientComment && displayPatientComment && (
               <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">{t.medical_record.symptoms}</p>
-                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.patientComment}</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{displayPatientComment}</p>
               </div>
             )}
-            {record.diagnosisContent && (
+            {record.diagnosisContent && displayDiagnosisContent && (
               <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">{t.medical_record.diagnosis}</p>
-                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.diagnosisContent}</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{displayDiagnosisContent}</p>
               </div>
             )}
-            {record.medicationInstruction && (
+            {record.medicationInstruction && displayMedicationInstruction && (
               <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">{t.medical_record.medication}</p>
-                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.medicationInstruction}</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{displayMedicationInstruction}</p>
               </div>
             )}
           </div>
@@ -156,7 +261,7 @@ function RecordDetailModal({ record, onClose }: { record: PatientReport; onClose
 
 export default function MyRecordsPage() {
   const { data: me, isLoading: meLoading } = useMe()
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [records, setRecords] = useState<PatientReport[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<PatientReport | null>(null)
@@ -226,6 +331,13 @@ export default function MyRecordsPage() {
                   const diseaseName = getDiseaseShortName(record.diagnosisNameCode)
                   const bodyImage = getBodyPartImage(record)
                   const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
+                  // 목록에서는 진단 내용 미리보기를 현재 언어 번역으로 표시
+                  const previewDiagnosis = resolveContent(
+                    record.translatedDiagnosisContent,
+                    record.translationLang,
+                    record.diagnosisContent,
+                    lang,
+                  )
                   return (
                     <button
                       key={record.id}
@@ -241,9 +353,9 @@ export default function MyRecordsPage() {
                           <p className="text-[20px] font-semibold text-[#2592ff] leading-[1.4]">
                             {diseaseName || hospitalDisplay || '-'}
                           </p>
-                          {record.diagnosisContent && (
+                          {previewDiagnosis && (
                             <p className="text-[16px] font-medium text-[#161616] leading-[1.4] line-clamp-1">
-                              {record.diagnosisContent}
+                              {previewDiagnosis}
                             </p>
                           )}
                         </div>
@@ -269,6 +381,7 @@ export default function MyRecordsPage() {
       {selectedRecord && (
         <RecordDetailModal
           record={selectedRecord}
+          currentLang={lang}
           onClose={() => setSelectedRecord(null)}
         />
       )}

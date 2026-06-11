@@ -178,6 +178,11 @@ export interface PatientReport {
   diagnosisNameCode?: string
   medicationInstruction?: string
   nextAppointmentDate?: string
+  translationLang?: string | null
+  translatedPatientComment?: string | null
+  translatedDiagnosisContent?: string | null
+  translatedTreatmentResult?: string | null
+  translatedMedicationInstruction?: string | null
 }
 
 export interface Handover {

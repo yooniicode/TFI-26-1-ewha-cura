@@ -2,6 +2,15 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'io.sentry.jvm.gradle' version '6.10.0'
+}
+
+sentry {
+    // SENTRY_AUTH_TOKEN이 있을 때만 소스 컨텍스트 업로드 (로컬에서는 스킵)
+    includeSourceContext = System.getenv('SENTRY_AUTH_TOKEN') != null
+    org = 'ewha-womans-univ-w6'
+    projectName = 'java-spring-boot'
+    authToken = System.getenv('SENTRY_AUTH_TOKEN')
 }
 
 group = 'com.byby'

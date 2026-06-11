@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI, SchemaType, type Schema } from '@google/generative-ai'
 import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
 import { type BodyPartKey, BODY_PART_KEYS, getBodyPartKey } from '@/lib/bodyPartUtils'
@@ -28,17 +27,6 @@ const SYSTEM_PROMPT = `당신은 의료 보고서를 분석하여 가장 관련 
 
 보고서 내용을 보고 가장 적합한 부위 하나를 JSON으로 반환하세요.`
 
-const RESPONSE_SCHEMA: Schema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    bodyPart: {
-      type: SchemaType.STRING,
-      description: 'One of: ear, eye, mouth, vertebrae, pelvis, head, chest, abdomen, legs, arm',
-    },
-  },
-  required: ['bodyPart'],
-}
-
 function buildText(data: BodyPartInput): string {
   const parts: string[] = []
   if (data.department) parts.push(`진료과: ${data.department}`)
@@ -52,23 +40,31 @@ function validateKey(raw: string | undefined): BodyPartKey {
   return BODY_PART_KEYS.includes(raw as BodyPartKey) ? (raw as BodyPartKey) : 'vertebrae'
 }
 
-async function detectWithGemini(text: string): Promise<BodyPartKey> {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) throw new Error('GEMINI_API_KEY 없음')
+async function detectWithOpenAi(text: string): Promise<BodyPartKey> {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY 없음')
 
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    systemInstruction: SYSTEM_PROMPT,
-    generationConfig: {
-      responseMimeType: 'application/json',
-      responseSchema: RESPONSE_SCHEMA,
-      maxOutputTokens: 64,
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: `다음 보고서 내용에서 신체 부위를 선택해 JSON으로만 답하세요.\n반드시 이 중 하나: ear, eye, mouth, vertebrae, pelvis, head, chest, abdomen, legs, arm\n\n${text}\n\n{"bodyPart":"..."}`,
+        },
+      ],
+      max_tokens: 32,
       temperature: 0.1,
-    },
+      response_format: { type: 'json_object' },
+    }),
   })
-  const result = await model.generateContent(text)
-  const parsed = JSON.parse(result.response.text()) as { bodyPart?: string }
+
+  if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`)
+  const data = await res.json() as { choices: { message: { content: string } }[] }
+  const parsed = JSON.parse(data.choices[0]?.message?.content ?? '{}') as { bodyPart?: string }
   return validateKey(parsed.bodyPart)
 }
 
@@ -99,13 +95,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ bodyPart: 'vertebrae' })
     }
 
-    if (process.env.GEMINI_API_KEY) {
+    if (process.env.OPENAI_API_KEY) {
       try {
-        const bodyPart = await detectWithGemini(text)
-        console.log(`[body-part] Gemini → ${bodyPart}`)
+        const bodyPart = await detectWithOpenAi(text)
+        console.log(`[body-part] OpenAI → ${bodyPart}`)
         return NextResponse.json({ bodyPart })
       } catch (e) {
-        console.error('[body-part] Gemini 실패:', e instanceof Error ? e.message : e)
+        console.error('[body-part] OpenAI 실패:', e instanceof Error ? e.message : e)
       }
     }
 

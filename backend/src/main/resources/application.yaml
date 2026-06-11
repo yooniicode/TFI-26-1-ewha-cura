@@ -90,9 +90,9 @@ byby:
     redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/auth/kakao/callback}
     client-secret: ${KAKAO_CLIENT_SECRET:}
 
-  gemini:
-    api-key: ${GEMINI_API_KEY:}
-    model: gemini-2.0-flash
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: gpt-4o-mini
 
   google:
     service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
@@ -147,6 +147,12 @@ spring:
       hibernate:
         jdbc:
           time_zone: Asia/Seoul   # PostgreSQL 운영 환경 전용 — H2 테스트에서는 제외
+
+sentry:
+  dsn: ${SENTRY_DSN:}             # Railway 환경변수로 주입 — 없으면 비활성화
+  environment: production
+  traces-sample-rate: 0.1         # 요청의 10%만 성능 트랜잭션 수집
+  send-default-pii: false         # 환자·이주민 정보 보호: IP/헤더 자동 수집 금지
 
 logging:
   level:
