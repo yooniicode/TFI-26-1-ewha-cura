@@ -122,11 +122,10 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy (healthcheck 통과 시까지 대기)
-        run: railway up
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-          RAILWAY_SERVICE: ${{ secrets.RAILWAY_SERVICE_ID }}
           RAILWAY_ENVIRONMENT_ID: ${{ secrets.RAILWAY_ENV_ID }}
 
   # ─── 프론트엔드 배포 → Vercel (무중단) ──────────────────────────────────────
