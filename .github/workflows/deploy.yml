@@ -159,8 +159,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
       - name: Deploy to Vercel (빌드 완료 후 atomic 전환)
-        run: npx vercel --prod --token "${{ secrets.VERCEL_TOKEN }}" --yes
+        run: vercel --prod --token "${{ secrets.VERCEL_TOKEN }}" --yes
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
