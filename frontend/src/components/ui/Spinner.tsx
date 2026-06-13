@@ -26,7 +26,7 @@ export default function Spinner() {
             strokeDasharray="44 113"
           />
         </svg>
-        <img src="/icons/cura.svg" alt="" width={38} height={38} className="relative z-10 rounded-[9px]" />
+        <img src="/icons/curawithoutbg.svg" alt="" width={38} height={38} className="relative z-10 rounded-[9px]" />
       </div>
     </div>
   )
