@@ -157,16 +157,15 @@ public class ConsultationService {
     }
 
     public Page<ConsultationResponse.Summary> getAll(Pageable pageable, UserPrincipal principal, String patientQuery) {
-        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
-            return consultationRepository.searchByCenter(center.getId(), patientQuery, unsorted)
+            return consultationRepository.searchByCenter(center.getId(), patientQuery, pageable)
                     .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
         }
         if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            return consultationRepository.searchByInterpreter(interpreter.getId(), patientQuery, unsorted)
+            return consultationRepository.searchByInterpreter(interpreter.getId(), patientQuery, pageable)
                     .map(c -> ConsultationResponse.Summary.from(c, resolvePatientAvatarUrl(c.getPatient())));
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
