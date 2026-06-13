@@ -104,6 +104,8 @@ export const consultationSchema = z.object({
   medicationInstruction: nullableString,
   counselorName:       nullableString,
   workDescription:     nullableString,
+  memoCompleted:       z.boolean().optional().default(false),
+  reportCompleted:     z.boolean().optional().default(false),
   doctorConfirmationSignature: nullableString,
   durationHours:       nullableNumber,
   fee:                 nullableNumber,
@@ -131,6 +133,12 @@ export const patientReportSchema = z.object({
   diagnosisNameCode:     nullableString,
   medicationInstruction: nullableString,
   nextAppointmentDate:   nullableString,
+  translationLang:                      nullableString,
+  translatedPatientComment:             nullableString,
+  translatedDiagnosisContent:           nullableString,
+  translatedTreatmentResult:            nullableString,
+  translatedMedicationInstruction:      nullableString,
+  translatedDiagnosisNameCode:          nullableString,
 })
 
 export const handoverSchema = z.object({

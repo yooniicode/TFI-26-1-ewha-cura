@@ -23,15 +23,18 @@ import com.byby.backend.domain.patient.entity.Patient;
 import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -46,6 +49,7 @@ public class ConsultationService {
     private final PatientCenterRepository patientCenterRepository;
     private final UserCredentialRepository userCredentialRepository;
     private final CenterRepository centerRepository;
+    private final TranslationService translationService;
 
     private String resolvePatientAvatarUrl(Patient patient) {
         if (patient.getAuthUserId() == null) return null;
@@ -87,7 +91,9 @@ public class ConsultationService {
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
         Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-        if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())) {
+        boolean hasActiveMatch = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId());
+        boolean hasConsultation = consultationRepository.existsByPatientIdAndInterpreterId(patient.getId(), interpreter.getId());
+        if (!hasActiveMatch && !hasConsultation) {
             throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         }
         Hospital hospital = req.hospitalId() != null
@@ -201,7 +207,10 @@ public class ConsultationService {
                 req.doctorName(), req.patientComment(), req.treatmentResult(),
                 req.diagnosisContent(), req.diagnosisNameCode(), req.medicationInstruction(),
                 req.counselorName(), req.workDescription(), req.doctorConfirmationSignature(),
-                req.durationHours(), req.fee());
+                req.durationHours(), req.fee(), req.memoCompleted(), req.reportCompleted());
+
+        applyTranslationIfNeeded(c);
+
         Consultation updated = consultationRepository.save(c);
         return ConsultationResponse.Detail.from(updated, resolvePatientAvatarUrl(updated.getPatient()));
     }
@@ -226,7 +235,8 @@ public class ConsultationService {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
             boolean isAssigned = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                    patientId, interpreter.getId());
+                    patientId, interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
             if (!isAssigned) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         } else if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
@@ -270,9 +280,9 @@ public class ConsultationService {
         } else if (principal.isInterpreter()) {
             Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                     .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-            if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())) {
-                throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
-            }
+            boolean isAssigned = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
+            if (!isAssigned) throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         } else if (!principal.isAdmin()) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
@@ -325,7 +335,8 @@ public class ConsultationService {
             boolean isOwnConsultation = c.getInterpreter() != null
                     && c.getInterpreter().getId().equals(interpreter.getId());
             boolean isAssignedToPatient = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                    c.getPatient().getId(), interpreter.getId());
+                    c.getPatient().getId(), interpreter.getId())
+                    || consultationRepository.existsByPatientIdAndInterpreterId(c.getPatient().getId(), interpreter.getId());
             if (!isOwnConsultation && !isAssignedToPatient) {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);
             }
@@ -356,5 +367,32 @@ public class ConsultationService {
         }
         return c.getPatient().getPatientCenters().stream()
                 .anyMatch(pc -> pc.getCenter().getId().equals(center.getId()));
+    }
+
+    private void applyTranslationIfNeeded(Consultation c) {
+        if (c.getPatient() == null || c.getPatient().getNationality() == null) return;
+
+        String langCode = c.getPatient().getNationality().getLanguageCode();
+        if ("ko".equals(langCode)) return;
+
+        boolean hasContent = StringUtils.hasText(c.getDiagnosisContent())
+                || StringUtils.hasText(c.getTreatmentResult())
+                || StringUtils.hasText(c.getMedicationInstruction())
+                || StringUtils.hasText(c.getPatientComment())
+                || StringUtils.hasText(c.getDiagnosisNameCode());
+        if (!hasContent) return;
+
+        try {
+            TranslationService.MedicalTranslation t = translationService.translateMedicalFields(
+                    c.getPatientComment(), c.getDiagnosisContent(),
+                    c.getTreatmentResult(), c.getMedicationInstruction(),
+                    c.getDiagnosisNameCode(), langCode);
+            if (t != null) {
+                c.applyTranslation(langCode, t.patientComment(), t.diagnosisContent(),
+                        t.treatmentResult(), t.medicationInstruction(), t.diagnosisNameCode());
+            }
+        } catch (Exception e) {
+            log.warn("[translation] 번역 실패 — 원본 한국어 유지: {}", e.getMessage());
+        }
     }
 }

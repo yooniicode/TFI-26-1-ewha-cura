@@ -62,8 +62,6 @@ byby:
     jwt:
       secret: ${JWT_SECRET:local-dev-secret-key-change-in-production-minimum-256-bits-long!!}
       expiration-ms: 86400000
-    # Swagger UI 접근 비밀번호 — 미설정 시 인증 없이 접근 가능 (로컬 개발용)
-    # 운영 배포 시 반드시 설정: SWAGGER_SECRET=your-secret
     swagger-secret: ${SWAGGER_SECRET:}
     cors:
       allowed-origins:
@@ -74,10 +72,6 @@ byby:
         - https://tfi-26-1-archive-production.up.railway.app
         - https://cura-ewha.kr
         - https://www.cura-ewha.kr
-        - http://ewha-cura.kr
-        - https://ewha-cura.kr
-        - http://www.ewha-cura.kr
-        - https://www.ewha-cura.kr
 
   supabase:
     url: ${SUPABASE_URL:}
@@ -89,19 +83,16 @@ byby:
 
   center:
     # 개발자 전용 센터 등록/수정 API 시크릿
-    # 미설정 시 해당 API 비활성화 — 운영에서는 반드시 강한 값으로 설정
     dev-secret: ${CENTER_DEV_SECRET:}
 
   kakao:
     rest-api-key: ${KAKAO_REST_API_KEY:}
-    # 카카오 개발자 콘솔에 등록한 Redirect URI 와 정확히 일치해야 합니다
     redirect-uri: ${KAKAO_REDIRECT_URI:http://localhost:3000/auth/kakao/callback}
-    # 보안 탭에서 Client Secret 코드 활성화 시 필수
     client-secret: ${KAKAO_CLIENT_SECRET:}
 
-  gemini:
-    api-key: ${GEMINI_API_KEY:}
-    model: gemini-2.0-flash
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model: gpt-4o-mini
 
   google:
     service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
@@ -133,19 +124,35 @@ spring:
   datasource:
     url: ${DATABASE_URL}
     hikari:
-      maximum-pool-size: 10
-      connection-timeout: 5000
+      maximum-pool-size: 5         # Supabase free tier 권장 (server conn 60개 공유 환경)
+      minimum-idle: 1
+      connection-timeout: 10000
+      idle-timeout: 60000          # 1분 후 idle 커넥션 회수 (minimum-idle 초과분)
+      max-lifetime: 120000         # 2분 선제 재생성 — Supabase가 닫기 전에 교체
+      keepalive-time: 30000        # 30초 keepalive ping
+      validation-timeout: 5000
       data-source-properties:
         sslmode: require
         sslrootcert: system
+        prepareThreshold: 0        # PgBouncer Transaction Mode: 서버 측 Prepared Statement 금지
+        socketTimeout: 60          # JDBC 소켓 응답 대기 60초 (초 단위)
+        connectTimeout: 10         # JDBC TCP 연결 수립 타임아웃 10초
 
   jpa:
     hibernate:
-      ddl-auto: update
+      # Flyway 가 스키마 관리 → Hibernate DDL 비활성화
+      # ddl-auto: update 는 기동 시 대량 메타데이터 쿼리로 PgBouncer 풀 고갈 유발
+      ddl-auto: none
     properties:
       hibernate:
         jdbc:
           time_zone: Asia/Seoul   # PostgreSQL 운영 환경 전용 — H2 테스트에서는 제외
+
+sentry:
+  dsn: ${SENTRY_DSN:}             # Railway 환경변수로 주입 — 없으면 비활성화
+  environment: production
+  traces-sample-rate: 0.1         # 요청의 10%만 성능 트랜잭션 수집
+  send-default-pii: false         # 환자·이주민 정보 보호: IP/헤더 자동 수집 금지
 
 logging:
   level:

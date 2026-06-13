@@ -16,6 +16,7 @@ import com.byby.backend.domain.chat.entity.ChatRoomMember;
 import com.byby.backend.domain.chat.repository.ChatMessageRepository;
 import com.byby.backend.domain.chat.repository.ChatRoomMemberRepository;
 import com.byby.backend.domain.chat.repository.ChatRoomRepository;
+import com.byby.backend.domain.consultation.repository.ConsultationRepository;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.entity.Patient;
 import com.byby.backend.domain.patient.repository.PatientRepository;
@@ -40,6 +41,7 @@ public class ChatService {
     private final InterpreterRepository interpreterRepository;
     private final PatientRepository patientRepository;
     private final PatientMatchRepository patientMatchRepository;
+    private final ConsultationRepository consultationRepository;
     private final AdminService adminService;
     private final AdminProfileRepository adminProfileRepository;
 
@@ -82,7 +84,8 @@ public class ChatService {
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
 
         boolean matched = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                patient.getId(), interpreter.getId());
+                patient.getId(), interpreter.getId())
+                || consultationRepository.existsByPatientIdAndInterpreterId(patient.getId(), interpreter.getId());
         if (!matched) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
 
         return getOrCreateDirectRoom(
@@ -103,7 +106,8 @@ public class ChatService {
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
 
         boolean matched = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
-                patient.getId(), interpreter.getId());
+                patient.getId(), interpreter.getId())
+                || consultationRepository.existsByPatientIdAndInterpreterId(patient.getId(), interpreter.getId());
         if (!matched) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         if (patient.getAuthUserId() == null) {
             throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "Linked patient account is required");

@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface PatientMatchRepository extends JpaRepository<PatientMatch, UUID> {
 
-    Optional<PatientMatch> findByPatientIdAndActiveTrue(UUID patientId);
+    List<PatientMatch> findByPatientIdAndActiveTrue(UUID patientId);
+
+    Optional<PatientMatch> findByPatientIdAndInterpreterIdAndActiveTrue(UUID patientId, UUID interpreterId);
 
     Page<PatientMatch> findByActiveTrue(Pageable pageable);
 

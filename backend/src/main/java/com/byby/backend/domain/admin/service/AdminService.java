@@ -16,6 +16,7 @@ import com.byby.backend.domain.admin.repository.AdminWorkLogRepository;
 import com.byby.backend.domain.admin.repository.CenterPatientMemoRepository;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
+import com.byby.backend.domain.consultation.repository.ConsultationRepository;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.center.service.CenterService;
@@ -46,6 +47,7 @@ public class AdminService {
     private final PatientCenterRepository patientCenterRepository;
     private final InterpreterRepository interpreterRepository;
     private final PatientMatchRepository patientMatchRepository;
+    private final ConsultationRepository consultationRepository;
     private final CenterService centerService;
 
     @Transactional
@@ -234,7 +236,11 @@ public class AdminService {
     private void requireAssignedInterpreter(UUID patientId, UserPrincipal principal) {
         Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-        if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())) {
+        boolean hasActiveMatch = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
+                patientId, interpreter.getId());
+        boolean hasConsultation = consultationRepository.existsByPatientIdAndInterpreterId(
+                patientId, interpreter.getId());
+        if (!hasActiveMatch && !hasConsultation) {
             throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         }
     }

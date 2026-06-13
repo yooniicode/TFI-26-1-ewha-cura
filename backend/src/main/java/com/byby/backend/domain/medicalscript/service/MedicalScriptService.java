@@ -45,14 +45,14 @@ public class MedicalScriptService {
     private final InterpreterRepository interpreterRepository;
     private final PatientMatchRepository patientMatchRepository;
 
-    @Qualifier("geminiRestClient")
-    private final RestClient geminiRestClient;
+    @Qualifier("openAiRestClient")
+    private final RestClient openAiRestClient;
 
-    @Qualifier("geminiApiKey")
-    private final String geminiApiKey;
+    @Qualifier("openAiApiKey")
+    private final String openAiApiKey;
 
-    @Value("${byby.gemini.model:gemini-2.0-flash}")
-    private String geminiModel;
+    @Value("${byby.openai.model:gpt-4o-mini}")
+    private String openAiModel;
 
     @Transactional
     public ScriptResponse.Detail generate(ScriptRequest.Generate req, UserPrincipal principal) {
@@ -78,7 +78,7 @@ public class MedicalScriptService {
         }
 
         String prompt = buildPrompt(patient, consultation, req);
-        String contentKo = callGeminiApi(prompt);
+        String contentKo = callOpenAiApi(prompt);
 
         MedicalScript script = MedicalScript.builder()
                 .patient(patient)
@@ -125,7 +125,9 @@ public class MedicalScriptService {
         if (!principal.isInterpreter()) return;
         Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
-        if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId())) {
+        boolean hasActiveMatch = patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, interpreter.getId());
+        boolean hasConsultation = consultationRepository.existsByPatientIdAndInterpreterId(patientId, interpreter.getId());
+        if (!hasActiveMatch && !hasConsultation) {
             throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
         }
     }
@@ -151,45 +153,40 @@ public class MedicalScriptService {
     }
 
     @SuppressWarnings("unchecked")
-    private String callGeminiApi(String prompt) {
-        if (!StringUtils.hasText(geminiApiKey)) {
+    private String callOpenAiApi(String prompt) {
+        if (!StringUtils.hasText(openAiApiKey)) {
             throw new BusinessException(BusinessErrorCode.SCRIPT_GENERATION_FAILED);
         }
         try {
             Map<String, Object> body = Map.of(
-                    "contents", List.of(
-                            Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))
+                    "model", openAiModel,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)
                     ),
-                    "generationConfig", Map.of(
-                            "maxOutputTokens", 1024,
-                            "temperature", 0.7
-                    )
+                    "max_tokens", 1024,
+                    "temperature", 0.7
             );
 
-            String uri = "/models/" + geminiModel + ":generateContent?key=" + geminiApiKey;
-
-            Map<String, Object> response = geminiRestClient.post()
-                    .uri(uri)
+            Map<String, Object> response = openAiRestClient.post()
+                    .uri("/chat/completions")
+                    .header("Authorization", "Bearer " + openAiApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
                     .body(Map.class);
 
-            if (response != null && response.containsKey("candidates")) {
-                List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-                if (!candidates.isEmpty()) {
-                    Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
-                    List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
-                    if (!parts.isEmpty()) {
-                        return (String) parts.get(0).get("text");
-                    }
+            if (response != null && response.containsKey("choices")) {
+                List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+                if (!choices.isEmpty()) {
+                    Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+                    return (String) message.get("content");
                 }
             }
             throw new BusinessException(BusinessErrorCode.SCRIPT_GENERATION_FAILED);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Gemini API call failed: {}", e.getMessage());
+            log.error("OpenAI API call failed: {}", e.getMessage());
             throw new BusinessException(BusinessErrorCode.SCRIPT_GENERATION_FAILED);
         }
     }

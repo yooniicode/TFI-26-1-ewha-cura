@@ -88,7 +88,9 @@ public class ConsultationResponse {
             boolean confirmed,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
-            String patientAvatarUrl
+            String patientAvatarUrl,
+            boolean memoCompleted,
+            boolean reportCompleted
     ) {
         public static Detail from(Consultation c) {
             return from(c, null);
@@ -116,7 +118,8 @@ public class ConsultationResponse {
                     c.getDoctorConfirmationSignature(), c.getDurationHours(), c.getFee(), c.getNextAppointmentDate(),
                     c.getConfirmedAt(), c.getConfirmedBy(), c.getConfirmedByPhone(),
                     c.isConfirmed(),
-                    c.getCreatedAt(), c.getUpdatedAt(), patientAvatarUrl);
+                    c.getCreatedAt(), c.getUpdatedAt(), patientAvatarUrl,
+                    c.isMemoCompleted(), c.isReportCompleted());
         }
     }
 
@@ -159,7 +162,13 @@ public class ConsultationResponse {
             String diagnosisContent,
             String diagnosisNameCode,
             String medicationInstruction,
-            LocalDate nextAppointmentDate
+            LocalDate nextAppointmentDate,
+            String translationLang,
+            String translatedPatientComment,
+            String translatedDiagnosisContent,
+            String translatedTreatmentResult,
+            String translatedMedicationInstruction,
+            String translatedDiagnosisNameCode
     ) {
         public static PatientView from(Consultation c) {
             return new PatientView(
@@ -169,7 +178,13 @@ public class ConsultationResponse {
                     c.getResolvedHospitalName(),
                     c.getDepartment(), c.getDoctorName(), c.getPatientComment(),
                     c.getTreatmentResult(), c.getDiagnosisContent(), c.getDiagnosisNameCode(),
-                    c.getMedicationInstruction(), c.getNextAppointmentDate());
+                    c.getMedicationInstruction(), c.getNextAppointmentDate(),
+                    c.getTranslationLang(),
+                    c.getTranslatedPatientComment(),
+                    c.getTranslatedDiagnosisContent(),
+                    c.getTranslatedTreatmentResult(),
+                    c.getTranslatedMedicationInstruction(),
+                    c.getTranslatedDiagnosisNameCode());
         }
     }
 }

@@ -56,12 +56,13 @@ export default function DashboardPage() {
     enabled: hasCenter,
   })
 
-  const { data: myMatch } = useQuery({
+  const { data: myMatches } = useQuery({
     queryKey: queryKeys.matching.myMatch(),
-    queryFn: () => matchApi.myMatch().then(r => r.payload ?? null),
+    queryFn: () => matchApi.myMatch().then(r => r.payload ?? []),
     enabled: isPatientWithEntity,
     retry: false,
   })
+  const myMatch = myMatches?.[0] ?? null
 
   const { data: myRecords } = useQuery({
     queryKey: queryKeys.patients.myRecords(me?.entityId ?? '', 0),
@@ -413,6 +414,18 @@ export default function DashboardPage() {
                 ? `${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`
                 : ''
 
+              const memoLabel = c.memoCompleted
+                ? t.interpreter_home.realtime_memo_edit
+                : c.workDescription
+                ? t.interpreter_home.realtime_memo_draft
+                : t.interpreter_home.realtime_memo
+              const reportHref = c.reportCompleted
+                ? `/consultations/new?patientId=${c.patientId}&cid=${c.id}`
+                : `/consultations/start?patientId=${c.patientId}`
+              const reportLabel = c.reportCompleted
+                ? t.interpreter_home.edit_report_btn
+                : t.interpreter_home.write_report_btn
+
               if (idx === 0) {
                 return (
                   <div key={c.id} className="flex items-start">
@@ -429,15 +442,38 @@ export default function DashboardPage() {
                           </div>
                           <span className="text-[16px] text-[#494949]">{location}</span>
                         </div>
-                        <img src="/icons/common/arrows/right.svg" alt="" width={24} height={24} />
+                        <div className="flex items-center gap-1.5">
+                          {c.memoCompleted && (
+                            <span className="text-[11px] font-semibold text-[#2592ff] bg-[#e8f4ff] rounded-full px-2 py-0.5">{t.interpreter_home.memo_done_badge}</span>
+                          )}
+                          {c.reportCompleted && (
+                            <span className="text-[11px] font-semibold text-[#16a34a] bg-[#dcfce7] rounded-full px-2 py-0.5">{t.interpreter_home.report_done_badge}</span>
+                          )}
+                          <img src="/icons/common/arrows/right.svg" alt="" width={24} height={24} />
+                        </div>
                       </Link>
-                      <Link
-                        href={`/rm/new?patientId=${c.patientId}&cid=${c.id}`}
-                        className="bg-white rounded-[8px] px-5 py-4 flex items-center justify-center gap-1 active:opacity-70 transition-opacity"
-                      >
-                        <img src="/icons/interpreter/home/실시간메모작성.svg" alt="" width={20} height={20} />
-                        <span className="text-[14px] font-medium text-[#2592ff]">{t.interpreter_home.realtime_memo}</span>
-                      </Link>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/rm/new?patientId=${c.patientId}&cid=${c.id}`}
+                          className="flex-1 bg-white rounded-[8px] px-3 py-4 flex items-center justify-center gap-1 active:opacity-70 transition-opacity"
+                        >
+                          <img src="/icons/interpreter/home/실시간메모작성.svg" alt="" width={18} height={18} />
+                          <span className="text-[13px] font-medium text-[#2592ff]">{memoLabel}</span>
+                        </Link>
+                        <Link
+                          href={reportHref}
+                          className="flex-1 bg-white rounded-[8px] px-3 py-4 flex items-center justify-center gap-1 active:opacity-70 transition-opacity"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2592FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="16" y1="13" x2="8" y2="13" />
+                            <line x1="16" y1="17" x2="8" y2="17" />
+                            <polyline points="10 9 9 9 8 9" />
+                          </svg>
+                          <span className="text-[13px] font-medium text-[#2592ff]">{reportLabel}</span>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 )
@@ -459,7 +495,15 @@ export default function DashboardPage() {
                       </div>
                       <span className="text-[16px] text-[#808080]">{location}</span>
                     </div>
-                    <img src="/icons/common/arrows/right.svg" alt="" width={24} height={24} />
+                    <div className="flex items-center gap-1.5">
+                      {c.memoCompleted && (
+                        <span className="text-[11px] font-semibold text-[#2592ff] bg-[#e8f4ff] rounded-full px-2 py-0.5">{t.interpreter_home.memo_done_badge}</span>
+                      )}
+                      {c.reportCompleted && (
+                        <span className="text-[11px] font-semibold text-[#16a34a] bg-[#dcfce7] rounded-full px-2 py-0.5">{t.interpreter_home.report_done_badge}</span>
+                      )}
+                      <img src="/icons/common/arrows/right.svg" alt="" width={24} height={24} />
+                    </div>
                   </Link>
                 </div>
               )
