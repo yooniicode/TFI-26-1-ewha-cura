@@ -171,10 +171,10 @@ export const medicalScriptSchema = z.object({
   id:            z.string().uuid(),
   patientId:     z.string().uuid(),
   patientName:   z.string(),
-  consultationId: z.string().uuid().optional(),
+  consultationId: nullableUuid,
   scriptType:    scriptTypeSchema,
   contentKo:     z.string(),
-  contentOrigin: z.string().optional(),
+  contentOrigin: nullableString,
   createdAt:     z.string(),
 })
 
