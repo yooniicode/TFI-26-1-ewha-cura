@@ -137,7 +137,7 @@ function RmMemoEditInner() {
       </div>
 
       {/* 메모 텍스트 편집 */}
-      <div className="bg-[#f7f7f7] px-4 py-4 pb-36 min-h-screen">
+      <div className="bg-[#f7f7f7] px-4 py-4 pb-36">
         <div className="bg-white border border-[#eee] rounded-[8px] p-4">
           {consultation ? (
             <textarea
