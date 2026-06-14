@@ -82,4 +82,22 @@ public class AuthRequest {
             String centerName,
             UUID centerId
     ) {}
+
+    public record PhoneRequest(@NotBlank String phone) {}
+
+    public record PhoneVerify(
+            @NotBlank String phone,
+            @NotBlank String code
+    ) {}
+
+    public record PhoneSignup(
+            @NotBlank String phone,
+            @NotBlank String name,
+            UserRole role,
+            Gender gender,
+            Nationality nationality,
+            VisaType visaType,
+            UUID centerId,
+            String centerName
+    ) {}
 }

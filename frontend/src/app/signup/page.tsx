@@ -11,7 +11,7 @@ import { NATIONALITIES, VISA_TYPES, GENDERS, useEnumLabels } from '@/lib/i18n/en
 import type { Gender, Nationality, VisaType } from '@/lib/types'
 
 type AccountType = 'patient' | 'interpreter'
-type Step = 0 | 1 | 2 | 3 | 4 | 5
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 10 | 11 | 12 | 13
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
@@ -83,6 +83,21 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // 이메일 가입 플로우 — Step 3 휴대폰 인증
+  const [phoneVerified, setPhoneVerified] = useState(false)
+  const [phoneCode, setPhoneCode] = useState('')
+  const [phoneReceiveNumber, setPhoneReceiveNumber] = useState('')
+  const [phoneRequestLoading, setPhoneRequestLoading] = useState(false)
+  const [phoneVerifying, setPhoneVerifying] = useState(false)
+
+  // 전화번호 전용 플로우 (step 10~13)
+  const [pfPhone, setPfPhone] = useState('')          // 인증할 전화번호
+  const [pfCode, setPfCode] = useState('')            // 수신된 코드 (표시용)
+  const [pfReceiveNum, setPfReceiveNum] = useState('') // OCTOMO 수신번호
+  const [pfCodeSent, setPfCodeSent] = useState(false)
+  const [pfReqLoading, setPfReqLoading] = useState(false)
+  const [pfVerifyLoading, setPfVerifyLoading] = useState(false)
+
   function next() {
     setError('')
     if (step === 1) {
@@ -95,12 +110,19 @@ export default function SignupPage() {
     } else if (step === 3) {
       if (!name.trim()) { setError('이름을 입력해주세요.'); return }
       if (!phone.trim()) { setError('연락처를 입력해주세요.'); return }
+      if (!phoneVerified) { setError('휴대폰 인증을 완료해주세요.'); return }
+    } else if (step === 11) {
+      if (!name.trim()) { setError('이름을 입력해주세요.'); return }
+      if (!accountType) { setError('가입 유형을 선택해주세요.'); return }
     }
     setStep((step + 1) as Step)
   }
 
   function prev() {
     setError('')
+    if (step === 10) { setStep(0); return }
+    if (step === 11) { setStep(10); return }
+    if (step === 12) { setStep(11); return }
     setStep((step - 1) as Step)
   }
 
@@ -131,6 +153,101 @@ export default function SignupPage() {
     }
   }
 
+  // 전화번호 전용 플로우 핸들러 (step 10)
+  async function handlePfRequest() {
+    if (!pfPhone.trim()) return
+    setPfReqLoading(true); setError('')
+    try {
+      const res = await authApi.phoneRequest(pfPhone.trim())
+      if (res.payload) {
+        setPfCode(res.payload.code)
+        setPfReceiveNum(res.payload.receiveNumber)
+        setPfCodeSent(true)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '코드 발급에 실패했습니다.')
+    } finally {
+      setPfReqLoading(false)
+    }
+  }
+
+  async function handlePfVerify() {
+    setPfVerifyLoading(true); setError('')
+    try {
+      const res = await authApi.phoneLogin(pfPhone.trim(), pfCode)
+      if (!res.payload) throw new Error('응답 오류')
+      if (res.payload.exists && res.payload.token) {
+        setAccessToken(res.payload.token)
+        router.replace('/dashboard')
+      } else {
+        // 신규 유저 → 프로필 입력 단계로
+        setPhone(pfPhone.trim())
+        setStep(11)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '인증에 실패했습니다. 문자를 보낸 후 다시 시도해주세요.')
+    } finally {
+      setPfVerifyLoading(false)
+    }
+  }
+
+  async function handlePhoneSignup() {
+    setError(''); setLoading(true)
+    try {
+      if (!centerId && !centerName.trim()) { setError('담당 센터를 선택해주세요.'); return }
+      const res = await authApi.phoneSignup({
+        phone: pfPhone.trim(),
+        name: name.trim(),
+        role: accountType!,
+        centerId: centerId || undefined,
+        centerName: centerName.trim() || undefined,
+        ...(accountType === 'patient' ? { nationality, gender, visaType } : {}),
+      })
+      if (res.payload?.token) setAccessToken(res.payload.token)
+      setStep(13)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '회원가입 중 오류가 발생했습니다.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handlePhoneRequest() {
+    if (!phone.trim()) return
+    setPhoneRequestLoading(true)
+    setError('')
+    try {
+      const res = await authApi.phoneRequest(phone.trim())
+      if (res.payload) {
+        setPhoneCode(res.payload.code)
+        setPhoneReceiveNumber(res.payload.receiveNumber)
+        setPhoneVerified(false)
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '인증 코드 발급에 실패했습니다.')
+    } finally {
+      setPhoneRequestLoading(false)
+    }
+  }
+
+  async function handlePhoneVerify() {
+    setPhoneVerifying(true)
+    setError('')
+    try {
+      const res = await authApi.phoneVerify(phone.trim(), phoneCode)
+      if (res.payload?.verified) {
+        setPhoneVerified(true)
+        setPhoneCode('')
+      } else {
+        setError('인증에 실패했습니다. 문자를 보낸 후 다시 시도해주세요.')
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : '인증 확인 중 오류가 발생했습니다.')
+    } finally {
+      setPhoneVerifying(false)
+    }
+  }
+
   function handleKakao() {
     const key = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY
     if (!key) return
@@ -141,8 +258,8 @@ export default function SignupPage() {
 
   // ─── Render ─────────────────────────────────────────────────────────────────
 
-  const showBottomBar = step >= 1 && step <= 4
-  const isLastFormStep = step === 4
+  const showBottomBar = (step >= 1 && step <= 4) || step === 11 || step === 12
+  const isLastFormStep = step === 4 || step === 12
 
   return (
     <div className="min-h-screen bg-white flex flex-col max-w-[402px] mx-auto">
@@ -194,6 +311,13 @@ export default function SignupPage() {
                 className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] transition-colors"
               >
                 이메일로 시작하기
+              </button>
+              <button
+                type="button"
+                onClick={() => { setError(''); setPfPhone(''); setPfCode(''); setPfCodeSent(false); setStep(10) }}
+                className="w-full h-[60px] bg-white rounded-lg text-[#2592FF] text-[18px] font-semibold border-2 border-[#2592FF] hover:bg-[#F3F9FF] transition-colors"
+              >
+                전화번호로 시작하기
               </button>
               <button
                 type="button"
@@ -334,13 +458,61 @@ export default function SignupPage() {
                 </Field>
               )}
               <Field label="연락처">
-                <input
-                  type="tel"
-                  className={inputCls}
-                  placeholder="전화번호를 입력해주세요"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    className={`${inputCls} flex-1`}
+                    placeholder="전화번호를 입력해주세요"
+                    value={phone}
+                    onChange={e => {
+                      setPhone(e.target.value)
+                      setPhoneVerified(false)
+                      setPhoneCode('')
+                    }}
+                    disabled={phoneVerified}
+                  />
+                  {!phoneVerified && (
+                    <button
+                      type="button"
+                      onClick={handlePhoneRequest}
+                      disabled={!phone.trim() || phoneRequestLoading}
+                      className="shrink-0 h-[56px] px-4 bg-[#2592FF] rounded-2xl text-white text-[15px] font-semibold disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors"
+                    >
+                      {phoneRequestLoading ? '...' : phoneCode ? '재발급' : '인증하기'}
+                    </button>
+                  )}
+                </div>
+
+                {/* 인증 패널 */}
+                {phoneCode && !phoneVerified && (
+                  <div className="bg-[#F3F9FF] rounded-2xl p-4 flex flex-col gap-3 mt-1">
+                    <p className="text-[14px] text-[#494949] text-center">
+                      아래 번호로 코드를 문자로 보내주세요
+                    </p>
+                    <p className="text-[13px] text-[#808080] text-center font-medium">{phoneReceiveNumber}</p>
+                    <div className="bg-white rounded-xl px-4 py-3 text-center border border-[#2592FF]/20">
+                      <p className="text-[36px] font-bold text-[#2592FF] tracking-[10px]">{phoneCode}</p>
+                    </div>
+                    <a
+                      href={`sms:${phoneReceiveNumber}?body=${encodeURIComponent(phoneCode)}`}
+                      className="w-full h-[48px] bg-[#2592FF] rounded-xl text-white text-[15px] font-semibold flex items-center justify-center hover:bg-[#1a7ee6] transition-colors"
+                    >
+                      문자앱으로 바로 보내기
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handlePhoneVerify}
+                      disabled={phoneVerifying}
+                      className="w-full h-[48px] bg-[#F0F1F5] rounded-xl text-[#494949] text-[15px] font-semibold disabled:opacity-40 hover:bg-[#e4e4e8] transition-colors"
+                    >
+                      {phoneVerifying ? '확인 중...' : '문자 보냈어요, 인증 확인'}
+                    </button>
+                  </div>
+                )}
+
+                {phoneVerified && (
+                  <p className="text-[#30C100] text-[14px] font-medium mt-1">✓ 휴대폰 인증이 완료되었습니다</p>
+                )}
               </Field>
               {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
@@ -399,6 +571,153 @@ export default function SignupPage() {
             <p className="text-[24px] font-semibold text-[#161616] mt-8">가입이 완료되었습니다</p>
           </div>
         )}
+
+        {/* Step 10: 전화번호 인증 */}
+        {step === 10 && (
+          <div className="px-4 pt-6 pb-4">
+            <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
+              전화번호로<br />시작해요
+            </h1>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2.5">
+                <label className="text-[16px] font-medium text-[#494949]">전화번호</label>
+                <div className="flex gap-2">
+                  <input
+                    type="tel"
+                    className={`${inputCls} flex-1`}
+                    placeholder="010-0000-0000"
+                    value={pfPhone}
+                    onChange={e => { setPfPhone(e.target.value); setPfCodeSent(false); setPfCode('') }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePfRequest}
+                    disabled={!pfPhone.trim() || pfReqLoading}
+                    className="shrink-0 h-[56px] px-4 bg-[#2592FF] rounded-2xl text-white text-[15px] font-semibold disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors"
+                  >
+                    {pfReqLoading ? '...' : pfCodeSent ? '재발급' : '인증하기'}
+                  </button>
+                </div>
+              </div>
+
+              {pfCodeSent && (
+                <div className="bg-[#F3F9FF] rounded-2xl p-4 flex flex-col gap-3">
+                  <p className="text-[14px] text-[#494949] text-center">아래 번호로 코드를 문자로 보내주세요</p>
+                  <p className="text-[13px] text-[#808080] text-center font-medium">{pfReceiveNum}</p>
+                  <div className="bg-white rounded-xl px-4 py-3 text-center border border-[#2592FF]/20">
+                    <p className="text-[36px] font-bold text-[#2592FF] tracking-[10px]">{pfCode}</p>
+                  </div>
+                  <a
+                    href={`sms:${pfReceiveNum}?body=${encodeURIComponent(pfCode)}`}
+                    className="w-full h-[48px] bg-[#2592FF] rounded-xl text-white text-[15px] font-semibold flex items-center justify-center hover:bg-[#1a7ee6] transition-colors"
+                  >
+                    문자앱으로 바로 보내기
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handlePfVerify}
+                    disabled={pfVerifyLoading}
+                    className="w-full h-[48px] bg-[#F0F1F5] rounded-xl text-[#494949] text-[15px] font-semibold disabled:opacity-40 hover:bg-[#e4e4e8] transition-colors"
+                  >
+                    {pfVerifyLoading ? '확인 중...' : '문자 보냈어요, 인증 확인'}
+                  </button>
+                </div>
+              )}
+
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Step 11: 이름 + 유형 선택 */}
+        {step === 11 && (
+          <div className="px-4 pt-6 pb-4">
+            <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
+              기본 정보를<br />알려주세요
+            </h1>
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2.5">
+                <label className="text-[16px] font-medium text-[#494949]">이름</label>
+                <input type="text" className={inputCls} placeholder="성함을 입력해주세요" value={name} onChange={e => setName(e.target.value)} />
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <label className="text-[16px] font-medium text-[#494949]">가입 유형</label>
+                <div className="flex gap-4">
+                  {(['patient', 'interpreter'] as AccountType[]).map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setAccountType(t)}
+                      className={`flex-1 rounded-[20px] border p-4 text-left transition-all ${
+                        accountType === t
+                          ? t === 'patient' ? 'border-[#2592FF] bg-[#F3F9FF]' : 'border-[#30C100] bg-[#F3FFF0]'
+                          : 'border-[#EEEEEE] bg-white'
+                      }`}
+                    >
+                      <p className={`text-[15px] font-semibold ${accountType === t ? (t === 'patient' ? 'text-[#2592FF]' : 'text-[#30C100]') : 'text-[#161616]'}`}>
+                        {t === 'patient' ? '이주민' : '통번역가'}
+                      </p>
+                      <p className="text-[13px] text-[#808080] mt-1">
+                        {t === 'patient' ? '내 진료 기록 확인' : '진료 동행 기록 작성'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Step 12: 센터 + 국적/비자 */}
+        {step === 12 && (
+          <div className="px-4 pt-6 pb-4">
+            <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
+              추가 정보를<br />설정해주세요
+            </h1>
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-2.5">
+                <label className="text-[16px] font-medium text-[#494949]">담당 센터</label>
+                <CenterSearchSelect
+                  valueName={centerName}
+                  placeholder="담당 센터를 선택해주세요"
+                  onSelect={c => { setCenterId(c.id); setCenterName(c.name) }}
+                />
+              </div>
+              {accountType === 'patient' && (
+                <>
+                  <div className="flex flex-col gap-2.5">
+                    <label className="text-[16px] font-medium text-[#494949]">성별</label>
+                    <select className={`${inputCls} appearance-none`} value={gender} onChange={e => setGender(e.target.value as Gender)}>
+                      {GENDERS.map(g => <option key={g} value={g}>{labels.gender[g]}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <label className="text-[16px] font-medium text-[#494949]">국적</label>
+                    <select className={`${inputCls} appearance-none`} value={nationality} onChange={e => setNationality(e.target.value as Nationality)}>
+                      {NATIONALITIES.map(n => <option key={n} value={n}>{labels.nationality[n]}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <label className="text-[16px] font-medium text-[#494949]">비자</label>
+                    <select className={`${inputCls} appearance-none`} value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
+                      {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
+              {error && <p className="text-red-500 text-sm">{error}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Step 13: 전화번호 가입 완료 */}
+        {step === 13 && (
+          <div className="flex flex-col items-center justify-center flex-1 min-h-[calc(100vh-66px-113px)] pb-8">
+            <CompletionMark />
+            <p className="text-[24px] font-semibold text-[#161616] mt-8">가입이 완료되었습니다</p>
+          </div>
+        )}
       </div>
 
       {/* ── Bottom bar ─────────────────────────────────────────────────────── */}
@@ -413,7 +732,7 @@ export default function SignupPage() {
           </button>
           <button
             type="button"
-            onClick={isLastFormStep ? handleSubmit : next}
+            onClick={step === 12 ? handlePhoneSignup : (isLastFormStep ? handleSubmit : next)}
             disabled={loading}
             className="flex-1 h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold disabled:opacity-40 hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
           >
@@ -422,7 +741,7 @@ export default function SignupPage() {
         </div>
       )}
 
-      {step === 5 && (
+      {(step === 5 || step === 13) && (
         <div className="border-t border-[#EEEEEE] px-6 pt-6 pb-8 shrink-0 bg-white">
           <button
             type="button"

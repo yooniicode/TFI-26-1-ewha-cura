@@ -65,4 +65,15 @@ export const authApi = {
   members:         () => get('/auth/members', schemas.members),
   updateMemberRole: (authUserId: string, body: UpdateMemberRoleRequest) =>
     patch(`/auth/members/${authUserId}/role`, body, schemas.member),
+  phoneRequest:    (phone: string) =>
+    post<{ receiveNumber: string; code: string }>('/auth/phone/request', { phone }),
+  phoneVerify:     (phone: string, code: string) =>
+    post<{ verified: boolean }>('/auth/phone/verify', { phone, code }),
+  phoneLogin:      (phone: string, code: string) =>
+    post<{ exists: boolean; token: string | null; me: TokenMe['me'] | null }>('/auth/phone/login', { phone, code }),
+  phoneSignup:     (body: {
+    phone: string; name: string; role: string;
+    gender?: string; nationality?: string; visaType?: string;
+    centerId?: string; centerName?: string;
+  }) => post<TokenMe>('/auth/phone/signup', body),
 }

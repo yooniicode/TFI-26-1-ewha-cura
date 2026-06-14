@@ -44,4 +44,14 @@ public class AuthResponse {
             String token,
             Me me
     ) {}
+
+    public record PhoneVerification(
+            String receiveNumber,
+            String code
+    ) {}
+
+    public record PhoneVerified(boolean verified) {}
+
+    /** /auth/phone/login 응답 — exists=true 면 token/me 포함, false 면 둘 다 null */
+    public record PhoneLoginResult(boolean exists, String token, Me me) {}
 }

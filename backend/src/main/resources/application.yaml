@@ -97,6 +97,11 @@ byby:
   google:
     service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
 
+  octomo:
+    api-key: ${OCTOMO_API_KEY:}
+    check-url: ${OCTOMO_CHECK_URL:https://api.octomo.kr/v1/message/exists}
+    receive-number: ${OCTOMO_RECEIVE_NUMBER:}
+
 ---
 spring:
   config:

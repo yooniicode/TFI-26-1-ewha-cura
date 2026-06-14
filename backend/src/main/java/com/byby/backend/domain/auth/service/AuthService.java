@@ -46,6 +46,7 @@ public class AuthService {
     private final CenterService centerService;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final PhoneVerificationStore phoneVerificationStore;
 
     @org.springframework.beans.factory.annotation.Value("${byby.admin.bootstrap-code:}")
     private String adminBootstrapCode;
@@ -170,6 +171,59 @@ public class AuthService {
         UserCredential cred = userCredentialRepository.findByAuthUserId(authUserId)
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
         cred.updateAvatarUrl(avatarUrl);
+    }
+
+    // ─── Phone-only login/signup ─────────────────────────────────────────────────
+
+    @Transactional
+    public AuthResponse.PhoneLoginResult loginByPhone(String phone) {
+        String syntheticEmail = toSyntheticEmail(phone);
+        Optional<UserCredential> credOpt = userCredentialRepository.findByEmail(syntheticEmail);
+        if (credOpt.isEmpty()) {
+            return new AuthResponse.PhoneLoginResult(false, null, null);
+        }
+        UserCredential cred = credOpt.get();
+        long sessionVersion = rotateSessionVersion(cred.getAuthUserId());
+        String token = jwtUtil.generate(cred.getAuthUserId(), cred.getRequestedRole(), sessionVersion);
+        AuthResponse.Me me = getMe(new UserPrincipal(cred.getAuthUserId(), cred.getRequestedRole()));
+        return new AuthResponse.PhoneLoginResult(true, token, me);
+    }
+
+    @Transactional
+    public AuthResponse.TokenMe phoneSignup(AuthRequest.PhoneSignup req) {
+        if (!phoneVerificationStore.consumeVerified(req.phone())) {
+            throw new GeneralException(GeneralErrorCode.UNAUTHORIZED, "휴대폰 인증이 필요합니다");
+        }
+        String syntheticEmail = toSyntheticEmail(req.phone());
+        if (userCredentialRepository.existsByEmail(syntheticEmail)) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 가입된 전화번호입니다");
+        }
+
+        UserRole role = req.role() != null ? req.role() : UserRole.patient;
+        UUID authUserId = UUID.randomUUID();
+        UserCredential cred = UserCredential.builder()
+                .email(syntheticEmail)
+                .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
+                .authUserId(authUserId)
+                .requestedRole(role)
+                .build();
+        userCredentialRepository.save(cred);
+
+        UserPrincipal principal = new UserPrincipal(authUserId, role);
+        AuthRequest.RegisterProfile profileReq = new AuthRequest.RegisterProfile(
+                req.name(), role, req.nationality(), req.gender(), req.visaType(),
+                null, req.phone(), null,
+                role == UserRole.interpreter ? com.byby.backend.common.enums.InterpreterRole.ACTIVIST : null,
+                req.centerId(), req.centerName(), null, null
+        );
+        registerProfile(profileReq, principal);
+
+        String token = jwtUtil.generate(authUserId, role, cred.getSessionVersion());
+        return new AuthResponse.TokenMe(token, getMe(principal));
+    }
+
+    private String toSyntheticEmail(String phone) {
+        return "ph_" + phone.replaceAll("[^0-9]", "") + "@phone.cura.local";
     }
 
     // ─── Email exists ────────────────────────────────────────────────────────────

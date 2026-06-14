@@ -9,6 +9,7 @@ import com.byby.backend.domain.auth.dto.AuthRequest;
 import com.byby.backend.domain.auth.dto.AuthResponse;
 import com.byby.backend.domain.auth.service.AuthService;
 import com.byby.backend.domain.auth.service.KakaoOAuthService;
+import com.byby.backend.domain.auth.service.OctomoVerificationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,6 +27,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final KakaoOAuthService kakaoOAuthService;
+    private final OctomoVerificationService octomoVerificationService;
 
     @PostMapping("/login")
     @Operation(summary = "이메일/비밀번호 로그인")
@@ -156,6 +158,44 @@ public class AuthController {
         if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
         authService.deleteAccount(principal.getAuthUserId());
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
+    }
+
+    @PostMapping("/phone/request")
+    @Operation(summary = "휴대폰 인증 코드 발급", description = "6자리 코드를 발급하고 OCTOMO 수신 번호를 반환합니다. 코드 유효시간 10분.")
+    public ResponseEntity<Response<AuthResponse.PhoneVerification>> phoneRequest(
+            @Valid @RequestBody AuthRequest.PhoneRequest req) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK,
+                octomoVerificationService.requestCode(req.phone())));
+    }
+
+    @PostMapping("/phone/verify")
+    @Operation(summary = "휴대폰 인증 확인 (이메일 가입 플로우용)", description = "OCTOMO API로 해당 번호가 코드를 전송했는지 확인합니다.")
+    public ResponseEntity<Response<AuthResponse.PhoneVerified>> phoneVerify(
+            @Valid @RequestBody AuthRequest.PhoneVerify req) {
+        boolean verified = octomoVerificationService.verifyCode(req.phone(), req.code());
+        return ResponseEntity.ok(Response.success(SuccessCode.OK,
+                new AuthResponse.PhoneVerified(verified)));
+    }
+
+    @PostMapping("/phone/login")
+    @Operation(summary = "전화번호 로그인", description = "OCTOMO 인증 후 기존 계정이면 JWT 발급, 신규면 exists=false 반환 (5분 내 /phone/signup 호출 가능).")
+    public ResponseEntity<Response<AuthResponse.PhoneLoginResult>> phoneLogin(
+            @Valid @RequestBody AuthRequest.PhoneVerify req) {
+        boolean verified = octomoVerificationService.verifyCode(req.phone(), req.code());
+        if (!verified) {
+            throw new com.byby.backend.common.exception.GeneralException(
+                    com.byby.backend.common.response.code.GeneralErrorCode.UNAUTHORIZED,
+                    "인증에 실패했습니다. 문자를 보낸 후 다시 시도해주세요.");
+        }
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.loginByPhone(req.phone())));
+    }
+
+    @PostMapping("/phone/signup")
+    @Operation(summary = "전화번호 전용 회원가입", description = "/phone/login에서 exists=false 받은 후 5분 내 호출. 이름·역할·센터 정보 필요.")
+    public ResponseEntity<Response<AuthResponse.TokenMe>> phoneSignup(
+            @Valid @RequestBody AuthRequest.PhoneSignup req) {
+        return ResponseEntity.status(201).body(Response.success(SuccessCode.CREATED,
+                authService.phoneSignup(req)));
     }
 
 }
