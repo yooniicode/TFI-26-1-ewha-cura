@@ -5,18 +5,12 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.util.StringUtils;
 
 @Configuration
 public class OpenApiConfig {
-
-    @Value("${byby.server.url:}")
-    private String serverUrl;
 
     @Bean
     public OpenAPI openAPI() {
@@ -27,9 +21,6 @@ public class OpenApiConfig {
                         .description("이주민 의료 통번역 지원 시스템")
                         .version("v1"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName));
-        if (StringUtils.hasText(serverUrl)) {
-            openAPI.addServersItem(new Server().url(serverUrl).description("Production"));
-        }
 
         return openAPI
                 .addTagsItem(new Tag().name("Auth").description("인증/내 프로필 등록 API"))

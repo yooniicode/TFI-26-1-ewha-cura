@@ -93,7 +93,7 @@ export default function InterpretationRequestPage() {
 
       <PageHeader title={ti.title} />
 
-      <div className="bg-[#F5F5F5] px-4 py-4 pb-32 min-h-screen space-y-4">
+      <div className="bg-[#F5F5F5] px-4 py-4 pb-32 space-y-4">
 
         {/* 증상 키워드 */}
         <div className="bg-white rounded-2xl px-5 py-5">

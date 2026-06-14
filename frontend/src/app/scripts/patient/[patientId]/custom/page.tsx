@@ -178,7 +178,7 @@ export default function CustomScriptPage() {
     <AppShell noPadding>
       <PageHeader title={ui.custom_title} />
 
-      <div className="bg-[#F5F5F5] px-4 py-4 pb-36 min-h-screen">
+      <div className="bg-[#F5F5F5] px-4 py-4 pb-36">
         <p className="text-sm text-[#808080] mb-5 leading-relaxed">{ui.custom_subtitle}</p>
 
         {/* 복용 중인 약 칩 */}

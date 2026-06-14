@@ -17,12 +17,14 @@ import com.byby.backend.domain.patient.entity.Patient;
 import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -125,15 +127,29 @@ public class PatientMatchService {
         }
 
         // 이미 나와 활성 매칭이면 그대로 반환 (idempotent)
-        return patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())
-                .map(MatchResponse.Detail::from)
-                .orElseGet(() -> {
-                    PatientMatch newMatch = patientMatchRepository.saveAndFlush(PatientMatch.builder()
-                            .patient(patient)
-                            .interpreter(interpreter)
-                            .build());
-                    return MatchResponse.Detail.from(newMatch);
-                });
+        Optional<PatientMatch> myActiveMatch = patientMatchRepository
+                .findByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId());
+        if (myActiveMatch.isPresent()) {
+            return MatchResponse.Detail.from(myActiveMatch.get());
+        }
+
+        // 다른 통번역가가 이미 담당 중이면 충돌
+        if (patientMatchRepository.existsByPatientIdAndActiveTrue(patient.getId())) {
+            throw new BusinessException(BusinessErrorCode.MATCH_ALREADY_EXISTS);
+        }
+
+        try {
+            PatientMatch newMatch = patientMatchRepository.saveAndFlush(PatientMatch.builder()
+                    .patient(patient)
+                    .interpreter(interpreter)
+                    .build());
+            return MatchResponse.Detail.from(newMatch);
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청으로 인해 그 사이 다른 트랜잭션이 먼저 매칭을 생성한 경우
+            return patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(patient.getId(), interpreter.getId())
+                    .map(MatchResponse.Detail::from)
+                    .orElseThrow(() -> new BusinessException(BusinessErrorCode.MATCH_ALREADY_EXISTS));
+        }
     }
 
     public List<MatchResponse.Detail> getMyMatch(UserPrincipal principal) {

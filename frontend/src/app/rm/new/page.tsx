@@ -402,7 +402,7 @@ function RmMemoEditor({ patientId, cid }: { patientId: string; cid: string | nul
       </div>
 
       {/* 메모 입력 영역 */}
-      <div className="bg-[#f7f7f7] px-4 py-4 pb-28 min-h-screen">
+      <div className="bg-[#f7f7f7] px-4 py-4 pb-28">
         <div className="bg-white border border-[#eee] rounded-[8px] p-4 flex flex-col gap-3">
           <textarea
             className="w-full min-h-[394px] resize-none focus:outline-none text-[18px] text-[#161616] leading-relaxed placeholder:text-[#808080]"

@@ -26,6 +26,7 @@ public class ConsultationResponse {
             String createdByName,
             String hospitalName,
             IssueType issueType,
+            String workDescription,
             boolean confirmed,
             LocalDateTime createdAt,
             String patientAvatarUrl
@@ -43,7 +44,8 @@ public class ConsultationResponse {
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getInterpreter() != null ? c.getInterpreter().getName() : null,
                     c.getResolvedHospitalName(),
-                    c.getIssueType(), c.isConfirmed(), c.getCreatedAt(), patientAvatarUrl);
+                    c.getIssueType(), c.getWorkDescription(),
+                    c.isConfirmed(), c.getCreatedAt(), patientAvatarUrl);
         }
     }
 
