@@ -126,7 +126,7 @@ public class PatientService {
             }
         }
         
-        patient.updateInfo(req.name(), req.phone(), req.region(), req.visaNote(), req.visaType());
+        patient.updateInfo(req.name(), req.phone(), req.region(), req.visaNote(), req.visaType(), req.workplace());
         return PatientResponse.Detail.from(patient);
     }
 

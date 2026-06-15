@@ -58,8 +58,7 @@ public class CenterService {
         Center center = centerRepository.findById(id)
                 .orElseThrow(() -> new GeneralException(GeneralErrorCode.NOT_FOUND));
         if (principal != null) requireOwnCenterOrUnassigned(center, principal);
-        center.update(req.name().trim(), trimToNull(req.address()), trimToNull(req.phone()),
-                req.active() != null ? req.active() : true);
+        center.update(req.name().trim(), trimToNull(req.address()), trimToNull(req.phone()), req.active());
         return CenterResponse.Summary.from(center);
     }
 

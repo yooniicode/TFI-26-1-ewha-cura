@@ -51,13 +51,16 @@ public class Patient extends BaseEntity {
     @Column(length = 100)
     private String region;
 
+    @Column(length = 200)
+    private String workplace;
+
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<PatientCenter> patientCenters = new ArrayList<>();
 
     @Builder
     public Patient(UUID authUserId, String name, Nationality nationality, Gender gender,
                    VisaType visaType, String visaNote, LocalDate birthDate,
-                   String phone, String region) {
+                   String phone, String region, String workplace) {
         this.authUserId = authUserId;
         this.name = name;
         this.nationality = nationality;
@@ -67,14 +70,16 @@ public class Patient extends BaseEntity {
         this.birthDate = birthDate;
         this.phone = phone;
         this.region = region;
+        this.workplace = workplace;
     }
 
-    public void updateInfo(String name, String phone, String region, String visaNote, VisaType visaType) {
+    public void updateInfo(String name, String phone, String region, String visaNote, VisaType visaType, String workplace) {
         if (name != null) this.name = name;
         if (phone != null) this.phone = phone;
         if (region != null) this.region = region;
         if (visaNote != null) this.visaNote = visaNote;
         if (visaType != null) this.visaType = visaType;
+        if (workplace != null) this.workplace = workplace;
     }
 
     public void linkAuthUser(UUID authUserId) {

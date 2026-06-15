@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
@@ -15,7 +15,11 @@ const inputCls =
 
 export default function LoginPage() {
   const router = useRouter()
-  const [method, setMethod] = useState<Method>('email')
+  const searchParams = useSearchParams()
+  const [method, setMethod] = useState<Method>(() => {
+    const m = searchParams.get('method')
+    return m === 'phone' ? 'phone' : 'email'
+  })
 
   // 이메일 로그인
   const [email, setEmail] = useState('')

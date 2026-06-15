@@ -40,9 +40,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(GeneralException.class)
     public ResponseEntity<Response<Void>> handleGeneralException(GeneralException e) {
         GeneralErrorCode errorCode = e.getErrorCode();
-        log.warn("GeneralException: {} - {}", errorCode.name(), e.getMessage());
+        String message = e.getMessage();
+        log.warn("GeneralException: {} - {}", errorCode.name(), message);
 
-        return ResponseEntity.status(errorCode.getStatusCode()).body(Response.fail(errorCode));
+        String responseMessage = (message != null && !message.equals(errorCode.getMessage()))
+                ? message : errorCode.getMessage();
+        return ResponseEntity.status(errorCode.getStatusCode()).body(Response.fail(errorCode, responseMessage));
     }
 
     @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class, AuthenticationException.class})

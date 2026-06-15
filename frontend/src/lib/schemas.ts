@@ -85,6 +85,7 @@ export const consultationSchema = z.object({
   patientGender:       genderSchema.nullable().optional().transform(v => v ?? undefined),
   patientVisaType:     visaTypeSchema.nullable().optional().transform(v => v ?? undefined),
   patientRegion:       nullableString,
+  patientWorkplace:    nullableString,
   patientPhone:        nullableString,
   interpreterId:       nullableUuid,
   interpreterName:     nullableString,

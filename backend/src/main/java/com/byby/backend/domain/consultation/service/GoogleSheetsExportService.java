@@ -58,7 +58,7 @@ public class GoogleSheetsExportService {
      * @return url + spreadsheetId (신규 생성 시 spreadsheetId를 DB에 저장해야 함)
      */
     public ExportResult createSheet(String title, String centerName, String existingSpreadsheetId,
-                                    List<ConsultationResponse.Summary> rows) {
+                                    List<ConsultationResponse.Detail> rows) {
         if (!StringUtils.hasText(serviceAccountJson)) {
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
                     "GOOGLE_SERVICE_ACCOUNT_JSON 이 설정되지 않았습니다");
@@ -161,7 +161,7 @@ public class GoogleSheetsExportService {
     }
 
     private String appendSheetToExistingSpreadsheet(String accessToken, String spreadsheetId, String title,
-                                                    List<ConsultationResponse.Summary> rows) {
+                                                    List<ConsultationResponse.Detail> rows) {
         String sheetTitle = buildExportSheetTitle(title);
         int sheetId = addSheet(accessToken, spreadsheetId, sheetTitle);
         writeRows(accessToken, spreadsheetId, sheetTitle, rows);
@@ -204,24 +204,40 @@ public class GoogleSheetsExportService {
     }
 
     private void writeRows(String accessToken, String spreadsheetId, String sheetTitle,
-                           List<ConsultationResponse.Summary> rows) {
+                           List<ConsultationResponse.Detail> rows) {
         try {
             ArrayNode values = objectMapper.createArrayNode();
 
             ArrayNode header = objectMapper.createArrayNode();
-            for (String h : new String[]{"ID", "상담일", "이주민", "통번역가", "병원", "이슈유형", "확인여부", "작성일"}) {
+            for (String h : new String[]{
+                    "ID", "상담일", "이주민 이름", "환자 생년월일", "국적", "성별", "비자",
+                    "사업장명", "지역", "통번역가", "병원", "이슈유형", "방법",
+                    "상담자 이름", "상담 내용", "처방/약물", "치료 결과",
+                    "다음 예약일정", "확인여부", "작성일"}) {
                 header.add(h);
             }
             values.add(header);
 
-            for (ConsultationResponse.Summary s : rows) {
+            for (ConsultationResponse.Detail s : rows) {
                 ArrayNode row = objectMapper.createArrayNode();
                 row.add(s.id().toString());
                 row.add(s.consultationDate() != null ? s.consultationDate().toString() : "");
                 row.add(s.patientName() != null ? s.patientName() : "");
+                row.add(s.patientBirthDate() != null ? s.patientBirthDate().toString() : "");
+                row.add(s.patientNationality() != null ? s.patientNationality().name() : "");
+                row.add(s.patientGender() != null ? s.patientGender().name() : "");
+                row.add(s.patientVisaType() != null ? s.patientVisaType().name() : "");
+                row.add(s.patientWorkplace() != null ? s.patientWorkplace() : "");
+                row.add(s.patientRegion() != null ? s.patientRegion() : "");
                 row.add(s.interpreterName() != null ? s.interpreterName() : "");
                 row.add(s.hospitalName() != null ? s.hospitalName() : "");
                 row.add(s.issueType() != null ? s.issueType().name() : "");
+                row.add(s.method() != null ? s.method().getLabel() : "출장/동행");
+                row.add(s.counselorName() != null ? s.counselorName() : "");
+                row.add(s.diagnosisContent() != null ? s.diagnosisContent() : "");
+                row.add(s.medicationInstruction() != null ? s.medicationInstruction() : "");
+                row.add(s.treatmentResult() != null ? s.treatmentResult() : "");
+                row.add(s.nextAppointmentDate() != null ? s.nextAppointmentDate().toString() : "");
                 row.add(s.confirmed() ? "확인" : "미확인");
                 row.add(s.createdAt() != null ? s.createdAt().toString() : "");
                 values.add(row);
@@ -252,6 +268,55 @@ public class GoogleSheetsExportService {
         } catch (Exception e) {
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
                     "Google 시트 데이터 입력 실패: " + e.getMessage());
+        }
+    }
+
+    public void overwriteMonthlyTab(String spreadsheetId, String centerName, List<ConsultationResponse.Detail> rows) {
+        String token = fetchAccessToken();
+        String tabTitle = centerName + " 상담 데이터";
+
+        Integer existingSheetId = findSheetIdByTitle(token, spreadsheetId, tabTitle);
+        if (existingSheetId != null) {
+            clearSheetContent(token, spreadsheetId, tabTitle);
+        } else {
+            addSheet(token, spreadsheetId, tabTitle);
+        }
+        writeRows(token, spreadsheetId, tabTitle, rows);
+    }
+
+    private Integer findSheetIdByTitle(String accessToken, String spreadsheetId, String title) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(SHEETS_API + "/" + spreadsheetId + "?fields=sheets.properties"))
+                    .header("Authorization", "Bearer " + accessToken)
+                    .GET().build();
+            HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() >= 300) return null;
+            for (JsonNode sheet : objectMapper.readTree(res.body()).path("sheets")) {
+                if (title.equals(sheet.path("properties").path("title").asText(null))) {
+                    return sheet.path("properties").path("sheetId").asInt();
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            log.warn("시트 탭 조회 실패 (무시): {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void clearSheetContent(String accessToken, String spreadsheetId, String sheetTitle) {
+        try {
+            String range = URLEncoder.encode(quoteSheetName(sheetTitle) + "!A1:ZZ100000", StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(SHEETS_API + "/" + spreadsheetId + "/values/" + range + ":clear"))
+                    .header("Authorization", "Bearer " + accessToken)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString("{}"))
+                    .build();
+            httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            log.warn("시트 내용 초기화 실패 (무시): {}", e.getMessage());
         }
     }
 

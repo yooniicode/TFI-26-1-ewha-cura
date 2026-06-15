@@ -30,6 +30,7 @@ public class PatientRequest {
             VisaType visaType,
             String visaNote,
             String phone,
-            String region
+            String region,
+            String workplace
     ) {}
 }

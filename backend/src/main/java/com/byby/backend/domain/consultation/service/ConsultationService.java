@@ -62,7 +62,7 @@ public class ConsultationService {
             UUID centerId,
             String centerName,
             String existingSpreadsheetId,
-            List<ConsultationResponse.Summary> rows
+            List<ConsultationResponse.Detail> rows
     ) {}
 
     @Transactional
@@ -293,8 +293,8 @@ public class ConsultationService {
         Pageable all = PageRequest.of(0, 5000);
         if (principal.isAdmin()) {
             Center center = adminService.getAdminCenter(principal);
-            List<ConsultationResponse.Summary> rows = consultationRepository.searchByCenter(center.getId(), null, all)
-                    .map(ConsultationResponse.Summary::from).getContent();
+            List<ConsultationResponse.Detail> rows = consultationRepository.searchByCenter(center.getId(), null, all)
+                    .map(ConsultationResponse.Detail::from).getContent();
             return new ExportData(center.getId(), center.getName(), center.getSpreadsheetId(), rows);
         }
         if (principal.isInterpreter()) {
@@ -305,11 +305,18 @@ public class ConsultationService {
                         "통번역가의 센터 정보가 없어 export 대상 스프레드시트를 결정할 수 없습니다");
             }
             Center center = interpreter.getCenter();
-            List<ConsultationResponse.Summary> rows = consultationRepository.searchByInterpreter(interpreter.getId(), null, all)
-                    .map(ConsultationResponse.Summary::from).getContent();
+            List<ConsultationResponse.Detail> rows = consultationRepository.searchByInterpreter(interpreter.getId(), null, all)
+                    .map(ConsultationResponse.Detail::from).getContent();
             return new ExportData(center.getId(), center.getName(), center.getSpreadsheetId(), rows);
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConsultationResponse.Detail> getDetailsByCenter(UUID centerId) {
+        Pageable all = PageRequest.of(0, 50000);
+        return consultationRepository.searchByCenter(centerId, null, all)
+                .map(ConsultationResponse.Detail::from).getContent();
     }
 
     @Transactional

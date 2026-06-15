@@ -3,10 +3,20 @@
 import Link from 'next/link'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
-export const NATIONALITY_FLAG: Record<string, string> = {
-  KOREA: '/icons/common/flag/flag_KR.svg',
+export const NATIONALITY_FLAG: Partial<Record<string, string>> = {
+  KOREA:         '/icons/common/flag/flag_KR.svg',
   UNITED_STATES: '/icons/common/flag/flag_US.svg',
-  VIETNAM: '/icons/common/flag/flag_VT.svg',
+  VIETNAM:       '/icons/common/flag/flag_VN.svg',
+  CHINA:         '/icons/common/flag/flag_CN.svg',
+  CAMBODIA:      '/icons/common/flag/flag_KH.svg',
+  MYANMAR:       '/icons/common/flag/flag_MM.svg',
+  THAILAND:      '/icons/common/flag/flag_TH.svg',
+  NEPAL:         '/icons/common/flag/flag_NP.svg',
+  MONGOLIA:      '/icons/common/flag/flag_MN.svg',
+  UZBEKISTAN:    '/icons/common/flag/flag_UZ.svg',
+  SRI_LANKA:     '/icons/common/flag/flag_LK.svg',
+  BANGLADESH:    '/icons/common/flag/flag_BD.svg',
+  PAKISTAN:      '/icons/common/flag/flag_PK.svg',
 }
 
 export function getFlagSrc(nationality?: string | null): string | undefined {

@@ -78,13 +78,20 @@ export default function SplashPage() {
 
       {/* Bottom buttons */}
       <div className="px-4 pb-10 flex flex-col gap-5">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           <button
             type="button"
-            onClick={() => router.push('/login')}
+            onClick={() => router.push('/login?method=email')}
             className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
           >
             이메일로 로그인
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/login?method=phone')}
+            className="w-full h-[60px] bg-white border-2 border-[#2592FF] rounded-lg text-[#2592FF] text-[18px] font-semibold hover:bg-[#f0f7ff] active:bg-[#e0efff] transition-colors"
+          >
+            전화번호로 로그인
           </button>
           <button
             type="button"

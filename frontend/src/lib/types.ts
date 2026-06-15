@@ -130,6 +130,7 @@ export interface Consultation {
   patientGender?: Gender
   patientVisaType?: VisaType
   patientRegion?: string
+  patientWorkplace?: string
   patientPhone?: string
   interpreterId?: string
   interpreterName?: string

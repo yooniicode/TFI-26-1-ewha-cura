@@ -9,6 +9,7 @@ import Spinner from '@/components/ui/Spinner'
 import { consultationApi, patientApi } from '@/lib/api'
 import { ISSUE_LABEL, NATIONALITY_LABEL, VISA_LABEL, type Consultation, type Patient } from '@/lib/types'
 import { ConsultationCard } from '@/components/consultation'
+import { NATIONALITY_FLAG } from '@/components/patient/PatientInfoBar'
 
 /* ── 유틸 ─────────────────────────────────────────── */
 function calcAge(birthDate?: string | null): string {
@@ -44,9 +45,6 @@ function isToday(dateStr: string): boolean {
   return dateStr === today
 }
 
-const NATIONALITY_FLAG: Partial<Record<string, string>> = {
-  VIETNAM: '/icons/베트남국기.svg',
-}
 
 /* ── 엔트리 ───────────────────────────────────────── */
 export default function PatientProfilePage() {

@@ -31,6 +31,7 @@ public class AuthRequest {
             String visaNote,
             String phone,
             String region,
+            String workplace,
             InterpreterRole interpreterRole,
             UUID centerId,
             String centerName,
@@ -47,6 +48,7 @@ public class AuthRequest {
             String visaNote,
             String phone,
             String region,
+            String workplace,
             InterpreterRole interpreterRole,
             UUID centerId,
             String centerName,
@@ -97,6 +99,7 @@ public class AuthRequest {
             Gender gender,
             Nationality nationality,
             VisaType visaType,
+            String workplace,
             UUID centerId,
             String centerName
     ) {}

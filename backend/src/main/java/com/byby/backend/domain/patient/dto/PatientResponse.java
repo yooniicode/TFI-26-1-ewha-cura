@@ -69,6 +69,7 @@ public class PatientResponse {
             LocalDate birthDate,
             String phone,
             String region,
+            String workplace,
             List<CenterResponse.Summary> centers,
             boolean accountLinked,
             LocalDateTime createdAt,
@@ -85,7 +86,7 @@ public class PatientResponse {
                     .toList();
             return new Detail(p.getId(), p.getName(), p.getNationality(), p.getGender(),
                     p.getVisaType(), p.getVisaNote(), p.getBirthDate(), p.getPhone(),
-                    p.getRegion(), centerList, p.getAuthUserId() != null,
+                    p.getRegion(), p.getWorkplace(), centerList, p.getAuthUserId() != null,
                     p.getCreatedAt(), p.getUpdatedAt(), avatarUrl);
         }
     }

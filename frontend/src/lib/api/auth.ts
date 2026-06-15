@@ -74,6 +74,6 @@ export const authApi = {
   phoneSignup:     (body: {
     phone: string; name: string; role: string;
     gender?: string; nationality?: string; visaType?: string;
-    centerId?: string; centerName?: string;
+    workplace?: string; centerId?: string; centerName?: string;
   }) => post<TokenMe>('/auth/phone/signup', body),
 }

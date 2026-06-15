@@ -38,7 +38,7 @@ public class CenterRequest {
             String spreadsheetId
     ) {
         public Upsert toUpsert() {
-            return new Upsert(name, address, phone, active != null ? active : true);
+            return new Upsert(name, address, phone, active);
         }
     }
 }

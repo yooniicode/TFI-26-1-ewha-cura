@@ -1,4 +1,4 @@
-package com.byby.backend.common.config;
+package com.byby.backend.common.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

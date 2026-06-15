@@ -79,6 +79,7 @@ export default function SignupPage() {
   const [centerName, setCenterName] = useState('')
   const [nationality, setNationality] = useState<Nationality>('OTHER')
   const [visaType, setVisaType] = useState<VisaType>('OTHER')
+  const [workplace, setWorkplace] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -201,7 +202,7 @@ export default function SignupPage() {
         role: accountType!,
         centerId: centerId || undefined,
         centerName: centerName.trim() || undefined,
-        ...(accountType === 'patient' ? { nationality, gender, visaType } : {}),
+        ...(accountType === 'patient' ? { nationality, gender, visaType, workplace: workplace.trim() || undefined } : {}),
       })
       if (res.payload?.token) setAccessToken(res.payload.token)
       setStep(13)
@@ -703,6 +704,15 @@ export default function SignupPage() {
                     <select className={`${inputCls} appearance-none`} value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
                       {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
                     </select>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <label className="text-[16px] font-medium text-[#494949]">사업장명 <span className="text-[#999] font-normal text-[14px]">(선택)</span></label>
+                    <input
+                      className={inputCls}
+                      placeholder="근무 중인 직장 이름"
+                      value={workplace}
+                      onChange={e => setWorkplace(e.target.value)}
+                    />
                   </div>
                 </>
               )}

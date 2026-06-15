@@ -111,4 +111,12 @@ public class Response<T> {
                 .message(code.getMessage())
                 .build();
     }
+
+    public static <T> Response<T> fail(Code code, String message) {
+        return Response.<T>builder()
+                .statusCode(code.getStatusCode())
+                .isSuccess(false)
+                .message(message)
+                .build();
+    }
 }
