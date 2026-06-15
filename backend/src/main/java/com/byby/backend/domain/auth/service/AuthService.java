@@ -102,7 +102,7 @@ public class AuthService {
 
         AuthRequest.RegisterProfile profileReq = new AuthRequest.RegisterProfile(
                 req.name(), role, req.nationality(), req.gender(), req.visaType(),
-                req.visaNote(), req.phone(), req.region(), req.workplace(), req.interpreterRole(),
+                req.visaNote(), req.birthDate(), req.phone(), req.region(), req.workplace(), req.interpreterRole(),
                 req.centerId(), req.centerName(), req.languages(), req.availabilityNote()
         );
         registerProfile(profileReq, principal);
@@ -212,7 +212,7 @@ public class AuthService {
         UserPrincipal principal = new UserPrincipal(authUserId, role);
         AuthRequest.RegisterProfile profileReq = new AuthRequest.RegisterProfile(
                 req.name(), role, req.nationality(), req.gender(), req.visaType(),
-                null, req.phone(), null, req.workplace(),
+                null, req.birthDate(), req.phone(), null, req.workplace(),
                 role == UserRole.interpreter ? com.byby.backend.common.enums.InterpreterRole.ACTIVIST : null,
                 req.centerId(), req.centerName(), null, null
         );
@@ -386,6 +386,7 @@ public class AuthService {
                 .gender(req.gender())
                 .visaType(req.visaType())
                 .visaNote(req.visaNote())
+                .birthDate(req.birthDate())
                 .phone(req.phone())
                 .region(req.region())
                 .workplace(req.workplace())

@@ -45,7 +45,9 @@ export default function MyRecordDetailPage() {
               department: found.department,
               patientComment: found.patientComment,
               diagnosisNameCode: found.diagnosisNameCode,
-              diagnosisContent: found.diagnosisContent,
+              diagnosisContent: found.translationLang && found.translationLang !== 'ko'
+                ? (found.translatedDiagnosisContent ?? found.diagnosisContent)
+                : found.diagnosisContent,
             }),
           })
             .then(res => res.json())
@@ -95,6 +97,15 @@ export default function MyRecordDetailPage() {
   const bodyImage = bodyPart ? bodyPartImagePath(bodyPart) : bodyPartImagePath(getBodyPartKey(record))
   const hospitalDisplay = [record.hospitalName, record.department].filter(Boolean).join(' ')
 
+  // 구모드(translationLang = "vi" 등): content*=한국어, translated*=모국어 → translated* 표시
+  // 신모드(translationLang = "ko"): content*=모국어, translated*=한국어 → content* 표시
+  // 무번역(translationLang = null): content*=원본 그대로 표시
+  const useTranslated = !!record.translationLang && record.translationLang !== 'ko'
+  const displayTreatmentResult = useTranslated ? (record.translatedTreatmentResult ?? record.treatmentResult) : record.treatmentResult
+  const displayPatientComment  = useTranslated ? (record.translatedPatientComment  ?? record.patientComment)  : record.patientComment
+  const displayDiagnosisContent = useTranslated ? (record.translatedDiagnosisContent ?? record.diagnosisContent) : record.diagnosisContent
+  const displayMedication = useTranslated ? (record.translatedMedicationInstruction ?? record.medicationInstruction) : record.medicationInstruction
+
   return (
     <AppShell noPadding>
       <PageHeader title={t.medical_record.detail_title} />
@@ -124,29 +135,29 @@ export default function MyRecordDetailPage() {
 
           {/* 내용 섹션 */}
           <div className="flex flex-col gap-4">
-            {record.treatmentResult && (
+            {displayTreatmentResult && (
               <div className="bg-[#f3f9ff] rounded-[16px] px-3 py-2">
                 <p className="text-[16px] font-medium text-[#2592ff] leading-[1.4]">
-                  {record.treatmentResult}
+                  {displayTreatmentResult}
                 </p>
               </div>
             )}
-            {record.patientComment && (
+            {displayPatientComment && (
               <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">증상</p>
-                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.patientComment}</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{displayPatientComment}</p>
               </div>
             )}
-            {record.diagnosisContent && (
+            {displayDiagnosisContent && (
               <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">진단</p>
-                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.diagnosisContent}</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{displayDiagnosisContent}</p>
               </div>
             )}
-            {record.medicationInstruction && (
+            {displayMedication && (
               <div className="flex flex-col gap-0.5">
                 <p className="text-[14px] font-medium text-[#808080] leading-[1.4]">약 처방</p>
-                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{record.medicationInstruction}</p>
+                <p className="text-[16px] font-medium text-[#494949] leading-[1.4]">{displayMedication}</p>
               </div>
             )}
           </div>

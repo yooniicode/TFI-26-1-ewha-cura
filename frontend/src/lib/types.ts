@@ -152,10 +152,17 @@ export interface Consultation {
   workDescription?: string
   memoCompleted: boolean
   reportCompleted: boolean
+  translationLang?: string
+  translatedPatientComment?: string
+  translatedDiagnosisContent?: string
+  translatedTreatmentResult?: string
+  translatedMedicationInstruction?: string
+  translatedDiagnosisNameCode?: string
   doctorConfirmationSignature?: string
   durationHours?: number
   fee?: number
   nextAppointmentDate?: string
+  nextAppointmentTime?: string
   confirmedAt?: string
   confirmedBy?: string
   confirmedByPhone?: string

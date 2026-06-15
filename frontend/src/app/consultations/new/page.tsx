@@ -61,20 +61,23 @@ function ReportWriteInner() {
   const [diagnosisNameCode, setDiagnosisNameCode] = useState('')
   const [diagnosisContent, setDiagnosisContent] = useState('')
   const [treatmentResult, setTreatmentResult] = useState('')
-  // Step 4
+  // Step 4 (merged with step 3 — shown on same scrollable screen)
   const [medicationInstruction, setMedicationInstruction] = useState('')
   const [nextAppointmentDate, setNextAppointmentDate] = useState('')
+  const [nextAppointmentTime, setNextAppointmentTime] = useState('')
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [aiParsing, setAiParsing] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // 메모에서 온 경우 step 1 건너뜀
+  // 메모에서 온 경우 step 1 건너뜀; 5번+6번을 하나의 스크린으로 합침
   const fromMemo = !!rmCid
-  const TOTAL_STEPS = fromMemo ? 3 : 4
-  // step 숫자 매핑: fromMemo → 4~6, 처음부터 → 3~6
-  const stepLabel = fromMemo ? step + 3 : step + 2
+  const TOTAL_STEPS = fromMemo ? 2 : 3
+  const isLastStep = step === TOTAL_STEPS
+  // 스텝 인디케이터 매핑: fromMemo → 4,5~6 / 처음부터 → 3,4,5~6
+  const stepLabelLow = fromMemo ? step + 3 : step + 2
+  const stepLabelHigh = isLastStep ? 6 : stepLabelLow
 
   function applyParsedFields(fields: Record<string, string>) {
     if (fields.diagnosisNameCode) setDiagnosisNameCode(fields.diagnosisNameCode)
@@ -84,6 +87,9 @@ function ReportWriteInner() {
     // YYYY-MM-DD 형식만 허용 (AI가 "6개월 후" 같은 비날짜 문자열을 반환하면 NaN 버그 발생)
     if (fields.nextAppointmentDate && /^\d{4}-\d{2}-\d{2}$/.test(fields.nextAppointmentDate)) {
       setNextAppointmentDate(fields.nextAppointmentDate)
+    }
+    if (fields.nextAppointmentTime && /^\d{2}:\d{2}$/.test(fields.nextAppointmentTime)) {
+      setNextAppointmentTime(fields.nextAppointmentTime)
     }
     if (fields.department) setDepartment(fields.department)
     if (fields.hospitalName) setHospitalName(fields.hospitalName)
@@ -199,6 +205,7 @@ function ReportWriteInner() {
           diagnosisNameCode: diagnosisNameCode || rmConsultation.diagnosisNameCode || '',
           medicationInstruction: medicationInstruction || '',
           nextAppointmentDate: /^\d{4}-\d{2}-\d{2}$/.test(nextAppointmentDate) ? nextAppointmentDate : null,
+          nextAppointmentTime: nextAppointmentTime || null,
           counselorName: rmConsultation.counselorName || '',
           durationHours: rmConsultation.durationHours ?? null,
           fee: rmConsultation.fee ?? null,
@@ -220,6 +227,7 @@ function ReportWriteInner() {
           treatmentResult: treatmentResult || undefined,
           medicationInstruction: medicationInstruction || undefined,
           nextAppointmentDate: /^\d{4}-\d{2}-\d{2}$/.test(nextAppointmentDate) ? nextAppointmentDate : undefined,
+          nextAppointmentTime: nextAppointmentTime || undefined,
           department: department || undefined,
           hospitalName: hospitalName || undefined,
         })
@@ -306,16 +314,16 @@ function ReportWriteInner() {
       <div className="bg-white px-4 pt-4 pb-5">
         <div className="flex gap-2">
           {Array.from({ length: 6 }, (_, i) => i + 1).map(n => {
-            const done = n < stepLabel
-            const active = n === stepLabel
+            const isDone = n < stepLabelLow
+            const isActive = n >= stepLabelLow && n <= stepLabelHigh
             return (
               <div
                 key={n}
                 className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
-                  active ? 'bg-[#2592FF] text-white' : done ? 'bg-[#f3f9ff]' : 'bg-[#F7F7F7] text-[#808080]'
+                  isActive ? 'bg-[#2592FF] text-white' : isDone ? 'bg-[#f3f9ff]' : 'bg-[#F7F7F7] text-[#808080]'
                 }`}
               >
-                {done ? (
+                {isDone ? (
                   <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
                     <path d="M1 4.5L4.5 8L11 1" stroke="#2592FF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
@@ -345,27 +353,30 @@ function ReportWriteInner() {
             onDepartmentChange={setDepartment}
           />
         )}
-        {(fromMemo ? step === 2 : step === 3) && (
-          <StepDiagnosis
-            patientComment={patientComment}
-            diagnosisNameCode={diagnosisNameCode}
-            diagnosisContent={diagnosisContent}
-            treatmentResult={treatmentResult}
-            fromMemo={fromMemo}
-            onPatientCommentChange={setPatientComment}
-            onDiagnosisNameCodeChange={setDiagnosisNameCode}
-            onDiagnosisChange={setDiagnosisContent}
-            onTreatmentChange={setTreatmentResult}
-          />
-        )}
-        {(fromMemo ? step === 3 : step === 4) && (
-          <StepMedication
-            medicationInstruction={medicationInstruction}
-            nextAppointmentDate={nextAppointmentDate}
-            fromMemo={fromMemo}
-            onMedicationChange={setMedicationInstruction}
-            onNextDateChange={setNextAppointmentDate}
-          />
+        {isLastStep && (
+          <div className="flex flex-col gap-10">
+            <StepDiagnosis
+              patientComment={patientComment}
+              diagnosisNameCode={diagnosisNameCode}
+              diagnosisContent={diagnosisContent}
+              treatmentResult={treatmentResult}
+              fromMemo={fromMemo}
+              onPatientCommentChange={setPatientComment}
+              onDiagnosisNameCodeChange={setDiagnosisNameCode}
+              onDiagnosisChange={setDiagnosisContent}
+              onTreatmentChange={setTreatmentResult}
+            />
+            <div className="border-t border-[#F0F0F0]" />
+            <StepMedication
+              medicationInstruction={medicationInstruction}
+              nextAppointmentDate={nextAppointmentDate}
+              nextAppointmentTime={nextAppointmentTime}
+              fromMemo={fromMemo}
+              onMedicationChange={setMedicationInstruction}
+              onNextDateChange={setNextAppointmentDate}
+              onNextTimeChange={setNextAppointmentTime}
+            />
+          </div>
         )}
         {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
       </div>
@@ -776,6 +787,9 @@ function StepDiagnosis({
           <span className="text-sm text-blue-600 font-medium">{tc.ai_auto_filled}</span>
         </div>
       )}
+      <div className="bg-[#F3F9FF] rounded-lg px-3 py-2 text-xs text-[#2592FF] font-medium">
+        💬 아래 내용은 <strong>환자 모국어로 작성</strong>해주세요. AI가 한국어로 번역해 센터장에게 전달됩니다.
+      </div>
       <FieldTextarea label={tc.symptom_field} value={patientComment} onChange={onPatientCommentChange}
         placeholder={tc.symptom_ph} fromMemo={fromMemo} />
 
@@ -947,10 +961,10 @@ function DiseaseSearchField({
   )
 }
 
-function StepMedication({ medicationInstruction, nextAppointmentDate, fromMemo,
-  onMedicationChange, onNextDateChange }: {
-  medicationInstruction: string; nextAppointmentDate: string; fromMemo?: boolean;
-  onMedicationChange: (v: string) => void; onNextDateChange: (v: string) => void
+function StepMedication({ medicationInstruction, nextAppointmentDate, nextAppointmentTime, fromMemo,
+  onMedicationChange, onNextDateChange, onNextTimeChange }: {
+  medicationInstruction: string; nextAppointmentDate: string; nextAppointmentTime: string; fromMemo?: boolean;
+  onMedicationChange: (v: string) => void; onNextDateChange: (v: string) => void; onNextTimeChange: (v: string) => void
 }) {
   const { t } = useTranslation()
   const tc = t.consultation
@@ -966,13 +980,21 @@ function StepMedication({ medicationInstruction, nextAppointmentDate, fromMemo,
         placeholder={tc.medication_ph} fromMemo={fromMemo} />
       <div className="flex flex-col gap-2">
         <label className="text-base font-medium text-[#161616]">{tc.next_schedule}</label>
-        <CalendarPicker value={nextAppointmentDate} onChange={onNextDateChange} />
+        <CalendarPicker
+          value={nextAppointmentDate}
+          onChange={onNextDateChange}
+          time={nextAppointmentTime}
+          onTimeChange={onNextTimeChange}
+        />
       </div>
     </div>
   )
 }
 
-function CalendarPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function CalendarPicker({ value, onChange, time, onTimeChange }: {
+  value: string; onChange: (v: string) => void
+  time?: string; onTimeChange?: (v: string) => void
+}) {
   const { t } = useTranslation()
   const today = new Date()
   const initDate = parseAppDate(value)
@@ -1015,6 +1037,13 @@ function CalendarPicker({ value, onChange }: { value: string; onChange: (v: stri
     const m = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')
     onChange(`${y}-${m}-${day}`)
+  }
+
+  const selectedHour = time ? time.split(':')[0] : ''
+  const selectedMin = time ? time.split(':')[1] : ''
+
+  function handleTimeChange(hour: string, min: string) {
+    if (onTimeChange) onTimeChange(hour && min ? `${hour}:${min}` : '')
   }
 
   const DAYS = t.common.weekdays
@@ -1060,9 +1089,9 @@ function CalendarPicker({ value, onChange }: { value: string; onChange: (v: stri
             >
               <span className={`w-[30px] h-[30px] flex items-center justify-center rounded-full text-[14px] ${
                 isSelected
-                  ? 'bg-[#f3f9ff] text-[#2592ff] font-medium'
+                  ? 'bg-[#2592ff] text-white font-medium'
                   : !current
-                  ? 'text-[#808080]'
+                  ? 'text-[#C8C8C8]'
                   : 'text-[#494949]'
               }`}>
                 {date.getDate()}
@@ -1072,12 +1101,52 @@ function CalendarPicker({ value, onChange }: { value: string; onChange: (v: stri
         })}
       </div>
 
-      {/* 선택된 날짜 표시 */}
+      {/* 날짜 선택 후: 날짜 표시 + 시간 선택 */}
       {value && (
-        <div className="mt-3 pt-3 border-t border-[#eee] text-center">
-          <span className="text-[14px] text-[#2592ff] font-medium">
-            {formatKoreanDate(value)}
-          </span>
+        <div className="mt-4 pt-4 border-t border-[#eee] flex flex-col gap-3">
+          <p className="text-[14px] text-[#2592ff] font-medium text-center">{formatKoreanDate(value)}</p>
+          {onTimeChange && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[13px] text-[#808080] text-center">시간 선택 (선택)</p>
+              <div className="flex items-center justify-center gap-2">
+                <select
+                  value={selectedHour}
+                  onChange={e => handleTimeChange(e.target.value, selectedMin || '00')}
+                  className="px-3 py-2 rounded-lg border border-[#EEEEEE] bg-[#F7F7F7] text-[15px] text-[#161616] outline-none appearance-none text-center"
+                >
+                  <option value="">시</option>
+                  {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
+                    <option key={h} value={h}>{h}시</option>
+                  ))}
+                </select>
+                <span className="text-[#494949] font-semibold">:</span>
+                <select
+                  value={selectedMin}
+                  onChange={e => handleTimeChange(selectedHour || '09', e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-[#EEEEEE] bg-[#F7F7F7] text-[15px] text-[#161616] outline-none appearance-none text-center"
+                >
+                  <option value="">분</option>
+                  {['00', '10', '20', '30', '40', '50'].map(m => (
+                    <option key={m} value={m}>{m}분</option>
+                  ))}
+                </select>
+                {time && (
+                  <button
+                    type="button"
+                    onClick={() => onTimeChange('')}
+                    className="text-[#A0A0A0] hover:text-red-400 transition-colors ml-1"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {time && (
+                <p className="text-[13px] text-[#2592ff] text-center font-medium">{formatKoreanDate(value)} {time}</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

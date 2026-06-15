@@ -202,7 +202,7 @@ public class ConsultationService {
                 : c.getHospital();
         String freeHospitalName = (hospital == null) ? req.hospitalName() : null;
         c.update(req.consultationDate(), hospital, freeHospitalName, req.issueType(), req.method(), req.processing(),
-                req.memo(), req.nextAppointmentDate(), req.department(),
+                req.memo(), req.nextAppointmentDate(), req.nextAppointmentTime(), req.department(),
                 req.doctorName(), req.patientComment(), req.treatmentResult(),
                 req.diagnosisContent(), req.diagnosisNameCode(), req.medicationInstruction(),
                 req.counselorName(), req.workDescription(), req.doctorConfirmationSignature(),
@@ -389,16 +389,17 @@ public class ConsultationService {
         if (!hasContent) return;
 
         try {
-            TranslationService.MedicalTranslation t = translationService.translateMedicalFields(
+            TranslationService.MedicalTranslation t = translationService.translateToKorean(
                     c.getPatientComment(), c.getDiagnosisContent(),
                     c.getTreatmentResult(), c.getMedicationInstruction(),
                     c.getDiagnosisNameCode(), langCode);
             if (t != null) {
-                c.applyTranslation(langCode, t.patientComment(), t.diagnosisContent(),
+                // translationLang = "ko": translated* 필드에 한국어 번역본 저장
+                c.applyTranslation("ko", t.patientComment(), t.diagnosisContent(),
                         t.treatmentResult(), t.medicationInstruction(), t.diagnosisNameCode());
             }
         } catch (Exception e) {
-            log.warn("[translation] 번역 실패 — 원본 한국어 유지: {}", e.getMessage());
+            log.warn("[translation] 번역 실패 — 원본 모국어 유지: {}", e.getMessage());
         }
     }
 }

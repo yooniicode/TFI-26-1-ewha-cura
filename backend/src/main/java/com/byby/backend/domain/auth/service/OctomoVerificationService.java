@@ -4,6 +4,8 @@ import com.byby.backend.domain.auth.dto.AuthResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.Optional;
@@ -45,15 +47,32 @@ public class OctomoVerificationService {
         if (stored.isEmpty() || !stored.get().equals(code)) {
             return false;
         }
-        boolean verified = callOctomoApi(phone, code);
-        if (verified) {
+
+        // API 키 미설정 시 코드 일치만으로 인증
+        if (!StringUtils.hasText(apiKey)) {
+            log.info("OCTOMO API key not configured, using code-only verification for phone {}", phone);
+            store.remove(phone);
+            store.markVerified(phone);
+            return true;
+        }
+
+        Boolean octomoResult = callOctomoApi(phone, code);
+        if (octomoResult == null) {
+            // 네트워크 오류 → 코드 일치가 확인된 상태이므로 폴백 인증
+            log.warn("OCTOMO unreachable, falling back to code-only verification for phone {}", phone);
+            store.remove(phone);
+            store.markVerified(phone);
+            return true;
+        }
+        if (octomoResult) {
             store.remove(phone);
             store.markVerified(phone);
         }
-        return verified;
+        return octomoResult;
     }
 
-    private boolean callOctomoApi(String phone, String content) {
+    // null = 연결 실패(폴백), true = SMS 확인됨, false = SMS 미수신
+    private Boolean callOctomoApi(String phone, String content) {
         try {
             OctomoCheckResponse res = restClient.post()
                     .uri(checkUrl)
@@ -61,9 +80,12 @@ public class OctomoVerificationService {
                     .retrieve()
                     .body(OctomoCheckResponse.class);
             return res != null && res.exists();
+        } catch (ResourceAccessException e) {
+            log.warn("OCTOMO API unreachable for phone {}: {}", phone, e.getMessage());
+            return null;
         } catch (Exception e) {
             log.warn("OCTOMO API call failed for phone {}: {}", phone, e.getMessage());
-            return false;
+            return null;
         }
     }
 

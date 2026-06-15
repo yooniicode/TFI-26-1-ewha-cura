@@ -37,22 +37,22 @@ public class TranslationService {
     ) {}
 
     /**
-     * Translates medical content fields from Korean into the target language.
+     * Translates medical content fields written in the patient's native language into Korean.
      * Returns null if translation is unavailable (missing API key, API error, etc.).
      */
-    public MedicalTranslation translateMedicalFields(
+    public MedicalTranslation translateToKorean(
             String patientComment,
             String diagnosisContent,
             String treatmentResult,
             String medicationInstruction,
             String diagnosisNameCode,
-            String targetLangCode) {
+            String sourceLangCode) {
 
         if (!StringUtils.hasText(openAiApiKey)) {
             log.warn("[translation] OPENAI_API_KEY 없음 — 번역 스킵");
             return null;
         }
-        if ("ko".equals(targetLangCode)) {
+        if ("ko".equals(sourceLangCode)) {
             return null;
         }
 
@@ -63,7 +63,7 @@ public class TranslationService {
                 || StringUtils.hasText(diagnosisNameCode);
         if (!hasContent) return null;
 
-        String langName = languageName(targetLangCode);
+        String langName = languageName(sourceLangCode);
         String prompt = buildTranslationPrompt(patientComment, diagnosisContent,
                 treatmentResult, medicationInstruction, diagnosisNameCode, langName);
 
@@ -72,7 +72,7 @@ public class TranslationService {
             return parseTranslation(raw, patientComment, diagnosisContent,
                     treatmentResult, medicationInstruction, diagnosisNameCode);
         } catch (Exception e) {
-            log.error("[translation] 번역 실패 lang={}: {}", targetLangCode, e.getMessage());
+            log.error("[translation] 번역 실패 lang={}: {}", sourceLangCode, e.getMessage());
             return null;
         }
     }
@@ -81,9 +81,9 @@ public class TranslationService {
                                           String treatmentResult, String medicationInstruction,
                                           String diagnosisNameCode, String langName) {
         StringBuilder sb = new StringBuilder();
-        sb.append("You are a medical translation assistant. Translate the following Korean medical record fields into ")
+        sb.append("You are a medical translation assistant. Translate the following medical record fields from ")
           .append(langName)
-          .append(". Keep medical terms accurate. Return ONLY the translated text for each field, in the exact same format as below.\n\n");
+          .append(" into Korean. Keep medical terms accurate. Return ONLY the translated text for each field, in the exact same format as below.\n\n");
 
         sb.append("DIAGNOSIS_NAME: ").append(StringUtils.hasText(diagnosisNameCode) ? diagnosisNameCode : "").append("\n");
         sb.append("PATIENT_COMMENT: ").append(StringUtils.hasText(patientComment) ? patientComment : "").append("\n");

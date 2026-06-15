@@ -182,11 +182,11 @@ export default function ConsultationDetailPage() {
             <ReportRow label={t.consultation.department} value={patientReport.department} />
             <ReportRow label={t.consultation.doctor} value={patientReport.doctorName} />
             <ReportRow label={t.consultation.diagnosis_label} value={patientReport.diagnosisNameCode} />
-            <ReportBlock label={t.consultation.diagnosis_content} value={patientReport.diagnosisContent} />
-            <ReportBlock label={t.consultation.treatment_result} value={patientReport.treatmentResult} />
-            <ReportBlock label={t.consultation.medication} value={patientReport.medicationInstruction} />
+            <ReportBlock label={t.consultation.diagnosis_content} value={patientReport.translationLang && patientReport.translationLang !== 'ko' ? (patientReport.translatedDiagnosisContent ?? patientReport.diagnosisContent) : patientReport.diagnosisContent} />
+            <ReportBlock label={t.consultation.treatment_result} value={patientReport.translationLang && patientReport.translationLang !== 'ko' ? (patientReport.translatedTreatmentResult ?? patientReport.treatmentResult) : patientReport.treatmentResult} />
+            <ReportBlock label={t.consultation.medication} value={patientReport.translationLang && patientReport.translationLang !== 'ko' ? (patientReport.translatedMedicationInstruction ?? patientReport.medicationInstruction) : patientReport.medicationInstruction} />
             <ReportRow label={t.consultation.next_appointment_date} value={formatKoreanDateTime(patientReport.nextAppointmentDate)} />
-            <ReportBlock label={t.consultation.interpreter_comment} value={patientReport.patientComment} />
+            <ReportBlock label={t.consultation.interpreter_comment} value={patientReport.translationLang && patientReport.translationLang !== 'ko' ? (patientReport.translatedPatientComment ?? patientReport.patientComment) : patientReport.patientComment} />
           </div>
         </div>
       </AppShell>
@@ -285,10 +285,10 @@ export default function ConsultationDetailPage() {
               <ReportRow label={t.consultation.next_appointment_date} value={formatKoreanDateTime(data.nextAppointmentDate)} />
               <ReportRow label={t.consultation.confirm_by} value={data.confirmedBy} />
               <ReportRow label={t.consultation.confirm_date} value={formatKoreanDate(data.confirmedAt)} />
-              <ReportBlock label={t.consultation.diagnosis_content} value={data.diagnosisContent} />
-              <ReportBlock label={t.consultation.treatment_result} value={data.treatmentResult} />
-              <ReportBlock label={t.consultation.medication} value={data.medicationInstruction} />
-              <ReportBlock label={t.consultation.interpreter_comment} value={data.patientComment} />
+              <ReportBlock label={t.consultation.diagnosis_content} value={data.translationLang === 'ko' ? (data.translatedDiagnosisContent ?? data.diagnosisContent) : data.diagnosisContent} />
+              <ReportBlock label={t.consultation.treatment_result} value={data.translationLang === 'ko' ? (data.translatedTreatmentResult ?? data.treatmentResult) : data.treatmentResult} />
+              <ReportBlock label={t.consultation.medication} value={data.translationLang === 'ko' ? (data.translatedMedicationInstruction ?? data.medicationInstruction) : data.medicationInstruction} />
+              <ReportBlock label={t.consultation.interpreter_comment} value={data.translationLang === 'ko' ? (data.translatedPatientComment ?? data.patientComment) : data.patientComment} />
               <ReportBlock label={t.consultation.work_description} value={data.workDescription} />
               <ReportBlock label={t.consultation.memo} value={data.memo} />
               <ReportBlock label={t.consultation.doctor_signature} value={data.doctorConfirmationSignature} />
@@ -355,6 +355,9 @@ function EditForm({
       </div>
 
       <TextInput label={t.consultation.diagnosis_name_code} value={form.diagnosisNameCode} onChange={v => set('diagnosisNameCode', v)} />
+      <div className="bg-[#F3F9FF] rounded-lg px-3 py-2 text-xs text-[#2592FF] font-medium">
+        💬 아래 내용은 <strong>환자 모국어로 작성</strong>해주세요. AI가 한국어로 번역해 센터장에게 전달됩니다.
+      </div>
       <FieldTextArea label={t.consultation.diagnosis_content} value={form.diagnosisContent} onChange={v => set('diagnosisContent', v)} />
       <FieldTextArea label={t.consultation.treatment_result} value={form.treatmentResult} onChange={v => set('treatmentResult', v)} />
       <FieldTextArea label={t.consultation.medication} value={form.medicationInstruction} onChange={v => set('medicationInstruction', v)} />

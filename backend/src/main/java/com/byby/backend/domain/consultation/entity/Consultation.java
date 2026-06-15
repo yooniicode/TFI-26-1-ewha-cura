@@ -120,6 +120,9 @@ public class Consultation extends BaseEntity {
 
     private LocalDate nextAppointmentDate;
 
+    @Column(length = 5)
+    private String nextAppointmentTime;
+
     private LocalDate confirmedAt;
 
     @Column(length = 100)
@@ -142,7 +145,8 @@ public class Consultation extends BaseEntity {
                         String diagnosisContent, String diagnosisNameCode,
                         String medicationInstruction, String counselorName,
                         String workDescription, String doctorConfirmationSignature,
-                        BigDecimal durationHours, Integer fee, LocalDate nextAppointmentDate) {
+                        BigDecimal durationHours, Integer fee, LocalDate nextAppointmentDate,
+                        String nextAppointmentTime) {
         this.consultationDate = consultationDate;
         this.patient = patient;
         this.interpreter = interpreter;
@@ -165,6 +169,7 @@ public class Consultation extends BaseEntity {
         this.durationHours = durationHours;
         this.fee = fee;
         this.nextAppointmentDate = nextAppointmentDate;
+        this.nextAppointmentTime = nextAppointmentTime;
     }
 
     public void accept(Interpreter interpreter, LocalDateTime confirmedDate) {
@@ -181,8 +186,8 @@ public class Consultation extends BaseEntity {
     public void update(LocalDateTime consultationDate, Hospital hospital, String hospitalName,
                        IssueType issueType,
                        ConsultationMethod method, ProcessingType processing,
-                       String memo, LocalDate nextAppointmentDate, String department,
-                       String doctorName, String patientComment, String treatmentResult,
+                       String memo, LocalDate nextAppointmentDate, String nextAppointmentTime,
+                       String department, String doctorName, String patientComment, String treatmentResult,
                        String diagnosisContent, String diagnosisNameCode,
                        String medicationInstruction, String counselorName,
                        String workDescription, String doctorConfirmationSignature,
@@ -196,6 +201,7 @@ public class Consultation extends BaseEntity {
         this.processing = processing;
         if (memo != null) this.memo = memo;
         if (nextAppointmentDate != null) this.nextAppointmentDate = nextAppointmentDate;
+        if (nextAppointmentTime != null) this.nextAppointmentTime = nextAppointmentTime;
         if (department != null) this.department = department;
         if (doctorName != null) this.doctorName = doctorName;
         if (patientComment != null) this.patientComment = patientComment;

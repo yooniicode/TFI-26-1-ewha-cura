@@ -97,7 +97,7 @@ byby:
   octomo:
     api-key: ${OCTOMO_API_KEY:}
     check-url: ${OCTOMO_CHECK_URL:https://api.octomo.kr/v1/message/exists}
-    receive-number: ${OCTOMO_RECEIVE_NUMBER:}
+    receive-number: ${OCTOMO_RECEIVE_NUMBER:+8216663538}
 
 ---
 spring:

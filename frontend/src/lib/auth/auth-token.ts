@@ -1,5 +1,8 @@
 const TOKEN_KEY = 'byby_access_token'
 const COOKIE_NAME = 'byby_auth'
+const LAST_LOGIN_METHOD_KEY = 'byby_last_login_method'
+
+export type LoginMethod = 'email' | 'phone' | 'kakao'
 
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null
@@ -17,4 +20,15 @@ export function setAccessToken(token: string): void {
 export function clearAccessToken(): void {
   localStorage.removeItem(TOKEN_KEY)
   document.cookie = `${COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`
+}
+
+export function setLastLoginMethod(method: LoginMethod): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(LAST_LOGIN_METHOD_KEY, method)
+}
+
+export function getLastLoginMethod(): LoginMethod | null {
+  if (typeof window === 'undefined') return null
+  const v = localStorage.getItem(LAST_LOGIN_METHOD_KEY)
+  return v === 'email' || v === 'phone' || v === 'kakao' ? v : null
 }

@@ -6,6 +6,7 @@ import com.byby.backend.common.enums.Nationality;
 import com.byby.backend.common.enums.UserRole;
 import com.byby.backend.common.enums.VisaType;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ public class AuthRequest {
             Gender gender,
             VisaType visaType,
             String visaNote,
+            LocalDate birthDate,
             String phone,
             String region,
             String workplace,
@@ -46,6 +48,7 @@ public class AuthRequest {
             Gender gender,
             VisaType visaType,
             String visaNote,
+            LocalDate birthDate,
             String phone,
             String region,
             String workplace,
@@ -99,6 +102,7 @@ public class AuthRequest {
             Gender gender,
             Nationality nationality,
             VisaType visaType,
+            LocalDate birthDate,
             String workplace,
             UUID centerId,
             String centerName

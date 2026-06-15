@@ -83,6 +83,7 @@ public class ConsultationResponse {
             BigDecimal durationHours,
             Integer fee,
             LocalDate nextAppointmentDate,
+            String nextAppointmentTime,
             LocalDate confirmedAt,
             String confirmedBy,
             String confirmedByPhone,
@@ -91,7 +92,13 @@ public class ConsultationResponse {
             LocalDateTime updatedAt,
             String patientAvatarUrl,
             boolean memoCompleted,
-            boolean reportCompleted
+            boolean reportCompleted,
+            String translationLang,
+            String translatedPatientComment,
+            String translatedDiagnosisContent,
+            String translatedTreatmentResult,
+            String translatedMedicationInstruction,
+            String translatedDiagnosisNameCode
     ) {
         public static Detail from(Consultation c) {
             return from(c, null);
@@ -118,10 +125,17 @@ public class ConsultationResponse {
                     c.getDiagnosisContent(), c.getDiagnosisNameCode(),
                     c.getMedicationInstruction(), c.getCounselorName(), c.getWorkDescription(),
                     c.getDoctorConfirmationSignature(), c.getDurationHours(), c.getFee(), c.getNextAppointmentDate(),
+                    c.getNextAppointmentTime(),
                     c.getConfirmedAt(), c.getConfirmedBy(), c.getConfirmedByPhone(),
                     c.isConfirmed(),
                     c.getCreatedAt(), c.getUpdatedAt(), patientAvatarUrl,
-                    c.isMemoCompleted(), c.isReportCompleted());
+                    c.isMemoCompleted(), c.isReportCompleted(),
+                    c.getTranslationLang(),
+                    c.getTranslatedPatientComment(),
+                    c.getTranslatedDiagnosisContent(),
+                    c.getTranslatedTreatmentResult(),
+                    c.getTranslatedMedicationInstruction(),
+                    c.getTranslatedDiagnosisNameCode());
         }
     }
 

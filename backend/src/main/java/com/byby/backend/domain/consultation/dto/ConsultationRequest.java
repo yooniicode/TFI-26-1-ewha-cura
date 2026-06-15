@@ -33,7 +33,8 @@ public class ConsultationRequest {
             String doctorConfirmationSignature,
             BigDecimal durationHours,
             Integer fee,
-            LocalDate nextAppointmentDate
+            LocalDate nextAppointmentDate,
+            String nextAppointmentTime
     ) {}
 
     public record Update(
@@ -45,6 +46,7 @@ public class ConsultationRequest {
             ProcessingType processing,
             String memo,
             LocalDate nextAppointmentDate,
+            String nextAppointmentTime,
             String department,
             String doctorName,
             String patientComment,

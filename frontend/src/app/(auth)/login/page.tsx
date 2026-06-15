@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
-import { setAccessToken } from '@/lib/auth/auth-token'
+import { setAccessToken, setLastLoginMethod } from '@/lib/auth/auth-token'
 import PasswordInput from '@/components/ui/PasswordInput'
 
 type Method = 'email' | 'phone'
@@ -43,7 +43,11 @@ export default function LoginPage() {
     setLoading(true); setError('')
     try {
       const res = await authApi.login({ email: email.trim(), password })
-      if (res.payload?.token) { setAccessToken(res.payload.token); router.replace('/dashboard') }
+      if (res.payload?.token) {
+        setAccessToken(res.payload.token)
+        setLastLoginMethod('email')
+        router.replace('/dashboard')
+      }
     } catch (e) {
       if (e instanceof ApiError && e.isNotFound) {
         setError('가입되지 않은 이메일입니다. 회원가입을 먼저 진행해주세요.')
@@ -75,6 +79,7 @@ export default function LoginPage() {
       if (!res.payload) throw new Error('응답 오류')
       if (res.payload.exists && res.payload.token) {
         setAccessToken(res.payload.token)
+        setLastLoginMethod('phone')
         router.replace('/dashboard')
       } else {
         setPfNoAccount(true)

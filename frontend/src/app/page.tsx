@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { getAccessToken } from '@/lib/auth/auth-token'
+import { getAccessToken, getLastLoginMethod, type LoginMethod } from '@/lib/auth/auth-token'
 
 const TAGLINES = [
   '의료와 당신을 잇다',
@@ -23,15 +23,34 @@ const TAGLINES = [
   'සෞඛ්‍ය සේවාව සම්බන්ධ කරයි',
 ]
 
+function KakaoIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path d="M12 3C6.48 3 2 6.58 2 11c0 2.79 1.88 5.25 4.65 6.65-.15.55-.96 3.32-.99 3.55 0 0-.02.16.09.23.1.07.23.02.23.02.31-.04 3.59-2.35 4.16-2.74A12.5 12.5 0 0 0 12 18.5c5.52 0 10-3.58 10-8s-4.48-8-10-8z" fill="#191600" />
+    </svg>
+  )
+}
+
+function RecentBadge() {
+  return (
+    <span className="absolute -top-2.5 right-3 bg-[#FF5A5F] text-white text-[11px] font-semibold px-2 py-0.5 rounded-full shadow-sm">
+      최근 로그인
+    </span>
+  )
+}
+
 export default function SplashPage() {
   const router = useRouter()
   const [idx, setIdx] = useState(0)
   const [visible, setVisible] = useState(true)
+  const [lastMethod, setLastMethod] = useState<LoginMethod | null>(null)
 
   useEffect(() => {
     if (getAccessToken()) {
       router.replace('/dashboard')
+      return
     }
+    setLastMethod(getLastLoginMethod())
   }, [router])
 
   useEffect(() => {
@@ -79,27 +98,37 @@ export default function SplashPage() {
       {/* Bottom buttons */}
       <div className="px-4 pb-10 flex flex-col gap-5">
         <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => router.push('/login?method=email')}
-            className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
-          >
-            이메일로 로그인
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/login?method=phone')}
-            className="w-full h-[60px] bg-white border-2 border-[#2592FF] rounded-lg text-[#2592FF] text-[18px] font-semibold hover:bg-[#f0f7ff] active:bg-[#e0efff] transition-colors"
-          >
-            전화번호로 로그인
-          </button>
-          <button
-            type="button"
-            onClick={handleKakao}
-            className="w-full h-[60px] bg-[#FFE724] rounded-lg text-[#171502] text-[18px] font-semibold hover:bg-[#f5dc00] active:bg-[#e8d000] transition-colors"
-          >
-            카카오톡 로그인
-          </button>
+          <div className="relative">
+            {lastMethod === 'email' && <RecentBadge />}
+            <button
+              type="button"
+              onClick={() => router.push('/login?method=email')}
+              className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
+            >
+              이메일로 로그인
+            </button>
+          </div>
+          <div className="relative">
+            {lastMethod === 'phone' && <RecentBadge />}
+            <button
+              type="button"
+              onClick={() => router.push('/login?method=phone')}
+              className="w-full h-[60px] bg-white border-2 border-[#2592FF] rounded-lg text-[#2592FF] text-[18px] font-semibold hover:bg-[#f0f7ff] active:bg-[#e0efff] transition-colors"
+            >
+              전화번호로 로그인
+            </button>
+          </div>
+          <div className="relative">
+            {lastMethod === 'kakao' && <RecentBadge />}
+            <button
+              type="button"
+              onClick={handleKakao}
+              className="w-full h-[60px] bg-[#FFE724] rounded-lg text-[#191600] text-[18px] font-semibold hover:bg-[#f5dc00] active:bg-[#e8d000] transition-colors flex items-center justify-center gap-2"
+            >
+              <KakaoIcon />
+              카카오톡으로 로그인
+            </button>
+          </div>
         </div>
         <div className="flex items-center justify-center gap-2.5">
           <span className="text-[16px] font-medium text-[#808080]">계정이 없으신가요?</span>

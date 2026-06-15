@@ -22,6 +22,17 @@ const CHIP_GROUPS = [
     ],
   },
   {
+    labelKey: 'chip_quality_label' as const,
+    chips: [
+      { koText: '콕콕 찌르듯 아파요', tKey: 'chip_pain_sharp'     as const },
+      { koText: '뻐근하게 아파요',    tKey: 'chip_pain_dull'      as const },
+      { koText: '타는 듯이 아파요',   tKey: 'chip_pain_burning'   as const },
+      { koText: '쑤시듯 아파요',      tKey: 'chip_pain_throbbing' as const },
+      { koText: '움직이면 더 아파요', tKey: 'chip_worse_on_move'  as const },
+      { koText: '쉬면 좀 나아져요',   tKey: 'chip_better_on_rest' as const },
+    ],
+  },
+  {
     labelKey: 'chip_other_label' as const,
     chips: [
       { koText: '열이 나요',       tKey: 'chip_fever'       as const },
@@ -37,6 +48,7 @@ const CHIP_GROUPS = [
       { koText: '임신 중이에요',          tKey: 'chip_pregnant'     as const },
       { koText: '당뇨가 있어요',          tKey: 'chip_diabetes'     as const },
       { koText: '고혈압이 있어요',        tKey: 'chip_hypertension' as const },
+      { koText: '허리디스크가 있어요',    tKey: 'chip_herniated_disc' as const },
     ],
   },
 ]
@@ -56,6 +68,9 @@ export default function CustomScriptPage() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<MedicalScript | null>(null)
+  const [onsetDate, setOnsetDate] = useState('')
+  const [onsetTime, setOnsetTime] = useState('')
+  const [painScale, setPainScale] = useState(5)
 
   useEffect(() => {
     consultationApi.byPatient(patientId, 0)
@@ -69,6 +84,17 @@ export default function CustomScriptPage() {
       .catch(() => {})
       .finally(() => setLoadingMeds(false))
   }, [patientId])
+
+  function appendOnset() {
+    if (!onsetDate) return
+    const [, month, day] = onsetDate.split('-')
+    const timePart = onsetTime ? ` ${onsetTime}` : ''
+    appendChip(`${parseInt(month)}월 ${parseInt(day)}일${timePart}부터 아파요`)
+  }
+
+  function appendPainScale() {
+    appendChip(`통증이 10점 중 ${painScale}점이에요`)
+  }
 
   function appendChip(koText: string) {
     setError(null)
@@ -196,6 +222,74 @@ export default function CustomScriptPage() {
             </button>
           </div>
         )}
+
+        {/* 증상 시작 시간 */}
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">
+            {ui.onset_label}
+          </p>
+          <div className="bg-white rounded-2xl border border-[#E0E0E0] px-4 py-4 flex flex-col gap-3">
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={onsetDate}
+                onChange={e => setOnsetDate(e.target.value)}
+                className="flex-1 rounded-xl border border-[#E0E0E0] px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#2592FF]"
+              />
+              {onsetDate && (
+                <input
+                  type="time"
+                  value={onsetTime}
+                  onChange={e => setOnsetTime(e.target.value)}
+                  className="flex-1 rounded-xl border border-[#E0E0E0] px-3 py-2 text-sm text-[#161616] focus:outline-none focus:border-[#2592FF]"
+                />
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={appendOnset}
+              disabled={!onsetDate}
+              className="w-full h-10 rounded-xl bg-[#EAF4FF] text-[#2592FF] text-sm font-semibold border border-[#D1E8FF] hover:bg-[#d5ecff] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {ui.append_btn}
+            </button>
+          </div>
+        </div>
+
+        {/* 통증 척도 */}
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-[#A0A0A0] uppercase tracking-wide mb-2">
+            {ui.pain_scale_label}
+          </p>
+          <div className="bg-white rounded-2xl border border-[#E0E0E0] px-4 py-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-[#A0A0A0]">{ui.pain_scale_min}</span>
+              <span className="text-2xl font-bold text-[#2592FF]">{painScale}</span>
+              <span className="text-xs text-[#A0A0A0]">{ui.pain_scale_max}</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={10}
+              step={1}
+              value={painScale}
+              onChange={e => setPainScale(Number(e.target.value))}
+              className="w-full accent-[#2592FF]"
+            />
+            <div className="flex justify-between text-[10px] text-[#C0C0C0] -mt-1">
+              {Array.from({ length: 11 }, (_, i) => (
+                <span key={i}>{i}</span>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={appendPainScale}
+              className="w-full h-10 rounded-xl bg-[#EAF4FF] text-[#2592FF] text-sm font-semibold border border-[#D1E8FF] hover:bg-[#d5ecff] transition-colors"
+            >
+              {ui.append_btn}
+            </button>
+          </div>
+        </div>
 
         {/* 키워드 칩 그룹 */}
         {CHIP_GROUPS.map(group => (

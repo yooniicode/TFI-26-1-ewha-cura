@@ -79,6 +79,7 @@ export default function SignupPage() {
   const [centerName, setCenterName] = useState('')
   const [nationality, setNationality] = useState<Nationality>('OTHER')
   const [visaType, setVisaType] = useState<VisaType>('OTHER')
+  const [birthDate, setBirthDate] = useState('')
   const [workplace, setWorkplace] = useState('')
 
   const [loading, setLoading] = useState(false)
@@ -140,7 +141,7 @@ export default function SignupPage() {
         phone: phone.trim() || undefined,
         centerId: centerId || undefined,
         centerName: centerName.trim() || undefined,
-        ...(accountType === 'patient' ? { nationality, gender, visaType } : {}),
+        ...(accountType === 'patient' ? { nationality, gender, visaType, birthDate: birthDate || undefined } : {}),
         ...(accountType === 'interpreter' ? { interpreterRole: 'ACTIVIST' as const } : {}),
       })
       if (res.payload?.token) {
@@ -202,7 +203,7 @@ export default function SignupPage() {
         role: accountType!,
         centerId: centerId || undefined,
         centerName: centerName.trim() || undefined,
-        ...(accountType === 'patient' ? { nationality, gender, visaType, workplace: workplace.trim() || undefined } : {}),
+        ...(accountType === 'patient' ? { nationality, gender, visaType, birthDate: birthDate || undefined, workplace: workplace.trim() || undefined } : {}),
       })
       if (res.payload?.token) setAccessToken(res.payload.token)
       setStep(13)
@@ -558,6 +559,15 @@ export default function SignupPage() {
                       ))}
                     </select>
                   </Field>
+                  <Field label="생년월일 (선택)">
+                    <input
+                      type="date"
+                      className={inputCls}
+                      value={birthDate}
+                      onChange={e => setBirthDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                    />
+                  </Field>
                 </>
               )}
               {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -704,6 +714,16 @@ export default function SignupPage() {
                     <select className={`${inputCls} appearance-none`} value={visaType} onChange={e => setVisaType(e.target.value as VisaType)}>
                       {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
                     </select>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <label className="text-[16px] font-medium text-[#494949]">생년월일 <span className="text-[#999] font-normal text-[14px]">(선택)</span></label>
+                    <input
+                      type="date"
+                      className={inputCls}
+                      value={birthDate}
+                      onChange={e => setBirthDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                    />
                   </div>
                   <div className="flex flex-col gap-2.5">
                     <label className="text-[16px] font-medium text-[#494949]">사업장명 <span className="text-[#999] font-normal text-[14px]">(선택)</span></label>
