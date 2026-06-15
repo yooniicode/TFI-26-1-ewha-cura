@@ -2,9 +2,9 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
-import PageHeader from '@/components/interpreter/PageHeader'
+import PageHeader from '@/components/ui/PageHeader'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
 export default function ConsultationStartPage() {

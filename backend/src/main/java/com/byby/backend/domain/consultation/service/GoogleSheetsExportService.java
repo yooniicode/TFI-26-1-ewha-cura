@@ -1,4 +1,4 @@
-package com.byby.backend.common.service;
+package com.byby.backend.domain.consultation.service;
 
 import com.byby.backend.common.exception.GeneralException;
 import com.byby.backend.common.response.code.GeneralErrorCode;

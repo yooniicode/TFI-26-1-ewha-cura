@@ -32,7 +32,10 @@ public class CenterRequest {
             String phone,
 
             @Schema(description = "활성 여부 (기본값 true)", defaultValue = "true")
-            Boolean active
+            Boolean active,
+
+            @Schema(description = "Google Sheets 스프레드시트 ID (선택) — 서비스 계정이 새 파일 생성 권한이 없을 때 미리 생성한 시트 ID를 설정하세요. 해당 시트를 서비스 계정 이메일에 '편집자'로 공유해야 합니다.", example = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms")
+            String spreadsheetId
     ) {
         public Upsert toUpsert() {
             return new Upsert(name, address, phone, active != null ? active : true);

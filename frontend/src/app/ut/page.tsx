@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { setAccessToken } from '@/lib/auth-token'
+import { setAccessToken } from '@/lib/auth/auth-token'
 import { startRecording } from '@/lib/ut-recording'
 import Image from 'next/image'
 import CuraSpinner from '@/components/ui/CuraSpinner'

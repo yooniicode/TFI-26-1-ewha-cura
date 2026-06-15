@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-import QueryProvider from '@/components/QueryProvider'
+import QueryProvider from '@/components/layout/QueryProvider'
 import { I18nProvider } from '@/lib/i18n/I18nContext'
 
 export const metadata: Metadata = {

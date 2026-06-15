@@ -1,4 +1,4 @@
-package com.byby.backend.common.service;
+package com.byby.backend.domain.consultation.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

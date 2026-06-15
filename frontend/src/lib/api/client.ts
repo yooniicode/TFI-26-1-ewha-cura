@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { z } from 'zod'
-import { getAccessToken, clearAccessToken } from '../auth-token'
+import { getAccessToken, clearAccessToken } from '../auth/auth-token'
 import type { ApiResponse } from '../types'
 
 export class ApiError extends Error {

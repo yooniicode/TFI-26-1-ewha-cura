@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
-import PageHeader from '@/components/interpreter/PageHeader'
+import PageHeader from '@/components/ui/PageHeader'
 import { patientApi, chatApi } from '@/lib/api'
 import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { type BodyPartKey, BODY_PART_KEYS, bodyPartImagePath, getBodyPartKey, getDiseaseShortName, getIcdCode } from '@/lib/bodyPartUtils'
-import { formatKoreanDateTime } from '@/lib/dateFormat'
+import { type BodyPartKey, BODY_PART_KEYS, bodyPartImagePath, getBodyPartKey, getDiseaseShortName, getIcdCode } from '@/lib/utils/bodyPartUtils'
+import { formatKoreanDateTime } from '@/lib/utils/dateFormat'
 
 function consultDateKo(dateStr: string) {
   return formatKoreanDateTime(dateStr)

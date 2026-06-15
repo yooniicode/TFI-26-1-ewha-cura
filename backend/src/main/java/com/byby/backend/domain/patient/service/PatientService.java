@@ -193,7 +193,12 @@ public class PatientService {
     }
 
     private void checkPatientAccess(Patient patient, UserPrincipal principal) {
-        if (principal.isAdmin()) return;
+        if (principal.isAdmin()) {
+            Center adminCenter = adminService.getAdminCenter(principal);
+            boolean belongsToCenter = patientCenterRepository.existsByPatientIdAndCenterId(patient.getId(), adminCenter.getId());
+            if (!belongsToCenter) throw new GeneralException(GeneralErrorCode.FORBIDDEN, "다른 센터 환자입니다");
+            return;
+        }
         if (principal.isPatient()) {
             if (!principal.getAuthUserId().equals(patient.getAuthUserId())) {
                 throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_OWNER);

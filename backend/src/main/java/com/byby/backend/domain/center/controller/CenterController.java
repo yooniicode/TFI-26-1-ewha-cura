@@ -80,6 +80,7 @@ public class CenterController {
 
             - `devSecret` 필드에 환경변수 `CENTER_DEV_SECRET` 값을 입력해야 합니다.
             - 미설정 시(`CENTER_DEV_SECRET` 가 비어있으면) 이 API는 항상 403을 반환합니다.
+            - `spreadsheetId` 를 설정하면 내보내기 시 새 시트 생성 대신 해당 시트에 탭을 추가합니다.
             """
     )
     public ResponseEntity<Response<CenterResponse.Summary>> devUpdate(
@@ -87,7 +88,11 @@ public class CenterController {
             @Valid @RequestBody CenterRequest.DevUpsert req,
             @AuthenticationPrincipal UserPrincipal principal) {
         validateDevSecret(req.devSecret());
-        return ResponseEntity.ok(Response.success(SuccessCode.OK, centerService.update(id, req.toUpsert(), principal)));
+        CenterResponse.Summary result = centerService.update(id, req.toUpsert(), principal);
+        if (org.springframework.util.StringUtils.hasText(req.spreadsheetId())) {
+            centerService.updateSpreadsheetId(id, req.spreadsheetId());
+        }
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, result));
     }
 
     // ─── 기존 admin JWT 전용 엔드포인트 ──────────────────────────────────────────

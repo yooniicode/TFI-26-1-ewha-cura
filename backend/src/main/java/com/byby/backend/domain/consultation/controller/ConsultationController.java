@@ -3,7 +3,7 @@ package com.byby.backend.domain.consultation.controller;
 import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
-import com.byby.backend.common.service.GoogleSheetsExportService;
+import com.byby.backend.domain.consultation.service.GoogleSheetsExportService;
 import com.byby.backend.domain.consultation.dto.ConsultationRequest;
 import com.byby.backend.domain.consultation.dto.ConsultationResponse;
 import com.byby.backend.domain.consultation.service.ConsultationService;

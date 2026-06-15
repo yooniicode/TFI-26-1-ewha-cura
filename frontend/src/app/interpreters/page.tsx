@@ -1,6 +1,6 @@
 'use client'
 
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
 export default function InterpretersPage() {

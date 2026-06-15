@@ -79,6 +79,13 @@ public class CenterService {
                 .orElseThrow(() -> new GeneralException(GeneralErrorCode.NOT_FOUND));
     }
 
+    @Transactional
+    public void updateSpreadsheetId(UUID id, String spreadsheetId) {
+        centerRepository.findById(id)
+                .orElseThrow(() -> new GeneralException(GeneralErrorCode.NOT_FOUND))
+                .updateSpreadsheetId(StringUtils.hasText(spreadsheetId) ? spreadsheetId.trim() : null);
+    }
+
     private void requireOwnCenterOrUnassigned(Center center, UserPrincipal principal) {
         AdminProfile profile = adminProfileRepository.findByAuthUserId(principal.getAuthUserId())
                 .orElse(null);

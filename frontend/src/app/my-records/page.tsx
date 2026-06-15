@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
-import PageHeader from '@/components/interpreter/PageHeader'
+import PageHeader from '@/components/ui/PageHeader'
 import { patientApi, chatApi } from '@/lib/api'
 import type { PatientReport } from '@/lib/types'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { getBodyPartImage, getDiseaseShortName, getIcdCode } from '@/lib/bodyPartUtils'
-import { formatKoreanDate, formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
+import { getBodyPartImage, getDiseaseShortName, getIcdCode } from '@/lib/utils/bodyPartUtils'
+import { formatKoreanDate, formatKoreanDateTime, toDateKey } from '@/lib/utils/dateFormat'
 import { useRouter } from 'next/navigation'
 
 function getTodayKST() {

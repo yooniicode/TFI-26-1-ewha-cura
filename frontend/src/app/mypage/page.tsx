@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import AppShell from '@/components/AppShell'
-import PageHeader from '@/components/interpreter/PageHeader'
+import AppShell from '@/components/layout/AppShell'
+import PageHeader from '@/components/ui/PageHeader'
 import { adminApi, centerApi, patientApi, interpreterApi, authApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
-import { clearAccessToken } from '@/lib/auth-token'
+import { clearAccessToken } from '@/lib/auth/auth-token'
 import { useMe } from '@/hooks/useMe'
 import type { Center, Patient, Interpreter, VisaType } from '@/lib/types'
 import { VISA_TYPES, useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import Spinner from '@/components/ui/Spinner'
 import PasswordInput from '@/components/ui/PasswordInput'
-import { INTERPRETER_LANGUAGE_OPTIONS } from '@/lib/constants'
+import { INTERPRETER_LANGUAGE_OPTIONS } from '@/lib/utils/constants'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
 
 export default function MyPage() {

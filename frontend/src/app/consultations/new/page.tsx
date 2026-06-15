@@ -2,17 +2,17 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
-import PageHeader from '@/components/interpreter/PageHeader'
+import PageHeader from '@/components/ui/PageHeader'
 import ReportExitModal from '@/components/ui/ReportExitModal'
-import PatientInfoBar, { getFlagSrc } from '@/components/interpreter/PatientInfoBar'
-import StepIndicator from '@/components/interpreter/StepIndicator'
+import PatientInfoBar, { getFlagSrc } from '@/components/patient/PatientInfoBar'
+import StepIndicator from '@/components/ui/StepIndicator'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { formatKoreanDate, parseAppDate } from '@/lib/dateFormat'
+import { formatKoreanDate, parseAppDate } from '@/lib/utils/dateFormat'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
 
 function calcAge(birthDate?: string | null): string {

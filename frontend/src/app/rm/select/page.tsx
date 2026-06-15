@@ -3,17 +3,17 @@
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
-import PageHeader from '@/components/interpreter/PageHeader'
-import StepIndicator from '@/components/interpreter/StepIndicator'
+import PageHeader from '@/components/ui/PageHeader'
+import StepIndicator from '@/components/ui/StepIndicator'
 import ReportExitModal from '@/components/ui/ReportExitModal'
 import { consultationApi } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Consultation } from '@/lib/types'
-import { formatKoreanDateTime } from '@/lib/dateFormat'
-import PatientAvatar from '@/components/interpreter/PatientAvatar'
+import { formatKoreanDateTime } from '@/lib/utils/dateFormat'
+import PatientAvatar from '@/components/patient/PatientAvatar'
 
 export default function RmSelectPage() {
   return (

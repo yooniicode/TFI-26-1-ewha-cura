@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Badge from '@/components/ui/Badge'
 import Spinner from '@/components/ui/Spinner'
 import { consultationApi, authApi, hospitalApi } from '@/lib/api'
@@ -22,8 +22,8 @@ import {
   useEnumLabels,
 } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { formatKoreanDate, formatKoreanDateTime, toDateKey } from '@/lib/dateFormat'
-import { type BodyPartKey, BODY_PART_KEYS, bodyPartImagePath, getBodyPartKey } from '@/lib/bodyPartUtils'
+import { formatKoreanDate, formatKoreanDateTime, toDateKey } from '@/lib/utils/dateFormat'
+import { type BodyPartKey, BODY_PART_KEYS, bodyPartImagePath, getBodyPartKey } from '@/lib/utils/bodyPartUtils'
 
 type ReportForm = {
   consultationDate: string

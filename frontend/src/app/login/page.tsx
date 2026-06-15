@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
-import { setAccessToken } from '@/lib/auth-token'
+import { setAccessToken } from '@/lib/auth/auth-token'
 import PasswordInput from '@/components/ui/PasswordInput'
 
 type Method = 'email' | 'phone'

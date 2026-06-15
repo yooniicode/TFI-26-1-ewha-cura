@@ -3,13 +3,13 @@
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import { patientApi, consultationApi } from '@/lib/api'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Consultation, Patient } from '@/lib/types'
-import { formatKoreanDate, toDateKey } from '@/lib/dateFormat'
+import { formatKoreanDate, toDateKey } from '@/lib/utils/dateFormat'
 
 const FLAG: Record<string, string> = {
   VIETNAM: '🇻🇳', CHINA: '🇨🇳', CAMBODIA: '🇰🇭', MYANMAR: '🇲🇲',

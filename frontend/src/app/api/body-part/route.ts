@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk'
 import { NextRequest, NextResponse } from 'next/server'
-import { type BodyPartKey, BODY_PART_KEYS, getBodyPartKey } from '@/lib/bodyPartUtils'
+import { type BodyPartKey, BODY_PART_KEYS, getBodyPartKey } from '@/lib/utils/bodyPartUtils'
 
 export type { BodyPartKey }
 

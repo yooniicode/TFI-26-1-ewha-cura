@@ -1,7 +1,7 @@
 'use client'
 
-import AppShell from '@/components/AppShell'
-import PageHeader from '@/components/interpreter/PageHeader'
+import AppShell from '@/components/layout/AppShell'
+import PageHeader from '@/components/ui/PageHeader'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 
 const PhoneIcon = () => (

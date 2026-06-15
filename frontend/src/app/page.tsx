@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { getAccessToken } from '@/lib/auth-token'
+import { getAccessToken } from '@/lib/auth/auth-token'
 
 const TAGLINES = [
   '의료와 당신을 잇다',

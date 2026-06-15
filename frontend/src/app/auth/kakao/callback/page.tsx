@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import { setAccessToken } from '@/lib/auth-token'
+import { setAccessToken } from '@/lib/auth/auth-token'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import CuraSpinner from '@/components/ui/CuraSpinner'
 

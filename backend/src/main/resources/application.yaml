@@ -57,7 +57,7 @@ springdoc:
 byby:
   security:
     jwt:
-      secret: ${JWT_SECRET:local-dev-secret-key-change-in-production-minimum-256-bits-long!!}
+      secret: ${JWT_SECRET:local-secret-for-dev-only-MUST-override-in-production}
       expiration-ms: 86400000
     swagger-secret: ${SWAGGER_SECRET:}
     cors:
@@ -76,7 +76,7 @@ byby:
     service-key: ${SUPABASE_SERVICE_KEY:}
 
   admin:
-    bootstrap-code: ${ADMIN_BOOTSTRAP_CODE:admin-setup-code}
+    bootstrap-code: ${ADMIN_BOOTSTRAP_CODE:}
 
   center:
     # 개발자 전용 센터 등록/수정 API 시크릿
@@ -104,6 +104,11 @@ spring:
   config:
     activate:
       on-profile: local
+
+  datasource:
+    hikari:
+      data-source-properties:
+        prepareThreshold: 0
 
   jpa:
     show-sql: true

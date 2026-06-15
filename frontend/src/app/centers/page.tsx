@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import AppShell from '@/components/AppShell'
+import AppShell from '@/components/layout/AppShell'
 import EmptyState from '@/components/ui/EmptyState'
 import Spinner from '@/components/ui/Spinner'
 import { centerApi } from '@/lib/api'

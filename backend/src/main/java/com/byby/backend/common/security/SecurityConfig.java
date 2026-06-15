@@ -66,7 +66,7 @@ public class SecurityConfig {
         List<String> origins = allowedOrigins.stream().filter(StringUtils::hasText).toList();
         config.setAllowedOrigins(origins.isEmpty() ? List.of("http://localhost:3000") : origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

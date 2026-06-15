@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAccessToken, clearAccessToken } from '@/lib/auth-token'
+import { getAccessToken, clearAccessToken } from '@/lib/auth/auth-token'
 import type { AuthMe } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 

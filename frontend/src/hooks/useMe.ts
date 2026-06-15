@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
-import { clearAccessToken, getAccessToken } from '@/lib/auth-token'
+import { clearAccessToken, getAccessToken } from '@/lib/auth/auth-token'
 import { queryKeys } from '@/lib/queryKeys'
 
 export function useMe() {
