@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
 import { setAccessToken, setLastLoginMethod } from '@/lib/auth/auth-token'
 import PasswordInput from '@/components/ui/PasswordInput'
+import CuraSpinner from '@/components/ui/CuraSpinner'
 
 type Method = 'email' | 'phone'
 
@@ -14,6 +15,14 @@ const inputCls =
   'w-full border border-[#EEEEEE] rounded-2xl px-4 py-4 text-[18px] text-[#161616] outline-none placeholder:text-[#808080] focus:border-[#2592FF] bg-white transition-colors'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<CuraSpinner />}>
+      <LoginPageInner />
+    </Suspense>
+  )
+}
+
+function LoginPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [method, setMethod] = useState<Method>(() => {
