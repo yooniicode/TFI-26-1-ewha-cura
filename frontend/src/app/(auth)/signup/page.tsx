@@ -307,27 +307,39 @@ export default function SignupPage() {
 
             <div className="flex-1 flex flex-col justify-end px-4 pb-10 gap-5">
               <p className="text-center text-[18px] font-medium text-[#808080]">편한 방법으로 시작해보세요</p>
-              <button
-                type="button"
-                onClick={() => { setError(''); setStep(1) }}
-                className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] transition-colors"
-              >
-                이메일로 시작하기
-              </button>
-              <button
-                type="button"
-                onClick={() => { setError(''); setPfPhone(''); setPfCode(''); setPfCodeSent(false); setStep(10) }}
-                className="w-full h-[60px] bg-white rounded-lg text-[#2592FF] text-[18px] font-semibold border-2 border-[#2592FF] hover:bg-[#F3F9FF] transition-colors"
-              >
-                전화번호로 시작하기
-              </button>
-              <button
-                type="button"
-                onClick={handleKakao}
-                className="w-full h-[60px] bg-[#FFE724] rounded-lg text-[#171502] text-[18px] font-semibold hover:bg-[#f5dc00] transition-colors"
-              >
-                카카오톡으로 시작하기
-              </button>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setError(''); setStep(1) }}
+                  className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] transition-colors"
+                >
+                  이메일로 시작하기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setError(''); setPfPhone(''); setPfCode(''); setPfCodeSent(false); setStep(10) }}
+                  className="w-full h-[60px] bg-white rounded-lg text-[#2592FF] text-[18px] font-semibold border-2 border-[#2592FF] hover:bg-[#F3F9FF] transition-colors"
+                >
+                  전화번호로 시작하기
+                </button>
+                <button
+                  type="button"
+                  onClick={handleKakao}
+                  className="w-full h-[60px] bg-[#FFE724] rounded-lg text-[#171502] text-[18px] font-semibold hover:bg-[#f5dc00] transition-colors"
+                >
+                  카카오톡으로 시작하기
+                </button>
+              </div>
+              <div className="flex items-center justify-center gap-2.5">
+                <span className="text-[16px] font-medium text-[#808080]">계정이 있으신가요?</span>
+                <button
+                  type="button"
+                  onClick={() => router.push('/')}
+                  className="text-[16px] font-medium text-[#2592FF]"
+                >
+                  로그인
+                </button>
+              </div>
             </div>
           </div>
         )}

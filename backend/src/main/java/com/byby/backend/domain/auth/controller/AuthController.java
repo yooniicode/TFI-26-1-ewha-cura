@@ -198,4 +198,39 @@ public class AuthController {
                 authService.phoneSignup(req)));
     }
 
+    @GetMapping("/linked-accounts")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "마이페이지 계정 연동 현황 조회")
+    public ResponseEntity<Response<AuthResponse.LinkedAccounts>> linkedAccounts(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.getLinkedAccounts(principal.getAuthUserId())));
+    }
+
+    @PostMapping("/link/email")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "이메일/비밀번호 로그인 연동", description = "현재 계정에 이메일/비밀번호 로그인 방법을 추가합니다.")
+    public ResponseEntity<Response<AuthResponse.LinkedAccounts>> linkEmail(
+            @Valid @RequestBody AuthRequest.LinkEmail req,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.linkEmailPassword(req, principal.getAuthUserId())));
+    }
+
+    @PostMapping("/link/kakao")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "카카오 계정 연동", description = "카카오 인가 코드(code)를 받아 현재 계정에 카카오 로그인을 연동합니다.")
+    public ResponseEntity<Response<AuthResponse.LinkedAccounts>> linkKakao(
+            @RequestParam String code,
+            @RequestParam(required = false) String redirectUri,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, kakaoOAuthService.linkAccount(code, redirectUri, principal.getAuthUserId())));
+    }
+
+    @DeleteMapping("/link/kakao")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "카카오 계정 연동 해제")
+    public ResponseEntity<Response<AuthResponse.LinkedAccounts>> unlinkKakao(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, authService.unlinkKakao(principal.getAuthUserId())));
+    }
+
 }

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -91,6 +92,10 @@ public class InterpreterService {
         }
         if (!principal.isAdmin() && req.role() != null && req.role() != interpreter.getRole()) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN, "Only center staff can change interpreter roles");
+        }
+        if (!principal.isAdmin() && req.phone() != null
+                && !Objects.equals(AuthService.normalizePhone(req.phone()), AuthService.normalizePhone(interpreter.getPhone()))) {
+            authService.syncPhone(principal.getAuthUserId(), req.phone());
         }
         interpreter.updateInfo(req.name(), req.phone(), req.role(), req.languages(), req.availabilityNote());
         return InterpreterResponse.Detail.from(interpreter);

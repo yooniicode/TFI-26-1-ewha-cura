@@ -177,8 +177,10 @@ public class AuthService {
 
     @Transactional
     public AuthResponse.PhoneLoginResult loginByPhone(String phone) {
-        String syntheticEmail = toSyntheticEmail(phone);
-        Optional<UserCredential> credOpt = userCredentialRepository.findByEmail(syntheticEmail);
+        String normalizedPhone = normalizePhone(phone);
+        Optional<UserCredential> credOpt = normalizedPhone != null
+                ? userCredentialRepository.findByPhone(normalizedPhone)
+                : Optional.empty();
         if (credOpt.isEmpty()) {
             return new AuthResponse.PhoneLoginResult(false, null, null);
         }
@@ -194,15 +196,10 @@ public class AuthService {
         if (!phoneVerificationStore.consumeVerified(req.phone())) {
             throw new GeneralException(GeneralErrorCode.UNAUTHORIZED, "휴대폰 인증이 필요합니다");
         }
-        String syntheticEmail = toSyntheticEmail(req.phone());
-        if (userCredentialRepository.existsByEmail(syntheticEmail)) {
-            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 가입된 전화번호입니다");
-        }
 
         UserRole role = req.role() != null ? req.role() : UserRole.patient;
         UUID authUserId = UUID.randomUUID();
         UserCredential cred = UserCredential.builder()
-                .email(syntheticEmail)
                 .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
                 .authUserId(authUserId)
                 .requestedRole(role)
@@ -222,8 +219,31 @@ public class AuthService {
         return new AuthResponse.TokenMe(token, getMe(principal));
     }
 
-    private String toSyntheticEmail(String phone) {
-        return "ph_" + phone.replaceAll("[^0-9]", "") + "@phone.cura.local";
+    /** 연락처를 숫자만 남긴 정규화된 형태로 반환 (빈 값이면 null) */
+    public static String normalizePhone(String raw) {
+        if (!StringUtils.hasText(raw)) return null;
+        String digits = raw.replaceAll("[^0-9]", "");
+        return digits.isEmpty() ? null : digits;
+    }
+
+    /**
+     * 회원가입/프로필 등록/마이페이지 연락처 수정 시 호출되는 단일 진입점.
+     * 다른 계정이 이미 사용 중인 연락처면 차단하고, 그렇지 않으면 cred.phone을 갱신한다.
+     */
+    @Transactional
+    public void syncPhone(UUID authUserId, String rawPhone) {
+        String normalized = normalizePhone(rawPhone);
+        if (normalized == null) return;
+        UserCredential cred = userCredentialRepository.findByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
+        if (normalized.equals(cred.getPhone())) return;
+        userCredentialRepository.findByPhone(normalized).ifPresent(existing -> {
+            if (!existing.getAuthUserId().equals(authUserId)) {
+                throw new GeneralException(GeneralErrorCode.BAD_REQUEST,
+                        "이미 다른 계정에서 사용 중인 연락처입니다. 기존 계정으로 로그인 후 마이페이지에서 계정을 연동해주세요.");
+            }
+        });
+        cred.updatePhone(normalized);
     }
 
     // ─── Email exists ────────────────────────────────────────────────────────────
@@ -258,6 +278,64 @@ public class AuthService {
             return;
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+    }
+
+    // ─── Account linking ─────────────────────────────────────────────────────────
+
+    public AuthResponse.LinkedAccounts getLinkedAccounts(UUID authUserId) {
+        UserCredential cred = userCredentialRepository.findByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
+        boolean hasPassword = hasUsableEmailLogin(cred);
+        return new AuthResponse.LinkedAccounts(
+                hasPassword ? cred.getEmail() : null,
+                hasPassword,
+                cred.getKakaoId() != null,
+                cred.getPhone()
+        );
+    }
+
+    @Transactional
+    public AuthResponse.LinkedAccounts linkEmailPassword(AuthRequest.LinkEmail req, UUID authUserId) {
+        UserCredential cred = userCredentialRepository.findByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
+        if (hasUsableEmailLogin(cred)) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 이메일 로그인이 설정되어 있습니다");
+        }
+        if (req.password().length() < 8) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "비밀번호는 8자 이상이어야 합니다");
+        }
+        String normalizedEmail = req.email().trim().toLowerCase(Locale.ROOT);
+        userCredentialRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
+            if (!existing.getAuthUserId().equals(authUserId)) {
+                throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 사용 중인 이메일입니다");
+            }
+        });
+        cred.setupEmailPassword(normalizedEmail, passwordEncoder.encode(req.password()));
+        return getLinkedAccounts(authUserId);
+    }
+
+    @Transactional
+    public AuthResponse.LinkedAccounts unlinkKakao(UUID authUserId) {
+        UserCredential cred = userCredentialRepository.findByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
+        if (cred.getKakaoId() == null) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "연동된 카카오 계정이 없습니다");
+        }
+        if (!hasUsableEmailLogin(cred) && cred.getPhone() == null) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST,
+                    "다른 로그인 방법이 없어 연동을 해제할 수 없습니다. 먼저 이메일을 등록해주세요.");
+        }
+        cred.unlinkKakao();
+        return getLinkedAccounts(authUserId);
+    }
+
+    private boolean hasUsableEmailLogin(UserCredential cred) {
+        boolean hasRealEmail = StringUtils.hasText(cred.getEmail()) && !isSyntheticPhoneEmail(cred.getEmail());
+        return hasRealEmail && cred.getPasswordHash() != null;
+    }
+
+    private static boolean isSyntheticPhoneEmail(String email) {
+        return email != null && email.matches("^ph_\\d+@phone\\.cura\\.local$");
     }
 
     // ─── Change password ─────────────────────────────────────────────────────────
@@ -356,6 +434,9 @@ public class AuthService {
     // ─── Private helpers ─────────────────────────────────────────────────────────
 
     private void registerPatientProfile(AuthRequest.RegisterProfile req, UserPrincipal principal) {
+        if (StringUtils.hasText(req.phone())) {
+            syncPhone(principal.getAuthUserId(), req.phone());
+        }
         if (req.centerId() == null && !StringUtils.hasText(req.centerName())) {
             throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "centerId 또는 centerName이 필요합니다");
         }
@@ -396,6 +477,9 @@ public class AuthService {
     }
 
     private void registerInterpreterProfile(AuthRequest.RegisterProfile req, UserPrincipal principal) {
+        if (StringUtils.hasText(req.phone())) {
+            syncPhone(principal.getAuthUserId(), req.phone());
+        }
         Optional<Interpreter> existing = interpreterRepository.findByAuthUserId(principal.getAuthUserId());
         if (existing.isPresent()) {
             Interpreter interpreter = existing.get();

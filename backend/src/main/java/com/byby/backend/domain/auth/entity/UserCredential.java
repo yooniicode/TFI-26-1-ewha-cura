@@ -31,6 +31,10 @@ public class UserCredential extends BaseEntity {
     @Column(unique = true, length = 50)
     private String kakaoId;
 
+    /** 정규화된 연락처 (숫자만). 중복 가입 방지 및 계정 연동에 사용 */
+    @Column(length = 20)
+    private String phone;
+
     @Column(nullable = false, unique = true)
     private UUID authUserId;
 
@@ -51,5 +55,22 @@ public class UserCredential extends BaseEntity {
 
     public void updateAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public void updatePhone(String phone) {
+        this.phone = phone;
+    }
+
+    public void linkKakao(String kakaoId) {
+        this.kakaoId = kakaoId;
+    }
+
+    public void unlinkKakao() {
+        this.kakaoId = null;
+    }
+
+    public void setupEmailPassword(String email, String passwordHash) {
+        this.email = email;
+        this.passwordHash = passwordHash;
     }
 }

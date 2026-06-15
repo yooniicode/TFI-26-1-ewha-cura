@@ -14,6 +14,7 @@ public interface UserCredentialRepository extends JpaRepository<UserCredential, 
     boolean existsByEmail(String email);
     Optional<UserCredential> findByAuthUserId(UUID authUserId);
     Optional<UserCredential> findByKakaoId(String kakaoId);
+    Optional<UserCredential> findByPhone(String phone);
 
     @Query("SELECT c.sessionVersion FROM UserCredential c WHERE c.authUserId = :authUserId")
     Optional<Long> findSessionVersionByAuthUserId(@Param("authUserId") UUID authUserId);

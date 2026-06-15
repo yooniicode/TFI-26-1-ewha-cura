@@ -54,4 +54,12 @@ public class AuthResponse {
 
     /** /auth/phone/login 응답 — exists=true 면 token/me 포함, false 면 둘 다 null */
     public record PhoneLoginResult(boolean exists, String token, Me me) {}
+
+    /** 마이페이지 "계정 연동" 현황 — email/hasPassword는 실제 사용 가능한 이메일 로그인 여부를 의미 */
+    public record LinkedAccounts(
+            String email,
+            boolean hasPassword,
+            boolean hasKakao,
+            String phone
+    ) {}
 }

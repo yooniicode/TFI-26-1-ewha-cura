@@ -1,7 +1,9 @@
 package com.byby.backend.domain.auth.service;
 
 import com.byby.backend.common.enums.UserRole;
+import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
+import com.byby.backend.common.response.code.BusinessErrorCode;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.security.JwtUtil;
 import com.byby.backend.domain.auth.dto.AuthResponse;
@@ -71,6 +73,41 @@ public class KakaoOAuthService {
         AuthResponse.Me me = authService.getMe(
                 new com.byby.backend.common.security.UserPrincipal(cred.getAuthUserId(), cred.getRequestedRole()));
         return new AuthResponse.TokenMe(token, me);
+    }
+
+    /**
+     * 마이페이지 "계정 연동" — 로그인된 사용자(authUserId)에 카카오 계정을 연동한다.
+     *
+     * @param code        카카오에서 받은 인가 코드 (code grant)
+     * @param clientRedirectUri 프론트엔드가 카카오에 전달한 redirect_uri (미입력 시 env 값 사용)
+     * @param authUserId  연동 대상 계정의 authUserId (로그인된 사용자)
+     */
+    @Transactional
+    public AuthResponse.LinkedAccounts linkAccount(String code, String clientRedirectUri, UUID authUserId) {
+        if (!StringUtils.hasText(restApiKey)) {
+            throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
+                    "KAKAO_REST_API_KEY 가 설정되지 않았습니다");
+        }
+
+        String effectiveRedirectUri = StringUtils.hasText(clientRedirectUri) ? clientRedirectUri : redirectUri;
+        String kakaoAccessToken = fetchKakaoToken(code, effectiveRedirectUri);
+        KakaoUserInfo userInfo = fetchKakaoUserInfo(kakaoAccessToken);
+
+        credentialRepository.findByKakaoId(userInfo.id()).ifPresent(existing -> {
+            if (!existing.getAuthUserId().equals(authUserId)) {
+                throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 다른 계정에 연동된 카카오 계정입니다");
+            }
+        });
+
+        UserCredential cred = credentialRepository.findByAuthUserId(authUserId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.USER_NOT_FOUND));
+        if (cred.getKakaoId() != null && !cred.getKakaoId().equals(userInfo.id())) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 다른 카카오 계정이 연동되어 있습니다");
+        }
+        if (cred.getKakaoId() == null) {
+            cred.linkKakao(userInfo.id());
+        }
+        return authService.getLinkedAccounts(authUserId);
     }
 
     // ─── 카카오 토큰 교환 ──────────────────────────────────────────────────────────

@@ -77,4 +77,13 @@ export const authApi = {
     gender?: string; nationality?: string; visaType?: string;
     birthDate?: string; workplace?: string; centerId?: string; centerName?: string;
   }) => post<TokenMe>('/auth/phone/signup', body),
+  linkedAccounts:  () => get('/auth/linked-accounts', schemas.linkedAccounts),
+  linkEmail:       (body: { email: string; password: string }) =>
+    post('/auth/link/email', body, schemas.linkedAccounts),
+  linkKakao:       (code: string, redirectUri?: string) => {
+    const params = new URLSearchParams({ code })
+    if (redirectUri) params.set('redirectUri', redirectUri)
+    return post(`/auth/link/kakao?${params.toString()}`, {}, schemas.linkedAccounts)
+  },
+  unlinkKakao:     () => del<void>('/auth/link/kakao'),
 }

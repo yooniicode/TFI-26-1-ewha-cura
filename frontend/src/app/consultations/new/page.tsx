@@ -71,13 +71,12 @@ function ReportWriteInner() {
   const [aiParsing, setAiParsing] = useState(false)
   const [showExitModal, setShowExitModal] = useState(false)
 
-  // 메모에서 온 경우 step 1 건너뜀; 5번+6번을 하나의 스크린으로 합침
+  // 메모에서 온 경우 step 1 건너뜀; 5번+6번을 하나의 스크린(5번)으로 합침
   const fromMemo = !!rmCid
   const TOTAL_STEPS = fromMemo ? 2 : 3
   const isLastStep = step === TOTAL_STEPS
-  // 스텝 인디케이터 매핑: fromMemo → 4,5~6 / 처음부터 → 3,4,5~6
-  const stepLabelLow = fromMemo ? step + 3 : step + 2
-  const stepLabelHigh = isLastStep ? 6 : stepLabelLow
+  // 스텝 인디케이터 매핑: fromMemo → 4,5 / 처음부터 → 3,4,5 (총 5단계)
+  const stepLabel = fromMemo ? step + 3 : step + 2
 
   function applyParsedFields(fields: Record<string, string>) {
     if (fields.diagnosisNameCode) setDiagnosisNameCode(fields.diagnosisNameCode)
@@ -313,9 +312,9 @@ function ReportWriteInner() {
       {/* 스텝 인디케이터 */}
       <div className="bg-white px-4 pt-4 pb-5">
         <div className="flex gap-2">
-          {Array.from({ length: 6 }, (_, i) => i + 1).map(n => {
-            const isDone = n < stepLabelLow
-            const isActive = n >= stepLabelLow && n <= stepLabelHigh
+          {Array.from({ length: 5 }, (_, i) => i + 1).map(n => {
+            const isDone = n < stepLabel
+            const isActive = n === stepLabel
             return (
               <div
                 key={n}
@@ -354,7 +353,7 @@ function ReportWriteInner() {
           />
         )}
         {isLastStep && (
-          <div className="flex flex-col gap-10">
+          <div className="flex flex-col gap-8">
             <StepDiagnosis
               patientComment={patientComment}
               diagnosisNameCode={diagnosisNameCode}
@@ -366,7 +365,7 @@ function ReportWriteInner() {
               onDiagnosisChange={setDiagnosisContent}
               onTreatmentChange={setTreatmentResult}
             />
-            <div className="border-t border-[#F0F0F0]" />
+            <div className="-mx-4 h-2 bg-[#F7F7F7]" />
             <StepMedication
               medicationInstruction={medicationInstruction}
               nextAppointmentDate={nextAppointmentDate}

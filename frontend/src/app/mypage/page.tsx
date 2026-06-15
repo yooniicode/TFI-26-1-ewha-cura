@@ -46,6 +46,12 @@ export default function MyPage() {
     enabled: me?.role === 'admin',
   })
 
+  const { data: linkedAccounts } = useQuery({
+    queryKey: queryKeys.linkedAccounts,
+    queryFn: () => authApi.linkedAccounts().then(r => r.payload),
+    enabled: !!me?.authUserId,
+  })
+
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [region, setRegion] = useState('')
@@ -219,6 +225,59 @@ export default function MyPage() {
       setPwSaving(false)
     }
   }
+
+  // ─── 계정 연동 ─────────────────────────────────────────────────────────────
+  const [linkEmailValue, setLinkEmailValue] = useState('')
+  const [linkPassword, setLinkPassword] = useState('')
+  const [linkPasswordConfirm, setLinkPasswordConfirm] = useState('')
+  const [linkNotice, setLinkNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  const { mutate: submitLinkEmail, isPending: linkingEmail, isSuccess: linkEmailSuccess, error: linkEmailError } =
+    useMutation<unknown, Error>({
+      mutationFn: () => {
+        if (linkPassword.length < 8) return Promise.reject(new Error(t.mypage.err_password_min))
+        if (linkPassword !== linkPasswordConfirm) return Promise.reject(new Error(t.mypage.err_password_confirm))
+        return authApi.linkEmail({ email: linkEmailValue.trim(), password: linkPassword })
+      },
+      onSuccess: () => {
+        setLinkEmailValue(''); setLinkPassword(''); setLinkPasswordConfirm('')
+        queryClient.invalidateQueries({ queryKey: queryKeys.linkedAccounts })
+      },
+    })
+
+  const { mutate: unlinkKakao, isPending: unlinkingKakao } = useMutation<unknown, Error>({
+    mutationFn: () => authApi.unlinkKakao(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.linkedAccounts }),
+  })
+
+  function handleUnlinkKakao() {
+    if (!confirm(t.mypage.unlink_kakao_confirm)) return
+    unlinkKakao()
+  }
+
+  function handleLinkKakao() {
+    const key = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY
+    if (!key) return
+    const redirectUri = `${window.location.origin}/auth/kakao/callback`
+    const params = new URLSearchParams({ client_id: key, redirect_uri: redirectUri, response_type: 'code', state: 'link' })
+    window.location.href = `https://kauth.kakao.com/oauth/authorize?${params}`
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const linked = params.get('linked')
+    const linkError = params.get('linkError')
+    if (linked === 'kakao') {
+      setLinkNotice({ type: 'success', message: t.mypage.link_success })
+      queryClient.invalidateQueries({ queryKey: queryKeys.linkedAccounts })
+      window.history.replaceState(null, '', '/mypage')
+    } else if (linkError) {
+      setLinkNotice({ type: 'error', message: linkError })
+      window.history.replaceState(null, '', '/mypage')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const canUnlinkKakao = !!linkedAccounts?.hasPassword || !!linkedAccounts?.phone
 
   async function handleDeleteAccount() {
     if (!confirm(t.mypage.delete_confirm)) return
@@ -439,6 +498,78 @@ export default function MyPage() {
               {pwSaving ? t.mypage.password_changing : t.mypage.password_change_btn}
             </ActionButton>
           </form>
+        </Section>
+
+        {/* 계정 연동 */}
+        <Section title={t.mypage.account_link_title}>
+          {linkNotice && (
+            <p className={`text-sm mb-3 ${linkNotice.type === 'success' ? 'text-[#2592FF]' : 'text-red-500'}`}>
+              {linkNotice.message}
+            </p>
+          )}
+          <div className="space-y-4">
+            {/* 이메일 로그인 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-[#161616]">{t.mypage.link_email_title}</p>
+                <span className={`text-xs font-bold ${linkedAccounts?.hasPassword ? 'text-[#2592FF]' : 'text-[#A0A0A0]'}`}>
+                  {linkedAccounts?.hasPassword ? t.mypage.linked : t.mypage.not_linked}
+                </span>
+              </div>
+              {linkedAccounts?.hasPassword ? (
+                <p className="text-sm text-[#808080]">{linkedAccounts.email}</p>
+              ) : (
+                <form onSubmit={e => { e.preventDefault(); submitLinkEmail() }} className="space-y-3">
+                  <Field label={t.mypage.link_email_label}>
+                    <Input type="email" value={linkEmailValue} onChange={e => setLinkEmailValue(e.target.value)} required />
+                  </Field>
+                  <Field label={t.mypage.link_password_label}>
+                    <PasswordInput value={linkPassword} onChange={setLinkPassword} placeholder={t.mypage.password_min_hint} autoComplete="new-password" className={INPUT_CLS} />
+                  </Field>
+                  <Field label={t.mypage.link_password_confirm_label}>
+                    <PasswordInput value={linkPasswordConfirm} onChange={setLinkPasswordConfirm} placeholder={t.mypage.password_reenter} autoComplete="new-password" className={INPUT_CLS} />
+                  </Field>
+                  {linkEmailError && <p className="text-red-500 text-sm">{linkEmailError.message}</p>}
+                  {linkEmailSuccess && <p className="text-[#2592FF] text-sm">{t.mypage.link_success}</p>}
+                  <ActionButton type="submit" variant="secondary" disabled={linkingEmail}>
+                    {linkingEmail ? t.mypage.saving : t.mypage.link_email_submit}
+                  </ActionButton>
+                </form>
+              )}
+            </div>
+
+            <div className="h-px bg-[#F0F0F0]" />
+
+            {/* 카카오 로그인 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-[#161616]">{t.mypage.link_kakao_title}</p>
+                <span className={`text-xs font-bold ${linkedAccounts?.hasKakao ? 'text-[#2592FF]' : 'text-[#A0A0A0]'}`}>
+                  {linkedAccounts?.hasKakao ? t.mypage.linked : t.mypage.not_linked}
+                </span>
+              </div>
+              {linkedAccounts?.hasKakao ? (
+                <>
+                  <ActionButton variant="secondary" disabled={!canUnlinkKakao || unlinkingKakao} onClick={handleUnlinkKakao}>
+                    {unlinkingKakao ? t.mypage.unlinking : t.mypage.unlink_kakao_button}
+                  </ActionButton>
+                  {!canUnlinkKakao && <p className="text-xs text-[#A0A0A0] mt-2">{t.mypage.unlink_kakao_need_password}</p>}
+                </>
+              ) : (
+                <ActionButton variant="secondary" onClick={handleLinkKakao}>
+                  {t.mypage.link_kakao_button}
+                </ActionButton>
+              )}
+            </div>
+
+            <div className="h-px bg-[#F0F0F0]" />
+
+            {/* 연락처 */}
+            <div>
+              <p className="text-sm font-medium text-[#161616] mb-2">{t.mypage.link_phone_title}</p>
+              <p className="text-sm text-[#808080]">{linkedAccounts?.phone || t.mypage.no_phone_registered}</p>
+            </div>
+          </div>
         </Section>
 
         {/* 로그아웃 / 계정 삭제 */}

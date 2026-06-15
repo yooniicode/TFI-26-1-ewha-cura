@@ -24,6 +24,22 @@ function KakaoCallbackInner() {
   useEffect(() => {
     const code = searchParams.get('code')
     const kakaoError = searchParams.get('error')
+    const state = searchParams.get('state')
+    const redirectUri = `${window.location.origin}/auth/kakao/callback`
+
+    if (state === 'link') {
+      if (kakaoError || !code) {
+        router.replace(`/mypage?linkError=${encodeURIComponent(t.login.err_callback_failed)}`)
+        return
+      }
+      authApi.linkKakao(code, redirectUri)
+        .then(() => router.replace('/mypage?linked=kakao'))
+        .catch(e => {
+          const message = e instanceof Error ? e.message : t.login.err_auth_unknown
+          router.replace(`/mypage?linkError=${encodeURIComponent(message)}`)
+        })
+      return
+    }
 
     if (kakaoError) {
       setError(t.login.err_callback_failed)
@@ -37,7 +53,6 @@ function KakaoCallbackInner() {
       return
     }
 
-    const redirectUri = `${window.location.origin}/auth/kakao/callback`
     authApi.kakaoLogin(code, redirectUri)
       .then(res => {
         if (res.payload?.token) {

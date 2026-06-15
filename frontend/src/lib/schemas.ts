@@ -200,6 +200,13 @@ export const emailExistsSchema = z.object({
   exists: z.boolean(),
 })
 
+export const linkedAccountsSchema = z.object({
+  email: z.string().nullable(),
+  hasPassword: z.boolean(),
+  hasKakao: z.boolean(),
+  phone: z.string().nullable(),
+})
+
 export const memberSchema = z.object({
   authUserId: z.string().uuid(),
   email: z.string().nullable().optional(),
@@ -337,6 +344,7 @@ export const schemas = {
   scripts:       z.array(medicalScriptSchema),
   authMe:        authMeSchema,
   emailExists:   emailExistsSchema,
+  linkedAccounts: linkedAccountsSchema,
   member:        memberSchema,
   members:       z.array(memberSchema),
   adminProfile:  adminProfileSchema,

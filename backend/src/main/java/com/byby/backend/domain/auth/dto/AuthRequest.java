@@ -107,4 +107,9 @@ public class AuthRequest {
             UUID centerId,
             String centerName
     ) {}
+
+    public record LinkEmail(
+            @NotBlank String email,
+            @NotBlank String password
+    ) {}
 }

@@ -6,6 +6,7 @@ import com.byby.backend.common.response.code.BusinessErrorCode;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.admin.service.AdminService;
+import com.byby.backend.domain.auth.service.AuthService;
 import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.center.repository.CenterRepository;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -41,6 +43,7 @@ public class PatientService {
     private final CenterRepository centerRepository;
     private final AdminService adminService;
     private final UserCredentialRepository userCredentialRepository;
+    private final AuthService authService;
 
     @Transactional
     public PatientResponse.Detail create(PatientRequest.Create req, UserPrincipal principal) {
@@ -124,8 +127,12 @@ public class PatientService {
             if (!principal.isPatient() || !principal.getAuthUserId().equals(patient.getAuthUserId())) {
                 throw new GeneralException(GeneralErrorCode.FORBIDDEN);
             }
+            if (req.phone() != null
+                    && !Objects.equals(AuthService.normalizePhone(req.phone()), AuthService.normalizePhone(patient.getPhone()))) {
+                authService.syncPhone(principal.getAuthUserId(), req.phone());
+            }
         }
-        
+
         patient.updateInfo(req.name(), req.phone(), req.region(), req.visaNote(), req.visaType(), req.workplace());
         return PatientResponse.Detail.from(patient);
     }
