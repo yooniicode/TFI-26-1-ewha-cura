@@ -97,7 +97,17 @@ export default function SplashPage() {
 
       {/* Bottom buttons */}
       <div className="px-4 pb-10 flex flex-col gap-5">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
+          <div className="relative">
+            {lastMethod === 'phone' && <RecentBadge />}
+            <button
+              type="button"
+              onClick={() => router.push('/login?method=phone')}
+              className="w-full h-[60px] bg-[#f0f1f5] rounded-lg text-[#161616] text-[18px] font-semibold hover:bg-[#e4e5ea] active:bg-[#d8d9de] transition-colors"
+            >
+              전화번호로 로그인
+            </button>
+          </div>
           <div className="relative">
             {lastMethod === 'email' && <RecentBadge />}
             <button
@@ -109,21 +119,11 @@ export default function SplashPage() {
             </button>
           </div>
           <div className="relative">
-            {lastMethod === 'phone' && <RecentBadge />}
-            <button
-              type="button"
-              onClick={() => router.push('/login?method=phone')}
-              className="w-full h-[60px] bg-white border-2 border-[#2592FF] rounded-lg text-[#2592FF] text-[18px] font-semibold hover:bg-[#f0f7ff] active:bg-[#e0efff] transition-colors"
-            >
-              전화번호로 로그인
-            </button>
-          </div>
-          <div className="relative">
             {lastMethod === 'kakao' && <RecentBadge />}
             <button
               type="button"
               onClick={handleKakao}
-              className="w-full h-[60px] bg-[#FFE724] rounded-lg text-[#191600] text-[18px] font-semibold hover:bg-[#f5dc00] active:bg-[#e8d000] transition-colors flex items-center justify-center gap-2"
+              className="w-full h-[60px] bg-[#FFE724] rounded-lg text-[#171502] text-[18px] font-semibold hover:bg-[#f5dc00] active:bg-[#e8d000] transition-colors flex items-center justify-center gap-2"
             >
               <KakaoIcon />
               카카오톡으로 로그인
@@ -131,13 +131,13 @@ export default function SplashPage() {
           </div>
         </div>
         <div className="flex items-center justify-center gap-2.5">
-          <span className="text-[16px] font-medium text-[#808080]">계정이 없으신가요?</span>
+          <span className="text-[16px] font-medium text-[#808080]">처음이신가요?</span>
           <button
             type="button"
             onClick={() => router.push('/signup')}
             className="text-[16px] font-medium text-[#2592FF]"
           >
-            회원가입
+            회원가입하기
           </button>
         </div>
       </div>

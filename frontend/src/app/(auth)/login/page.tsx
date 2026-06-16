@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
 import { setAccessToken, setLastLoginMethod } from '@/lib/auth/auth-token'
@@ -104,6 +103,8 @@ function LoginPageInner() {
     setMethod(m); setError(''); setPfCodeSent(false); setPfCode(''); setPfNoAccount(false)
   }
 
+  const isPhoneMethod = method === 'phone'
+
   return (
     <div className="min-h-screen bg-white flex flex-col max-w-[402px] mx-auto">
       {/* Header */}
@@ -134,7 +135,7 @@ function LoginPageInner() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 px-4 pt-6 pb-8">
+      <div className={`flex-1 px-4 pt-6 ${isPhoneMethod ? 'pb-[129px]' : 'pb-8'}`}>
 
         {/* 이메일 로그인 */}
         {method === 'email' && (
@@ -182,28 +183,18 @@ function LoginPageInner() {
         {method === 'phone' && (
           <>
             <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
-              전화번호로<br />로그인 해주세요
+              가입한 번호로<br />로그인해주세요
             </h1>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2.5">
                 <label className="text-[16px] font-medium text-[#494949]">전화번호</label>
-                <div className="flex gap-2">
-                  <input
-                    type="tel"
-                    className={`${inputCls} flex-1`}
-                    placeholder="010-0000-0000"
-                    value={pfPhone}
-                    onChange={e => { setPfPhone(e.target.value); setPfCodeSent(false); setPfCode(''); setPfNoAccount(false) }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handlePfRequest}
-                    disabled={!pfPhone.trim() || pfReqLoading}
-                    className="shrink-0 h-[56px] px-4 bg-[#2592FF] rounded-2xl text-white text-[15px] font-semibold disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors"
-                  >
-                    {pfReqLoading ? '...' : pfCodeSent ? '재발급' : '인증하기'}
-                  </button>
-                </div>
+                <input
+                  type="tel"
+                  className={inputCls}
+                  placeholder="전화번호를 입력해주세요"
+                  value={pfPhone}
+                  onChange={e => { setPfPhone(e.target.value); setPfCodeSent(false); setPfCode(''); setPfNoAccount(false) }}
+                />
               </div>
 
               {pfCodeSent && (
@@ -219,23 +210,6 @@ function LoginPageInner() {
                   >
                     문자앱으로 바로 보내기
                   </a>
-                  <button
-                    type="button"
-                    onClick={handlePfVerify}
-                    disabled={pfVerifyLoading}
-                    className="w-full h-[48px] bg-[#F0F1F5] rounded-xl text-[#494949] text-[15px] font-semibold disabled:opacity-40 hover:bg-[#e4e4e8] transition-colors"
-                  >
-                    {pfVerifyLoading ? '확인 중...' : '문자 보냈어요, 인증 확인'}
-                  </button>
-                </div>
-              )}
-
-              {pfNoAccount && (
-                <div className="bg-[#FFF3F3] rounded-2xl p-4 text-center flex flex-col gap-2">
-                  <p className="text-[15px] font-medium text-[#494949]">가입된 계정이 없어요</p>
-                  <Link href="/signup" className="text-[#2592FF] text-[14px] font-semibold">
-                    전화번호로 회원가입 하기 →
-                  </Link>
                 </div>
               )}
 
@@ -244,6 +218,63 @@ function LoginPageInner() {
           </>
         )}
       </div>
+
+      {/* 전화번호 로그인 하단 고정 CTA */}
+      {isPhoneMethod && (
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[402px] bg-white border-t border-[#EEEEEE] px-6 pt-6 pb-8">
+          <button
+            type="button"
+            onClick={pfCodeSent ? handlePfVerify : handlePfRequest}
+            disabled={!pfPhone.trim() || pfReqLoading || pfVerifyLoading}
+            className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold disabled:opacity-40 hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
+          >
+            {pfReqLoading ? '...' : pfVerifyLoading ? '확인 중...' : pfCodeSent ? '문자 보냈어요, 인증 확인' : '로그인하기'}
+          </button>
+        </div>
+      )}
+
+      {/* 가입 안된 번호 모달 */}
+      {pfNoAccount && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setPfNoAccount(false)} />
+          <div className="relative bg-white rounded-[20px] p-6 w-full max-w-[370px] flex flex-col gap-8 items-center">
+            {/* 닫기 버튼 */}
+            <button
+              type="button"
+              onClick={() => setPfNoAccount(false)}
+              className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6L18 18" stroke="#161616" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {/* 텍스트 */}
+            <div className="flex flex-col gap-2.5 items-center text-center">
+              <p className="text-[24px] font-semibold text-[#161616]">가입이 안된 번호예요</p>
+              <p className="text-[18px] font-medium text-[#494949]">지금 가입해서 큐라를 시작해보세요!</p>
+            </div>
+
+            {/* 버튼 */}
+            <div className="flex gap-2.5 w-full">
+              <button
+                type="button"
+                onClick={() => setPfNoAccount(false)}
+                className="flex-1 h-[60px] bg-[#F0F1F5] rounded-lg text-[#808080] text-[18px] font-semibold hover:bg-[#e4e4e8] transition-colors"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/signup')}
+                className="flex-1 h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] transition-colors"
+              >
+                회원가입하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

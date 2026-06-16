@@ -13,6 +13,7 @@ import type { Consultation, Patient } from '@/lib/types'
 import { useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { formatKoreanDate, parseAppDate } from '@/lib/utils/dateFormat'
+import { CalendarPicker, TimeScrollPicker } from '@/components/ui/DateTimePicker'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
 
 function calcAge(birthDate?: string | null): string {
@@ -261,15 +262,11 @@ function ReportWriteInner() {
       <AppShell noPadding>
         <PageHeader title={tc.write_report} />
         <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
-          <div className="w-16 h-16 rounded-full bg-[#f3f9ff] flex items-center justify-center mb-6">
-            <svg width="32" height="24" viewBox="0 0 32 24" fill="none">
-              <path d="M2 12L12 22L30 2" stroke="#2592FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <p className="text-[26px] font-semibold text-[#161616] leading-[1.4]">
+          <img src="/icons/common/completion-graphic.svg" width={172} height={172} alt="" className="mx-auto" />
+          <p className="text-[24px] font-semibold text-[#161616] leading-[1.4] mt-8">
             {tc.report_done}
           </p>
-          <p className="mt-2 text-base text-[#808080]">{tc.well_done}</p>
+          <p className="mt-2.5 text-[18px] font-medium text-[#494949]">{tc.well_done}</p>
         </div>
         <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
           <button
@@ -675,6 +672,10 @@ function HospitalSearchField({ value, onChange }: { value: string; onChange: (v:
         </div>
       )}
 
+      {!value && mode === 'search' && (
+        <p className="text-xs text-[#A0A0A0]">{tc.hosp_search_hint}</p>
+      )}
+
       {/* 직접 입력 모드 */}
       {!value && mode === 'direct' && (
         <div className="flex gap-2">
@@ -977,8 +978,8 @@ function StepMedication({ medicationInstruction, nextAppointmentDate, nextAppoin
       )}
       <FieldTextarea label={tc.medication_field} value={medicationInstruction} onChange={onMedicationChange}
         placeholder={tc.medication_ph} fromMemo={fromMemo} />
-      <div className="flex flex-col gap-2">
-        <label className="text-base font-medium text-[#161616]">{tc.next_schedule}</label>
+      <div className="flex flex-col gap-2.5">
+        <label className="text-[16px] font-medium text-[#494949]">{tc.next_schedule}</label>
         <CalendarPicker
           value={nextAppointmentDate}
           onChange={onNextDateChange}
@@ -990,164 +991,3 @@ function StepMedication({ medicationInstruction, nextAppointmentDate, nextAppoin
   )
 }
 
-function CalendarPicker({ value, onChange, time, onTimeChange }: {
-  value: string; onChange: (v: string) => void
-  time?: string; onTimeChange?: (v: string) => void
-}) {
-  const { t } = useTranslation()
-  const today = new Date()
-  const initDate = parseAppDate(value)
-  const [viewYear, setViewYear] = useState(() =>
-    initDate ? initDate.getFullYear() : today.getFullYear()
-  )
-  const [viewMonth, setViewMonth] = useState(() =>
-    initDate ? initDate.getMonth() : today.getMonth()
-  )
-
-  const selectedDate = parseAppDate(value)
-
-  const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay()
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
-  const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate()
-
-  const cells: Array<{ date: Date; current: boolean }> = []
-  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-    cells.push({ date: new Date(viewYear, viewMonth - 1, prevMonthDays - i), current: false })
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({ date: new Date(viewYear, viewMonth, d), current: true })
-  }
-  const remaining = cells.length % 7 === 0 ? 0 : 7 - (cells.length % 7)
-  for (let d = 1; d <= remaining; d++) {
-    cells.push({ date: new Date(viewYear, viewMonth + 1, d), current: false })
-  }
-
-  function prevMonth() {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11) }
-    else setViewMonth(m => m - 1)
-  }
-  function nextMonth() {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0) }
-    else setViewMonth(m => m + 1)
-  }
-
-  function handleSelect(d: Date) {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    onChange(`${y}-${m}-${day}`)
-  }
-
-  const selectedHour = time ? time.split(':')[0] : ''
-  const selectedMin = time ? time.split(':')[1] : ''
-
-  function handleTimeChange(hour: string, min: string) {
-    if (onTimeChange) onTimeChange(hour && min ? `${hour}:${min}` : '')
-  }
-
-  const DAYS = t.common.weekdays
-
-  return (
-    <div className="bg-white border border-[#eee] rounded-[20px] p-6">
-      {/* 월 헤더 */}
-      <div className="flex items-center justify-between mb-4">
-        <button type="button" onClick={prevMonth} className="w-8 h-8 flex items-center justify-center">
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-            <path d="M7 1L1 7L7 13" stroke="#494949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-        <span className="text-[16px] font-semibold text-[#161616]">{viewYear}년 {viewMonth + 1}월</span>
-        <button type="button" onClick={nextMonth} className="w-8 h-8 flex items-center justify-center">
-          <svg width="8" height="14" viewBox="0 0 8 14" fill="none">
-            <path d="M1 1L7 7L1 13" stroke="#494949" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
-
-      {/* 요일 헤더 */}
-      <div className="grid grid-cols-7 mb-1">
-        {DAYS.map(d => (
-          <div key={d} className="text-center text-[12px] text-[#808080] py-1">{d}</div>
-        ))}
-      </div>
-
-      {/* 날짜 그리드 */}
-      <div className="grid grid-cols-7">
-        {cells.map(({ date, current }, idx) => {
-          const isSelected = selectedDate &&
-            date.getFullYear() === selectedDate.getFullYear() &&
-            date.getMonth() === selectedDate.getMonth() &&
-            date.getDate() === selectedDate.getDate()
-
-          return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSelect(date)}
-              className="flex items-center justify-center py-1"
-            >
-              <span className={`w-[30px] h-[30px] flex items-center justify-center rounded-full text-[14px] ${
-                isSelected
-                  ? 'bg-[#2592ff] text-white font-medium'
-                  : !current
-                  ? 'text-[#C8C8C8]'
-                  : 'text-[#494949]'
-              }`}>
-                {date.getDate()}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* 날짜 선택 후: 날짜 표시 + 시간 선택 */}
-      {value && (
-        <div className="mt-4 pt-4 border-t border-[#eee] flex flex-col gap-3">
-          <p className="text-[14px] text-[#2592ff] font-medium text-center">{formatKoreanDate(value)}</p>
-          {onTimeChange && (
-            <div className="flex flex-col gap-2">
-              <p className="text-[13px] text-[#808080] text-center">시간 선택 (선택)</p>
-              <div className="flex items-center justify-center gap-2">
-                <select
-                  value={selectedHour}
-                  onChange={e => handleTimeChange(e.target.value, selectedMin || '00')}
-                  className="px-3 py-2 rounded-lg border border-[#EEEEEE] bg-[#F7F7F7] text-[15px] text-[#161616] outline-none appearance-none text-center"
-                >
-                  <option value="">시</option>
-                  {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(h => (
-                    <option key={h} value={h}>{h}시</option>
-                  ))}
-                </select>
-                <span className="text-[#494949] font-semibold">:</span>
-                <select
-                  value={selectedMin}
-                  onChange={e => handleTimeChange(selectedHour || '09', e.target.value)}
-                  className="px-3 py-2 rounded-lg border border-[#EEEEEE] bg-[#F7F7F7] text-[15px] text-[#161616] outline-none appearance-none text-center"
-                >
-                  <option value="">분</option>
-                  {['00', '10', '20', '30', '40', '50'].map(m => (
-                    <option key={m} value={m}>{m}분</option>
-                  ))}
-                </select>
-                {time && (
-                  <button
-                    type="button"
-                    onClick={() => onTimeChange('')}
-                    className="text-[#A0A0A0] hover:text-red-400 transition-colors ml-1"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              {time && (
-                <p className="text-[13px] text-[#2592ff] text-center font-medium">{formatKoreanDate(value)} {time}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}

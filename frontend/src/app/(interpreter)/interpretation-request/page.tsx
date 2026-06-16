@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AppShell from '@/components/layout/AppShell'
 import PageHeader from '@/components/ui/PageHeader'
+import { CalendarPicker } from '@/components/ui/DateTimePicker'
 import { consultationApi } from '@/lib/api'
 import { useMe } from '@/hooks/useMe'
 import { useTranslation } from '@/lib/i18n/I18nContext'
@@ -123,14 +124,8 @@ export default function InterpretationRequestPage() {
 
         {/* 희망 날짜 */}
         <div className="bg-white rounded-2xl px-5 py-5">
-          <p className="text-sm font-bold text-[#161616] mb-1">{ti.preferred_date}</p>
-          <input
-            type="date"
-            value={preferredDate}
-            onChange={e => setPreferredDate(e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none border border-[#EEEEEE] focus:border-[#2592FF]"
-          />
+          <p className="text-sm font-bold text-[#161616] mb-3">{ti.preferred_date}</p>
+          <CalendarPicker value={preferredDate} onChange={setPreferredDate} />
         </div>
 
         {/* 요청사항 */}

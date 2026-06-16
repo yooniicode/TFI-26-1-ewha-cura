@@ -50,10 +50,11 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation, unr
   if (me?.role === 'patient') {
     return [
       home,
-      { href: '/chat',                                                label: t.drawer.medical_translation, iconSrc: '/icons/immigrant/home/의료통번역.svg', badgeCount: unreadCount },
+      { href: '/chat',                                                label: t.drawer.medical_translation, inlineSvg: 'chat', badgeCount: unreadCount },
       { href: '/emergency-call',                                      label: t.drawer.emergency_call,      iconSrc: '/icons/immigrant/home/긴급전화.svg' },
       { href: '/my-records',                                          label: t.drawer.medical_records,     iconSrc: '/icons/immigrant/home/진료기록.svg' },
       { href: me.entityId ? `/scripts/patient/${me.entityId}` : '#', label: t.drawer.medical_script,      iconSrc: '/icons/immigrant/home/의료대본.svg' },
+      { href: '/scripts/saved',                                       label: t.drawer.saved_script,        inlineSvg: 'bookmark' },
       mypage,
     ]
   }
@@ -147,6 +148,12 @@ function DrawerIcon({ item }: { item: DrawerNavItem }) {
           <line x1="3" y1="10" x2="21" y2="10" />
           <line x1="12" y1="14" x2="12" y2="18" />
           <line x1="10" y1="16" x2="14" y2="16" />
+        </svg>
+      )
+    case 'bookmark':
+      return (
+        <svg {...svgProps}>
+          <path d="M17 3H7C5.9 3 5 3.9 5 5V21L12 18L19 21V5C19 3.9 18.1 3 17 3Z" />
         </svg>
       )
     default:

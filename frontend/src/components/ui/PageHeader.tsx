@@ -7,9 +7,10 @@ interface PageHeaderProps {
   onBack?: () => void
   showClose?: boolean
   onClose?: () => void
+  rightAction?: React.ReactNode
 }
 
-export default function PageHeader({ title, onBack, showClose = false, onClose }: PageHeaderProps) {
+export default function PageHeader({ title, onBack, showClose = false, onClose, rightAction }: PageHeaderProps) {
   const router = useRouter()
 
   function handleBack() {
@@ -34,7 +35,9 @@ export default function PageHeader({ title, onBack, showClose = false, onClose }
         </svg>
       </button>
       <h1 className="flex-1 text-center text-lg font-semibold text-[#161616]">{title}</h1>
-      {showClose ? (
+      {rightAction ? (
+        <div className="w-6 flex items-center justify-center">{rightAction}</div>
+      ) : showClose ? (
         <button
           onClick={handleClose}
           className="w-6 flex items-center justify-center"
