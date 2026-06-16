@@ -1,8 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import AppShell from '@/components/layout/AppShell'
 import PageHeader from '@/components/ui/PageHeader'
+import { useMe } from '@/hooks/useMe'
+import { patientApi } from '@/lib/api'
 
 function PhoneIcon({ size = 24, color = '#2592FF' }: { size?: number; color?: string }) {
   return (
@@ -49,9 +52,21 @@ function ChevronUp() {
   )
 }
 
-interface Interpretation {
-  flag: string
-  text: string
+const NATIONALITY_LANG: Record<string, { flag: string; text: string }> = {
+  VIETNAM:       { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+  CHINA:         { flag: '🇨🇳', text: '중국어로 전화가 가능해요' },
+  CAMBODIA:      { flag: '🇰🇭', text: '캄보디아어로 전화가 가능해요' },
+  MYANMAR:       { flag: '🇲🇲', text: '미얀마어로 전화가 가능해요' },
+  PHILIPPINES:   { flag: '🇵🇭', text: '필리핀어로 전화가 가능해요' },
+  INDONESIA:     { flag: '🇮🇩', text: '인도네시아어로 전화가 가능해요' },
+  THAILAND:      { flag: '🇹🇭', text: '태국어로 전화가 가능해요' },
+  NEPAL:         { flag: '🇳🇵', text: '네팔어로 전화가 가능해요' },
+  MONGOLIA:      { flag: '🇲🇳', text: '몽골어로 전화가 가능해요' },
+  UZBEKISTAN:    { flag: '🇺🇿', text: '우즈베크어로 전화가 가능해요' },
+  SRI_LANKA:     { flag: '🇱🇰', text: '싱할라어로 전화가 가능해요' },
+  BANGLADESH:    { flag: '🇧🇩', text: '벵골어로 전화가 가능해요' },
+  PAKISTAN:      { flag: '🇵🇰', text: '우르두어로 전화가 가능해요' },
+  UNITED_STATES: { flag: '🇺🇸', text: '영어로 전화가 가능해요' },
 }
 
 interface EmergencyContact {
@@ -61,7 +76,7 @@ interface EmergencyContact {
   hoursLabel?: string
   hoursRange?: { startHour: number; endHour: number; weekdayOnly?: boolean }
   category?: string
-  interpretation?: Interpretation
+  supportedNationalities?: string[]
   interpreterNote?: string
   hasSms: boolean
 }
@@ -72,7 +87,12 @@ const CONTACTS: EmergencyContact[] = [
     name: '응급·화재 신고',
     number: '119',
     hoursLabel: '24시간 365일',
-    interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    // 119 다국어 통역 서비스: 11~14개 언어 지원
+    supportedNationalities: [
+      'VIETNAM', 'CHINA', 'UNITED_STATES', 'MONGOLIA', 'CAMBODIA',
+      'MYANMAR', 'PHILIPPINES', 'INDONESIA', 'THAILAND', 'NEPAL',
+      'UZBEKISTAN', 'BANGLADESH', 'PAKISTAN', 'SRI_LANKA',
+    ],
     interpreterNote: '11~14개 언어 통역 지원 (지역별 상이) · SMS·앱·수어 신고 가능',
     hasSms: true,
   },
@@ -81,7 +101,12 @@ const CONTACTS: EmergencyContact[] = [
     name: '범죄·경찰 신고',
     number: '112',
     hoursLabel: '24시간 365일',
-    interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    // 영어·중국어 전담, 그 외 언어 3자 통화 연결
+    supportedNationalities: [
+      'UNITED_STATES', 'CHINA', 'VIETNAM', 'MONGOLIA', 'CAMBODIA',
+      'MYANMAR', 'PHILIPPINES', 'INDONESIA', 'THAILAND', 'NEPAL',
+      'UZBEKISTAN', 'BANGLADESH', 'PAKISTAN',
+    ],
     interpreterNote: '영어·중국어 전담 24시간 · 베트남어 등 기타 언어 3자 통화 연결',
     hasSms: true,
   },
@@ -98,7 +123,12 @@ const CONTACTS: EmergencyContact[] = [
     name: '다누리 콜센터',
     number: '1577-1366',
     hoursLabel: '365일 24시간',
-    interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    // 다누리 13개 언어 지원
+    supportedNationalities: [
+      'VIETNAM', 'CHINA', 'UNITED_STATES', 'MONGOLIA', 'CAMBODIA',
+      'MYANMAR', 'PHILIPPINES', 'INDONESIA', 'THAILAND', 'NEPAL',
+      'UZBEKISTAN', 'BANGLADESH',
+    ],
     interpreterNote: '13개 언어 지원 · 베트남어, 중국어, 영어, 몽골어, 러시아어 등',
     hasSms: false,
   },
@@ -109,7 +139,12 @@ const CONTACTS: EmergencyContact[] = [
     hoursLabel: '평일 09:00~22:00',
     hoursRange: { startHour: 9, endHour: 22, weekdayOnly: true },
     category: '출입국·생활 정보',
-    interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    // 1345: 20개 언어 지원
+    supportedNationalities: [
+      'VIETNAM', 'CHINA', 'UNITED_STATES', 'MONGOLIA', 'CAMBODIA',
+      'MYANMAR', 'PHILIPPINES', 'INDONESIA', 'THAILAND', 'NEPAL',
+      'UZBEKISTAN', 'BANGLADESH', 'PAKISTAN', 'SRI_LANKA',
+    ],
     interpreterNote: '20개 언어 지원 · 18시 이후 영어·중국어·한국어만',
     hasSms: false,
   },
@@ -137,12 +172,19 @@ function CallItem({
   contact,
   isExpanded,
   onToggle,
+  userNationality,
 }: {
   contact: EmergencyContact
   isExpanded: boolean
   onToggle: () => void
+  userNationality?: string | null
 }) {
   const numDialable = contact.number.replace(/-/g, '')
+  const interpretation =
+    userNationality &&
+    contact.supportedNationalities?.includes(userNationality)
+      ? NATIONALITY_LANG[userNationality]
+      : undefined
 
   if (!isExpanded) {
     return (
@@ -153,10 +195,10 @@ function CallItem({
           className="flex flex-col items-start justify-center gap-[2px] flex-1 min-w-0 active:opacity-70 transition-opacity text-left"
         >
           <p className="text-[20px] font-semibold text-[#161616] leading-[1.4]">{contact.name}</p>
-          {contact.interpretation && (
+          {interpretation && (
             <div className="flex items-center gap-[2px]">
-              <span className="text-[16px] leading-none">{contact.interpretation.flag}</span>
-              <p className="text-[16px] font-medium text-[#808080] leading-[1.4] ml-1">{contact.interpretation.text}</p>
+              <span className="text-[16px] leading-none">{interpretation.flag}</span>
+              <p className="text-[16px] font-medium text-[#808080] leading-[1.4] ml-1">{interpretation.text}</p>
             </div>
           )}
         </button>
@@ -187,10 +229,10 @@ function CallItem({
       </div>
 
       <div className="flex flex-col gap-[4px]">
-        {contact.interpretation && (
+        {interpretation && (
           <div className="flex items-center gap-[2px]">
-            <span className="text-[16px] leading-none">{contact.interpretation.flag}</span>
-            <p className="text-[16px] font-medium text-[#808080] leading-[1.4] ml-1">{contact.interpretation.text}</p>
+            <span className="text-[16px] leading-none">{interpretation.flag}</span>
+            <p className="text-[16px] font-medium text-[#808080] leading-[1.4] ml-1">{interpretation.text}</p>
           </div>
         )}
         {contact.hoursLabel && (
@@ -234,6 +276,13 @@ function CallItem({
 
 export default function EmergencyCallPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const { data: me } = useMe()
+  const { data: patient } = useQuery({
+    queryKey: ['patients', me?.entityId],
+    queryFn: () => patientApi.get(me!.entityId!).then(r => r.payload),
+    enabled: !!me?.entityId,
+  })
+  const userNationality = patient?.nationality ?? null
 
   const openContacts = CONTACTS.filter(isOpen)
 
@@ -266,6 +315,7 @@ export default function EmergencyCallPage() {
                   contact={contact}
                   isExpanded={expandedId === key}
                   onToggle={() => toggleItem(key)}
+                  userNationality={userNationality}
                 />
               )
             })}
@@ -285,6 +335,7 @@ export default function EmergencyCallPage() {
               contact={contact}
               isExpanded={expandedId === key}
               onToggle={() => toggleItem(key)}
+              userNationality={userNationality}
             />
           )
         })}

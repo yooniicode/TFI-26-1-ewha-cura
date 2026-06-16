@@ -458,7 +458,7 @@ export default function DashboardPage() {
                           className="flex-1 bg-white rounded-[8px] px-3 py-4 flex items-center justify-center gap-1 active:opacity-70 transition-opacity"
                         >
                           <img src="/icons/interpreter/home/실시간메모작성.svg" alt="" width={18} height={18} />
-                          <span className="text-[13px] font-medium text-[#2592ff]">{memoLabel}</span>
+                          <span className="text-[13px] font-medium text-[#2592ff]">실시간 메모</span>
                         </Link>
                         <Link
                           href={reportHref}
@@ -471,7 +471,7 @@ export default function DashboardPage() {
                             <line x1="16" y1="17" x2="8" y2="17" />
                             <polyline points="10 9 9 9 8 9" />
                           </svg>
-                          <span className="text-[13px] font-medium text-[#2592ff]">{reportLabel}</span>
+                          <span className="text-[13px] font-medium text-[#2592ff]">보고서</span>
                         </Link>
                       </div>
                     </div>
