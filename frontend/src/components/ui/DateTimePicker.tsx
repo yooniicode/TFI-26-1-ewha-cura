@@ -182,6 +182,8 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
   cur.current = { h: selH, m: selM, p: selP }
 
   const scrollTimers = useRef<{ h?: ReturnType<typeof setTimeout>; m?: ReturnType<typeof setTimeout>; p?: ReturnType<typeof setTimeout> }>({})
+  // 마운트 시 scrollTop 세팅으로 발생하는 scroll 이벤트 무시
+  const initialized = useRef(false)
 
   useEffect(() => {
     const hIdx = hours.indexOf(selH)
@@ -190,6 +192,7 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
     if (minRef.current && mIdx >= 0) minRef.current.scrollTop = mIdx * ITEM_H
     const pIdx = periods.indexOf(selP)
     if (periodRef.current && pIdx >= 0) periodRef.current.scrollTop = pIdx * ITEM_H
+    setTimeout(() => { initialized.current = true }, 200)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -223,6 +226,7 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
     onSettle: (item: string) => void
   ) {
     return () => {
+      if (!initialized.current) return
       clearTimeout(scrollTimers.current[key])
       scrollTimers.current[key] = setTimeout(() => {
         const el = ref.current
