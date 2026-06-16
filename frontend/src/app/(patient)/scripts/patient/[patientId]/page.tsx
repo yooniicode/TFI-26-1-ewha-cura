@@ -430,7 +430,7 @@ export default function ScriptPage() {
             }`}
           >
             <span className={`shrink-0 transition-colors duration-150 group-active:text-[#2592FF] ${
-              activeTab === 'body' ? 'text-[#2592FF]' : 'text-[#161616]'
+              activeTab === 'body' ? 'text-[#2592FF]' : 'text-[#808080]'
             }`}>
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                 <path d="M16.3346 4.66668C16.3346 5.95532 15.2899 7.00001 14.0013 7.00001C12.7127 7.00001 11.668 5.95532 11.668 4.66668C11.668 3.37801 12.7127 2.33334 14.0013 2.33334C15.2899 2.33334 16.3346 3.37801 16.3346 4.66668Z" fill="currentColor"/>
@@ -449,7 +449,7 @@ export default function ScriptPage() {
             }`}
           >
             <span className={`shrink-0 transition-colors duration-150 group-active:text-[#2592FF] ${
-              activeTab === 'situation' ? 'text-[#2592FF]' : 'text-[#161616]'
+              activeTab === 'situation' ? 'text-[#2592FF]' : 'text-[#808080]'
             }`}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M19 4H5C3.34315 4 2 5.34315 2 7C2 8.65685 3.34315 10 5 10H7C7.55228 10 8 10.4477 8 11V12.7929C8 13.2383 8.53857 13.4614 8.85355 13.1464L11.7071 10.2929C11.8946 10.1054 12.149 10 12.4142 10H19C20.6569 10 22 8.65685 22 7C22 5.34315 20.6569 4 19 4Z" fill="currentColor"/>

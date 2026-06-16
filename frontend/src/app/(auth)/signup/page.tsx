@@ -775,7 +775,7 @@ export default function SignupPage() {
         <div className="border-t border-[#EEEEEE] px-6 pt-6 pb-8 shrink-0 bg-white">
           {!pfSmsSent ? (
             <a
-              href={`sms:${pfReceiveNum}?body=${encodeURIComponent(`[큐라] 인증번호 ${pfCode}`)}`}
+              href={`sms:${pfReceiveNum}?body=${encodeURIComponent(pfCode)}`}
               onClick={() => setPfSmsSent(true)}
               className="flex items-center justify-center w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
             >

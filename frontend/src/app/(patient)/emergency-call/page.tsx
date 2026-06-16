@@ -62,6 +62,7 @@ interface EmergencyContact {
   hoursRange?: { startHour: number; endHour: number; weekdayOnly?: boolean }
   category?: string
   interpretation?: Interpretation
+  interpreterNote?: string
   hasSms: boolean
 }
 
@@ -70,25 +71,35 @@ const CONTACTS: EmergencyContact[] = [
     id: '119',
     name: '응급·화재 신고',
     number: '119',
+    hoursLabel: '24시간 365일',
+    interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    interpreterNote: '11~14개 언어 통역 지원 (지역별 상이) · SMS·앱·수어 신고 가능',
     hasSms: true,
   },
   {
     id: '112',
     name: '범죄·경찰 신고',
     number: '112',
+    hoursLabel: '24시간 365일',
+    interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    interpreterNote: '영어·중국어 전담 24시간 · 베트남어 등 기타 언어 3자 통화 연결',
     hasSms: true,
   },
   {
     id: '1339',
     name: '응급의료 안내',
     number: '1339',
+    hoursLabel: '24시간 365일',
+    interpreterNote: '외국어 직접 상담 없음 · 1330/1345 통해 3자 통화 연결',
     hasSms: false,
   },
   {
     id: '1577-1366',
     name: '다누리 콜센터',
     number: '1577-1366',
+    hoursLabel: '365일 24시간',
     interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    interpreterNote: '13개 언어 지원 · 베트남어, 중국어, 영어, 몽골어, 러시아어 등',
     hasSms: false,
   },
   {
@@ -99,11 +110,12 @@ const CONTACTS: EmergencyContact[] = [
     hoursRange: { startHour: 9, endHour: 22, weekdayOnly: true },
     category: '출입국·생활 정보',
     interpretation: { flag: '🇻🇳', text: '베트남어로 전화가 가능해요' },
+    interpreterNote: '20개 언어 지원 · 18시 이후 영어·중국어·한국어만',
     hasSms: false,
   },
   {
     id: 'nhis',
-    name: '국민건강보험 외국어 상담',
+    name: '국민건강보험 외국인 상담',
     number: '1588-1250',
     hoursLabel: '평일 09:00~18:00',
     hoursRange: { startHour: 9, endHour: 18, weekdayOnly: true },
@@ -191,6 +203,9 @@ function CallItem({
               </>
             )}
           </div>
+        )}
+        {contact.interpreterNote && (
+          <p className="text-[14px] font-medium text-[#808080] leading-[1.5]">{contact.interpreterNote}</p>
         )}
       </div>
 
