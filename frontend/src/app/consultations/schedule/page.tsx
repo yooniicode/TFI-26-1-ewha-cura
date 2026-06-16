@@ -14,6 +14,7 @@ import { consultationApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
 import type { PendingConsultation } from '@/lib/schemas'
 import { useTranslation } from '@/lib/i18n/I18nContext'
+import { CalendarPicker } from '@/components/ui/DateTimePicker'
 
 function formatPreferredDate(dateStr: string) {
   const d = new Date(dateStr)
@@ -42,7 +43,8 @@ function ScheduleInner() {
   const [step, setStep] = useState<1 | 2>(1)
   const [selected, setSelected] = useState<PendingConsultation | null>(null)
   const [dateTbd, setDateTbd] = useState(false)
-  const [date, setDate] = useState('')
+  const [dateOnly, setDateOnly] = useState('')
+  const [timeOnly, setTimeOnly] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -53,7 +55,9 @@ function ScheduleInner() {
 
   function handleSelectRequest(req: PendingConsultation) {
     setSelected(req === selected ? null : req)
-    setDate(toLocalDatetimeValue(req.consultationDate))
+    const combined = toLocalDatetimeValue(req.consultationDate)
+    setDateOnly(combined.slice(0, 10))
+    setTimeOnly(combined.slice(11, 16))
     setDateTbd(false)
   }
 
@@ -62,7 +66,7 @@ function ScheduleInner() {
     setSaving(true); setError('')
     try {
       await consultationApi.accept(selected.id, {
-        consultationDate: dateTbd ? null : date,
+        consultationDate: dateTbd ? null : (dateOnly ? `${dateOnly}T${timeOnly || '00:00'}` : null),
       })
       router.replace('/dashboard')
     } catch (e) {
@@ -86,7 +90,7 @@ function ScheduleInner() {
             <StepIndicator current={1} total={2} />
           </div>
 
-          <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
+          <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen pb-32">
             {isLoading ? (
               <div className="flex justify-center py-16"><Spinner /></div>
             ) : requests.length === 0 ? (
@@ -143,7 +147,7 @@ function ScheduleInner() {
             )}
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
+          <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8">
             <button
               type="button"
               onClick={() => setStep(2)}
@@ -167,7 +171,7 @@ function ScheduleInner() {
             <StepIndicator current={2} total={2} />
           </div>
 
-          <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen">
+          <div className="bg-[#F5F5F5] px-4 py-4 min-h-screen pb-32">
             <div className="bg-white rounded-2xl px-5 py-5 space-y-4">
 
               {/* 이주민 요청사항 요약 */}
@@ -205,11 +209,11 @@ function ScheduleInner() {
               {!dateTbd && (
                 <div>
                   <label className="block text-sm font-medium text-[#161616] mb-1.5">{t.schedule.visit_date}</label>
-                  <input
-                    type="datetime-local"
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                    className="w-full bg-[#F5F5F5] rounded-xl px-4 py-3.5 text-base text-[#161616] outline-none border border-[#A1A1A1]"
+                  <CalendarPicker
+                    value={dateOnly}
+                    onChange={setDateOnly}
+                    time={timeOnly}
+                    onTimeChange={setTimeOnly}
                   />
                 </div>
               )}
@@ -218,7 +222,7 @@ function ScheduleInner() {
             </div>
           </div>
 
-          <div className="sticky bottom-0 bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
+          <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
             <button
               type="button"
               onClick={() => setStep(1)}
@@ -229,7 +233,7 @@ function ScheduleInner() {
             <button
               type="button"
               onClick={handleAccept}
-              disabled={saving || (!dateTbd && !date)}
+              disabled={saving || (!dateTbd && !dateOnly)}
               className="flex-1 h-[60px] bg-[#2592FF] rounded-2xl text-lg font-bold text-white disabled:opacity-40 hover:bg-[#1a7ee6] transition-colors"
             >
               {saving ? t.schedule.saving : t.schedule.accept_btn}

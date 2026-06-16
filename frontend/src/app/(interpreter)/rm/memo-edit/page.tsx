@@ -45,6 +45,7 @@ function RmMemoEditInner() {
   const [submitting, setSubmitting] = useState(false)
   const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'ok' | 'fail'>('idle')
   const [showExitModal, setShowExitModal] = useState(false)
+  const [showSavedOverlay, setShowSavedOverlay] = useState(false)
 
   useEffect(() => {
     if (patientId) {
@@ -65,6 +66,8 @@ function RmMemoEditInner() {
 
     try {
       await consultationApi.update(cid, { workDescription: memoText })
+      setShowSavedOverlay(true)
+      setTimeout(() => setShowSavedOverlay(false), 1200)
     } catch {
       // 저장 실패해도 다음 단계 진행
     }
@@ -176,6 +179,19 @@ function RmMemoEditInner() {
           {aiStatus === 'loading' ? t.realtime_memo.ai_analyzing_btn : submitting ? t.common.saving : t.report_flow.next_btn}
         </button>
       </div>
+
+      {showSavedOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-2xl px-10 py-7 flex flex-col items-center gap-3 shadow-xl">
+            <div className="w-14 h-14 rounded-full bg-[#2592FF] flex items-center justify-center">
+              <svg width="26" height="20" viewBox="0 0 26 20" fill="none">
+                <path d="M2 10L9.5 17.5L24 2" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <p className="text-[18px] font-semibold text-[#161616]">저장 완료</p>
+          </div>
+        </div>
+      )}
 
       {showExitModal && (
         <ReportExitModal

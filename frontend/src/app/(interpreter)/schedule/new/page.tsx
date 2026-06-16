@@ -91,7 +91,7 @@ export default function ScheduleNewPage() {
         <div className="w-10" />
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 px-4 pt-5 pb-8">
+      <form id="schedule-new-form" onSubmit={handleSubmit} className="flex flex-col gap-3 px-4 pt-5 pb-36">
 
         {/* 환자 선택 */}
         <div className="rounded-2xl bg-white px-5 py-4">
@@ -178,16 +178,19 @@ export default function ScheduleNewPage() {
         {error && (
           <p className="rounded-xl bg-red-50 px-4 py-3 text-[14px] text-red-500">{error}</p>
         )}
+      </form>
 
-        {/* 제출 버튼 */}
+      {/* 하단 고정 버튼 */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white px-4 pt-4 pb-8">
         <button
           type="submit"
+          form="schedule-new-form"
           disabled={!patientId || !date || submitting}
-          className="mt-2 h-[60px] w-full rounded-2xl bg-[#2592ff] text-[18px] font-semibold text-white transition-opacity disabled:opacity-40"
+          className="h-[60px] w-full rounded-2xl bg-[#2592ff] text-[18px] font-semibold text-white transition-opacity disabled:opacity-40"
         >
           {submitting ? '추가 중...' : '일정 추가'}
         </button>
-      </form>
+      </div>
     </div>
   )
 }

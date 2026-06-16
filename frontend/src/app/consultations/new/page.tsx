@@ -544,15 +544,17 @@ function StepDate({ consultationDate, hospitalName, department, onDateChange, on
 }) {
   const { t } = useTranslation()
   const tc = t.consultation
+  const dateOnly = consultationDate.slice(0, 10)
+  const timeOnly = consultationDate.length >= 16 ? consultationDate.slice(11, 16) : ''
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2">
         <label className="text-base font-medium text-[#161616]">{tc.visit_datetime}</label>
-        <input
-          type="datetime-local"
-          value={consultationDate}
-          onChange={e => onDateChange(e.target.value)}
-          className="w-full px-4 py-4 rounded-lg text-lg text-[#161616] border border-[#A1A1A1] outline-none"
+        <CalendarPicker
+          value={dateOnly}
+          onChange={d => onDateChange(`${d}T${timeOnly || '00:00'}`)}
+          time={timeOnly}
+          onTimeChange={tm => onDateChange(`${dateOnly}T${tm}`)}
         />
       </div>
 
