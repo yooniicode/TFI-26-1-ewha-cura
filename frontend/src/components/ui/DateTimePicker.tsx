@@ -177,13 +177,19 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
   const periodRef = useRef<HTMLDivElement>(null)
   const ITEM_H = 44
 
+  // 스크롤 settle 후 최신값 읽기용 ref (stale closure 방지)
+  const cur = useRef({ h: selH, m: selM, p: selP })
+  cur.current = { h: selH, m: selM, p: selP }
+
+  const scrollTimers = useRef<{ h?: ReturnType<typeof setTimeout>; m?: ReturnType<typeof setTimeout>; p?: ReturnType<typeof setTimeout> }>({})
+
   useEffect(() => {
     const hIdx = hours.indexOf(selH)
-    if (hourRef.current && hIdx >= 0) hourRef.current.scrollTop = hIdx * ITEM_H - ITEM_H
+    if (hourRef.current && hIdx >= 0) hourRef.current.scrollTop = hIdx * ITEM_H
     const mIdx = minutes.indexOf(selM)
-    if (minRef.current && mIdx >= 0) minRef.current.scrollTop = mIdx * ITEM_H - ITEM_H
+    if (minRef.current && mIdx >= 0) minRef.current.scrollTop = mIdx * ITEM_H
     const pIdx = periods.indexOf(selP)
-    if (periodRef.current && pIdx >= 0) periodRef.current.scrollTop = pIdx * ITEM_H - ITEM_H
+    if (periodRef.current && pIdx >= 0) periodRef.current.scrollTop = pIdx * ITEM_H
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -194,21 +200,55 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
 
   function selectHour(h: string) {
     setSelH(h)
-    if (hourRef.current) hourRef.current.scrollTop = hours.indexOf(h) * ITEM_H - ITEM_H
+    hourRef.current?.scrollTo({ top: hours.indexOf(h) * ITEM_H, behavior: 'smooth' })
   }
 
   function selectMinute(m: string) {
     setSelM(m)
-    if (minRef.current) minRef.current.scrollTop = minutes.indexOf(m) * ITEM_H - ITEM_H
+    minRef.current?.scrollTo({ top: minutes.indexOf(m) * ITEM_H, behavior: 'smooth' })
   }
 
   function selectPeriod(p: 'AM' | 'PM') {
     setSelP(p)
+    periodRef.current?.scrollTo({ top: periods.indexOf(p) * ITEM_H, behavior: 'smooth' })
     const h24 = toH24(selH, p)
     onChange(`${String(h24).padStart(2, '0')}:${selM}`)
   }
 
-  const colCls = 'relative flex-1 overflow-y-auto z-10'
+  // 스크롤이 snap 위치에 정착하면 100ms 후 상태 동기화
+  function makeScrollHandler(
+    ref: React.RefObject<HTMLDivElement>,
+    items: string[],
+    key: 'h' | 'm' | 'p',
+    onSettle: (item: string) => void
+  ) {
+    return () => {
+      clearTimeout(scrollTimers.current[key])
+      scrollTimers.current[key] = setTimeout(() => {
+        const el = ref.current
+        if (!el) return
+        const idx = Math.round(el.scrollTop / ITEM_H)
+        onSettle(items[Math.max(0, Math.min(idx, items.length - 1))])
+      }, 100)
+    }
+  }
+
+  const onHourScroll = makeScrollHandler(hourRef, hours, 'h', h => setSelH(h))
+  const onMinuteScroll = makeScrollHandler(minRef, minutes, 'm', m => setSelM(m))
+  const onPeriodScroll = makeScrollHandler(periodRef, periods, 'p', p => {
+    setSelP(p as 'AM' | 'PM')
+    const h24 = toH24(cur.current.h, p as 'AM' | 'PM')
+    onChange(`${String(h24).padStart(2, '0')}:${cur.current.m}`)
+  })
+
+  const colStyle: React.CSSProperties = {
+    scrollbarWidth: 'none',
+    scrollSnapType: 'y mandatory',
+    overflowY: 'scroll',
+  }
+  const snapItem: React.CSSProperties = { scrollSnapAlign: 'center' }
+
+  const colCls = 'relative flex-1 z-10'
   const itemCls = (active: boolean) =>
     `h-[44px] flex items-center justify-center cursor-pointer select-none text-[18px] font-medium transition-colors ${active ? 'text-[#161616]' : 'text-[#808080]'}`
 
@@ -216,25 +256,25 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
     <div className="border border-[#2592FF] rounded-[20px] overflow-hidden bg-white">
       <div className="relative flex h-[176px]">
         <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-[44px] bg-[#f3f9ff] rounded-[10px] pointer-events-none z-0" />
-        <div ref={hourRef} className={colCls} style={{ scrollbarWidth: 'none' }}>
+        <div ref={hourRef} className={colCls} style={colStyle} onScroll={onHourScroll}>
           <div className="py-[66px]">
             {hours.map(h => (
-              <div key={h} onClick={() => selectHour(h)} className={itemCls(h === selH)}>{h}</div>
+              <div key={h} onClick={() => selectHour(h)} className={itemCls(h === selH)} style={snapItem}>{h}</div>
             ))}
           </div>
         </div>
         <div className="relative z-10 flex items-center self-center text-[18px] font-semibold text-[#494949] pointer-events-none">:</div>
-        <div ref={minRef} className={colCls} style={{ scrollbarWidth: 'none' }}>
+        <div ref={minRef} className={colCls} style={colStyle} onScroll={onMinuteScroll}>
           <div className="py-[66px]">
             {minutes.map(m => (
-              <div key={m} onClick={() => selectMinute(m)} className={itemCls(m === selM)}>{m}</div>
+              <div key={m} onClick={() => selectMinute(m)} className={itemCls(m === selM)} style={snapItem}>{m}</div>
             ))}
           </div>
         </div>
-        <div ref={periodRef} className={colCls} style={{ scrollbarWidth: 'none' }}>
+        <div ref={periodRef} className={colCls} style={colStyle} onScroll={onPeriodScroll}>
           <div className="py-[66px]">
             {periods.map(p => (
-              <div key={p} onClick={() => selectPeriod(p as 'AM' | 'PM')} className={itemCls(p === selP)}>{p}</div>
+              <div key={p} onClick={() => selectPeriod(p as 'AM' | 'PM')} className={itemCls(p === selP)} style={snapItem}>{p}</div>
             ))}
           </div>
         </div>
