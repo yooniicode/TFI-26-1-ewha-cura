@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { authApi } from '@/lib/api'
 import { setAccessToken } from '@/lib/auth/auth-token'
@@ -11,7 +11,8 @@ import { NATIONALITIES, VISA_TYPES, GENDERS, useEnumLabels } from '@/lib/i18n/en
 import type { Gender, Nationality, VisaType } from '@/lib/types'
 
 type AccountType = 'patient' | 'interpreter'
-type Step = 0 | 1 | 2 | 3 | 4 | 5 | 10 | 11 | 12 | 13 | 14
+type Platform = 'email' | 'phone' | 'kakao'
+type Step = 0 | 1 | 2 | 3 | 4 | 5 | 10 | 14
 
 function ChevronLeft() {
   return (
@@ -80,17 +81,41 @@ const SearchIcon = () => (
 )
 
 export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupPageInner />
+    </Suspense>
+  )
+}
+
+function SignupPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const labels = useEnumLabels()
 
-  const [step, setStep] = useState<Step>(0)
+  const isKakao = searchParams.get('kakao') === '1'
+  const kakaoName = searchParams.get('name') ?? ''
+
+  const [platform, setPlatform] = useState<Platform>(isKakao ? 'kakao' : 'email')
+  const [step, setStep] = useState<Step>(isKakao ? 2 : 0)
   const [showExitModal, setShowExitModal] = useState(false)
 
+  // 이메일 플로우 필드
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+
+  // 전화번호 인증 필드
+  const [pfPhone, setPfPhone] = useState('')
+  const [pfCode, setPfCode] = useState('')
+  const [pfReceiveNum, setPfReceiveNum] = useState('')
+  const [pfSmsSent, setPfSmsSent] = useState(false)
+  const [pfReqLoading, setPfReqLoading] = useState(false)
+  const [pfVerifyLoading, setPfVerifyLoading] = useState(false)
+
+  // 공통 프로필 필드
   const [accountType, setAccountType] = useState<AccountType | null>(null)
-  const [name, setName] = useState('')
+  const [name, setName] = useState(isKakao ? kakaoName : '')
   const [gender, setGender] = useState<Gender | ''>('')
   const [phone, setPhone] = useState('')
   const [centerId, setCenterId] = useState('')
@@ -98,17 +123,9 @@ export default function SignupPage() {
   const [nationality, setNationality] = useState<Nationality | ''>('')
   const [visaType, setVisaType] = useState<VisaType | ''>('')
   const [birthDate, setBirthDate] = useState('')
-  const [workplace, setWorkplace] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-
-  const [pfPhone, setPfPhone] = useState('')
-  const [pfCode, setPfCode] = useState('')
-  const [pfReceiveNum, setPfReceiveNum] = useState('')
-  const [pfSmsSent, setPfSmsSent] = useState(false)
-  const [pfReqLoading, setPfReqLoading] = useState(false)
-  const [pfVerifyLoading, setPfVerifyLoading] = useState(false)
 
   function next() {
     setError('')
@@ -117,9 +134,13 @@ export default function SignupPage() {
       if (!password) { setError('비밀번호를 입력해주세요.'); return }
       if (password.length < 8) { setError('비밀번호는 8자 이상이어야 합니다.'); return }
       if (password !== confirmPassword) { setError('비밀번호 확인이 일치하지 않습니다.'); return }
-    } else if (step === 2) {
+      setStep(2); return
+    }
+    if (step === 2) {
       if (!accountType) { setError('가입 유형을 선택해주세요.'); return }
-    } else if (step === 3) {
+      setStep(3); return
+    }
+    if (step === 3) {
       if (!name.trim()) { setError('이름을 입력해주세요.'); return }
       if (accountType === 'patient') {
         if (!phone.trim()) { setError('연락처를 입력해주세요.'); return }
@@ -129,45 +150,79 @@ export default function SignupPage() {
         if (!centerId && !centerName.trim()) { setError('근무 센터를 선택해주세요.'); return }
         handleSubmit(); return
       }
-    } else if (step === 4) {
+    }
+    if (step === 4) {
       if (!centerId && !centerName.trim()) { setError('담당 센터를 선택해주세요.'); return }
       handleSubmit(); return
-    } else if (step === 11) {
-      if (!name.trim()) { setError('이름을 입력해주세요.'); return }
-      if (!accountType) { setError('가입 유형을 선택해주세요.'); return }
     }
-    setStep((step + 1) as Step)
   }
 
   function prev() {
     setError('')
-    if (step === 10) { setStep(0); return }
+    if (step === 2) {
+      if (platform === 'kakao') { router.push('/login'); return }
+      if (platform === 'phone') { setStep(14); return }
+      setStep(1); return
+    }
+    if (step === 3) { setStep(2); return }
+    if (step === 4) { setStep(3); return }
     if (step === 14) { setStep(10); return }
-    if (step === 11) { setStep(14); return }
-    if (step === 12) { setStep(11); return }
-    setStep((step - 1) as Step)
+    if (step === 10) { setStep(0); return }
+    if (step === 1) { setStep(0); return }
   }
 
   async function handleSubmit() {
     setError(''); setLoading(true)
     try {
-      const res = await authApi.signup({
-        email: email.trim(),
-        password,
-        name: name.trim(),
-        role: accountType!,
-        phone: phone.trim() || undefined,
-        centerId: centerId || undefined,
-        centerName: centerName.trim() || undefined,
-        ...(accountType === 'patient' ? {
-          nationality: (nationality || 'OTHER') as Nationality,
-          gender: (gender || 'OTHER') as Gender,
-          visaType: (visaType || 'OTHER') as VisaType,
-          birthDate: birthDate || undefined,
-        } : {}),
-        ...(accountType === 'interpreter' ? { interpreterRole: 'ACTIVIST' as const } : {}),
-      })
-      if (res.payload?.token) setAccessToken(res.payload.token)
+      if (platform === 'kakao') {
+        await authApi.registerProfile({
+          name: name.trim(),
+          role: accountType!,
+          phone: phone.trim() || undefined,
+          centerId: centerId || undefined,
+          centerName: centerName.trim() || undefined,
+          ...(accountType === 'patient' ? {
+            nationality: (nationality || 'OTHER') as Nationality,
+            gender: (gender || 'OTHER') as Gender,
+            visaType: (visaType || 'OTHER') as VisaType,
+            birthDate: birthDate || undefined,
+          } : {}),
+          ...(accountType === 'interpreter' ? { interpreterRole: 'ACTIVIST' as const } : {}),
+        })
+      } else if (platform === 'phone') {
+        const res = await authApi.phoneSignup({
+          phone: pfPhone.trim(),
+          name: name.trim(),
+          role: accountType!,
+          centerId: centerId || undefined,
+          centerName: centerName.trim() || undefined,
+          ...(accountType === 'patient' ? {
+            nationality: (nationality || 'OTHER') as Nationality,
+            gender: (gender || 'OTHER') as Gender,
+            visaType: (visaType || 'OTHER') as VisaType,
+            birthDate: birthDate || undefined,
+          } : {}),
+        })
+        if (res.payload?.token) setAccessToken(res.payload.token)
+      } else {
+        const res = await authApi.signup({
+          email: email.trim(),
+          password,
+          name: name.trim(),
+          role: accountType!,
+          phone: phone.trim() || undefined,
+          centerId: centerId || undefined,
+          centerName: centerName.trim() || undefined,
+          ...(accountType === 'patient' ? {
+            nationality: (nationality || 'OTHER') as Nationality,
+            gender: (gender || 'OTHER') as Gender,
+            visaType: (visaType || 'OTHER') as VisaType,
+            birthDate: birthDate || undefined,
+          } : {}),
+          ...(accountType === 'interpreter' ? { interpreterRole: 'ACTIVIST' as const } : {}),
+        })
+        if (res.payload?.token) setAccessToken(res.payload.token)
+      }
       setStep(5)
     } catch (e) {
       setError(e instanceof Error ? e.message : '회원가입 중 오류가 발생했습니다.')
@@ -203,40 +258,14 @@ export default function SignupPage() {
         setAccessToken(res.payload.token)
         router.replace('/dashboard')
       } else {
+        // 신규 유저 → 공통 플로우 진입 (전화번호 pre-fill)
         setPhone(pfPhone.trim())
-        setStep(11)
+        setStep(2)
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '인증에 실패했습니다. 문자를 보낸 후 다시 시도해주세요.')
     } finally {
       setPfVerifyLoading(false)
-    }
-  }
-
-  async function handlePhoneSignup() {
-    setError(''); setLoading(true)
-    try {
-      if (!centerId && !centerName.trim()) { setError('담당 센터를 선택해주세요.'); setLoading(false); return }
-      const res = await authApi.phoneSignup({
-        phone: pfPhone.trim(),
-        name: name.trim(),
-        role: accountType!,
-        centerId: centerId || undefined,
-        centerName: centerName.trim() || undefined,
-        ...(accountType === 'patient' ? {
-          nationality: (nationality || 'OTHER') as Nationality,
-          gender: (gender || 'OTHER') as Gender,
-          visaType: (visaType || 'OTHER') as VisaType,
-          birthDate: birthDate || undefined,
-          workplace: workplace.trim() || undefined,
-        } : {}),
-      })
-      if (res.payload?.token) setAccessToken(res.payload.token)
-      setStep(13)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '회원가입 중 오류가 발생했습니다.')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -249,22 +278,21 @@ export default function SignupPage() {
   }
 
   const isLastFormStep =
-    step === 4 ||
-    step === 12 ||
-    (step === 3 && accountType === 'interpreter')
+    step === 4 || (step === 3 && accountType === 'interpreter')
 
-  const showBottomBar = (step >= 1 && step <= 4) || step === 11 || step === 12
-  const showCloseBtn = step >= 1 && step <= 4
+  const showBottomBar = step === 1 || step === 2 || step === 3 || step === 4
+  const showCloseBtn = platform === 'email' && (step === 1 || step === 2 || step === 3 || step === 4)
+  const showBackBtn = step === 1 || step === 2 || step === 3 || step === 4 || step === 10 || step === 14
 
   return (
     <div className="min-h-screen bg-white flex flex-col max-w-[402px] mx-auto">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-5 h-[66px] shrink-0">
-        {(step === 0 || step === 10 || step === 14) ? (
+        {showBackBtn ? (
           <button
             type="button"
-            onClick={() => step === 0 ? router.push('/') : prev()}
+            onClick={prev}
             className="w-6 h-6 flex items-center justify-center"
           >
             <ChevronLeft />
@@ -308,18 +336,14 @@ export default function SignupPage() {
               <div className="flex flex-col gap-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    setError('')
-                    setPfPhone(''); setPfCode(''); setPfSmsSent(false)
-                    setStep(10)
-                  }}
+                  onClick={() => { setError(''); setPlatform('phone'); setPfPhone(''); setPfCode(''); setPfSmsSent(false); setStep(10) }}
                   className="w-full h-[60px] bg-[#f0f1f5] rounded-lg text-[#161616] text-[18px] font-semibold hover:bg-[#e4e5ea] active:bg-[#d8d9de] transition-colors"
                 >
                   전화번호로 시작하기
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setError(''); setStep(1) }}
+                  onClick={() => { setError(''); setPlatform('email'); setStep(1) }}
                   className="w-full h-[60px] bg-[#2592FF] rounded-lg text-white text-[18px] font-semibold hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
                 >
                   이메일로 시작하기
@@ -392,7 +416,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        {/* Step 2: 유형 선택 */}
+        {/* Step 2: 유형 선택 (모든 플랫폼 공통) */}
         {step === 2 && (
           <div className="flex flex-col min-h-[calc(100vh-179px)]">
             <div className="px-4 pt-8">
@@ -405,7 +429,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setAccountType('patient')}
-                  className={`flex-1 h-[176px] rounded-[20px] border p-5 flex flex-col gap-5 transition-all ${
+                  className={`flex-1 h-[176px] rounded-[20px] border p-5 flex flex-col gap-5 justify-center overflow-hidden transition-all ${
                     accountType === 'patient'
                       ? 'border-[#2592FF] bg-[#F3F9FF]'
                       : 'border-[#EEEEEE] bg-white'
@@ -415,7 +439,7 @@ export default function SignupPage() {
                   <div className="text-left flex flex-col gap-1">
                     <p className="text-[16px] font-semibold text-[#2592FF]">이주민</p>
                     <p className="text-[16px] font-medium text-[#161616] leading-[1.4]">
-                      내 진료 기록을<br />확인하고 싶어요
+                      내 진료 기록을<br />직접 확인하고 싶어요
                     </p>
                   </div>
                 </button>
@@ -423,7 +447,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setAccountType('interpreter')}
-                  className={`flex-1 h-[176px] rounded-[20px] border p-5 flex flex-col gap-5 transition-all ${
+                  className={`flex-1 h-[176px] rounded-[20px] border p-5 flex flex-col gap-5 justify-center overflow-hidden transition-all ${
                     accountType === 'interpreter'
                       ? 'border-[#30C100] bg-[#F3FFF0]'
                       : 'border-[#EEEEEE] bg-white'
@@ -443,7 +467,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        {/* Step 3: 기본 정보 */}
+        {/* Step 3: 기본 정보 (유형별) */}
         {step === 3 && (
           <div className="px-4 pt-8 pb-4">
             <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
@@ -463,16 +487,15 @@ export default function SignupPage() {
               {accountType === 'patient' && (
                 <>
                   <Field label="성별">
-                    <select
-                      className={`${inputCls} appearance-none ${!gender ? 'text-[#808080]' : 'text-[#161616]'}`}
+                    <SelectWithChevron
                       value={gender}
                       onChange={e => setGender(e.target.value as Gender | '')}
+                      placeholder="성별을 선택해주세요"
                     >
-                      <option value="" disabled>성별을 선택해주세요</option>
                       {GENDERS.map(g => (
                         <option key={g} value={g}>{labels.gender[g]}</option>
                       ))}
-                    </select>
+                    </SelectWithChevron>
                   </Field>
                   <Field label="연락처">
                     <input
@@ -516,7 +539,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        {/* Step 4: 이주민 추가 정보 (담당 센터 + 국적 + 비자 + 생년월일) */}
+        {/* Step 4: 이주민 추가 정보 (담당 센터 + 국적 + 비자) */}
         {step === 4 && (
           <div className="px-4 pt-8 pb-4">
             <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
@@ -570,7 +593,7 @@ export default function SignupPage() {
           </div>
         )}
 
-        {/* Step 5: 이메일 가입 완료 */}
+        {/* Step 5: 가입 완료 */}
         {step === 5 && (
           <div className="flex flex-col items-center justify-center flex-1 min-h-[calc(100vh-179px)]">
             <img src="/icons/common/completion-graphic.svg" width={172} height={172} alt="" className="mx-auto" />
@@ -622,137 +645,6 @@ export default function SignupPage() {
               이용 중인 통신 요금제에 따라 메시지 발송 비용이 청구될 수 있습니다.
             </p>
             {error && <p className="text-red-500 text-sm mt-3 text-center">{error}</p>}
-          </div>
-        )}
-
-        {/* Step 11: 전화번호 플로우 - 이름 + 유형 선택 */}
-        {step === 11 && (
-          <div className="px-4 pt-8 pb-4">
-            <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
-              기본 정보를<br />알려주세요
-            </h1>
-            <div className="flex flex-col gap-5">
-              <Field label="이름">
-                <input
-                  type="text"
-                  className={inputCls}
-                  placeholder="성함을 입력해주세요"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                />
-              </Field>
-              <div className="flex flex-col gap-[10px]">
-                <label className="text-[16px] font-medium text-[#494949]">가입 유형</label>
-                <div className="flex gap-[22px]">
-                  {(['patient', 'interpreter'] as AccountType[]).map(t => (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setAccountType(t)}
-                      className={`flex-1 rounded-[20px] border p-5 flex flex-col gap-3 text-left transition-all ${
-                        accountType === t
-                          ? t === 'patient' ? 'border-[#2592FF] bg-[#F3F9FF]' : 'border-[#30C100] bg-[#F3FFF0]'
-                          : 'border-[#EEEEEE] bg-white'
-                      }`}
-                    >
-                      <img
-                        src={t === 'patient' ? '/icons/signup/migrant.svg' : '/icons/signup/interpreter.svg'}
-                        alt="" width={48} height={48}
-                      />
-                      <div className="flex flex-col gap-1">
-                        <p className={`text-[15px] font-semibold ${t === 'patient' ? 'text-[#2592FF]' : 'text-[#30C100]'}`}>
-                          {t === 'patient' ? '이주민' : '통번역가'}
-                        </p>
-                        <p className="text-[13px] font-medium text-[#808080] leading-[1.4]">
-                          {t === 'patient' ? '내 진료 기록 확인' : '진료 동행 기록 작성'}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Step 12: 전화번호 플로우 - 추가 정보 */}
-        {step === 12 && (
-          <div className="px-4 pt-8 pb-4">
-            <h1 className="text-[28px] font-semibold text-[#161616] leading-[1.4] mb-[52px]">
-              기본 정보를<br />설정해주세요
-            </h1>
-            <div className="flex flex-col gap-5">
-              <Field label="담당 센터">
-                <CenterSearchSelect
-                  valueName={centerName}
-                  placeholder="담당 센터를 선택해주세요"
-                  onSelect={c => { setCenterId(c.id); setCenterName(c.name) }}
-                  buttonClassName={centerBtnCls}
-                  valueClassName={centerValueCls}
-                  placeholderClassName={centerPlaceholderCls}
-                  rightIcon={<SearchIcon />}
-                />
-              </Field>
-              {accountType === 'patient' && (
-                <>
-                  <Field label="성별">
-                    <select
-                      className={`${inputCls} appearance-none ${!gender ? 'text-[#808080]' : 'text-[#161616]'}`}
-                      value={gender}
-                      onChange={e => setGender(e.target.value as Gender | '')}
-                    >
-                      <option value="" disabled>성별을 선택해주세요</option>
-                      {GENDERS.map(g => <option key={g} value={g}>{labels.gender[g]}</option>)}
-                    </select>
-                  </Field>
-                  <Field label="국적">
-                    <SelectWithChevron
-                      value={nationality}
-                      onChange={e => setNationality(e.target.value as Nationality | '')}
-                      placeholder="국적을 선택해주세요"
-                    >
-                      {NATIONALITIES.map(n => <option key={n} value={n}>{labels.nationality[n]}</option>)}
-                    </SelectWithChevron>
-                  </Field>
-                  <Field label="비자">
-                    <SelectWithChevron
-                      value={visaType}
-                      onChange={e => setVisaType(e.target.value as VisaType | '')}
-                      placeholder="비자를 선택해주세요"
-                    >
-                      {VISA_TYPES.map(v => <option key={v} value={v}>{labels.visa[v]}</option>)}
-                    </SelectWithChevron>
-                  </Field>
-                  <Field label="생년월일" optional>
-                    <input
-                      type="date"
-                      className={inputCls}
-                      value={birthDate}
-                      onChange={e => setBirthDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                    />
-                  </Field>
-                  <Field label="사업장명" optional>
-                    <input
-                      className={inputCls}
-                      placeholder="근무 중인 직장 이름"
-                      value={workplace}
-                      onChange={e => setWorkplace(e.target.value)}
-                    />
-                  </Field>
-                </>
-              )}
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Step 13: 전화번호 가입 완료 */}
-        {step === 13 && (
-          <div className="flex flex-col items-center justify-center flex-1 min-h-[calc(100vh-179px)]">
-            <img src="/icons/common/completion-graphic.svg" width={172} height={172} alt="" className="mx-auto" />
-            <p className="text-[24px] font-semibold text-[#161616] mt-8">가입이 완료되었습니다</p>
           </div>
         )}
       </div>
@@ -807,7 +699,7 @@ export default function SignupPage() {
           </button>
           <button
             type="button"
-            onClick={step === 12 ? handlePhoneSignup : next}
+            onClick={next}
             disabled={loading}
             className="flex-1 h-[60px] bg-[#2592FF] rounded-[8px] text-white text-[18px] font-semibold disabled:opacity-40 hover:bg-[#1a7ee6] active:bg-[#1568c7] transition-colors"
           >
@@ -819,7 +711,7 @@ export default function SignupPage() {
       )}
 
       {/* ── 완료 화면 시작하기 버튼 ────────────────────────────────────────── */}
-      {(step === 5 || step === 13) && (
+      {step === 5 && (
         <div className="border-t border-[#EEEEEE] px-6 pt-6 pb-8 shrink-0 bg-white">
           <button
             type="button"

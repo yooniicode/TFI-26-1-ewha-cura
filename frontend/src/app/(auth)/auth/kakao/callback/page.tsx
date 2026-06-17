@@ -60,7 +60,9 @@ function KakaoCallbackInner() {
           setLastLoginMethod('kakao')
           // 프로필 미완성(신규 유저)이면 정보 입력 페이지로
           if (!res.payload.me?.entityId) {
-            router.replace('/auth/complete')
+            const params = new URLSearchParams({ kakao: '1' })
+            if (res.payload.me?.name) params.set('name', res.payload.me.name)
+            router.replace(`/signup?${params.toString()}`)
           } else {
             router.replace('/dashboard')
           }

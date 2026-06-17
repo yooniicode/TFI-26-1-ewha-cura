@@ -310,7 +310,7 @@ export default function MyPage() {
     )
   }
   if (!meLoading && me && me.role !== 'admin' && !me.entityId) {
-    window.location.replace('/auth/complete')
+    window.location.replace('/signup?kakao=1')
     return null
   }
 

@@ -277,6 +277,7 @@ export interface RegisterProfileRequest {
   visaType?: VisaType
   visaNote?: string
   phone?: string
+  birthDate?: string
   region?: string
   interpreterRole?: InterpreterRole
   centerId?: string
