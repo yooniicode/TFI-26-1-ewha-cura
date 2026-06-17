@@ -10,6 +10,10 @@ type CenterSearchSelectProps = {
   disabled?: boolean
   placeholder?: string
   onSelect: (center: Center) => void
+  buttonClassName?: string
+  valueClassName?: string
+  placeholderClassName?: string
+  rightIcon?: React.ReactNode
 }
 
 export default function CenterSearchSelect({
@@ -17,6 +21,10 @@ export default function CenterSearchSelect({
   disabled,
   placeholder,
   onSelect,
+  buttonClassName,
+  valueClassName,
+  placeholderClassName,
+  rightIcon,
 }: CenterSearchSelectProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -68,17 +76,20 @@ export default function CenterSearchSelect({
     <>
       <button
         type="button"
-        className="input flex items-center justify-between gap-3 text-left disabled:bg-gray-50 disabled:text-gray-400"
+        className={buttonClassName ?? 'input flex items-center justify-between gap-3 text-left disabled:bg-gray-50 disabled:text-gray-400'}
         disabled={disabled}
         onClick={() => {
           setQuery(valueName ?? '')
           setOpen(true)
         }}
       >
-        <span className={valueName ? 'truncate text-gray-800' : 'truncate text-gray-400'}>
+        <span className={valueName
+          ? (valueClassName ?? 'truncate text-gray-800')
+          : (placeholderClassName ?? 'truncate text-gray-400')
+        }>
           {valueName || placeholder || t.common.center_search}
         </span>
-        <span className="flex-shrink-0 text-xs font-medium text-primary-600">{t.common.search}</span>
+        {rightIcon ?? <span className="flex-shrink-0 text-xs font-medium text-primary-600">{t.common.search}</span>}
       </button>
 
       {open && (
