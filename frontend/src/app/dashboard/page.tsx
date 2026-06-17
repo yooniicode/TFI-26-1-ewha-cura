@@ -107,6 +107,11 @@ export default function DashboardPage() {
 
   if (meLoading) return <CuraSpinner />
 
+  if (!me) {
+    router.replace('/')
+    return <CuraSpinner />
+  }
+
   const today = formatToday(t.locale)
   // 한국 표준시(UTC+9) 기준 오늘 날짜
   const todayStr = (() => {

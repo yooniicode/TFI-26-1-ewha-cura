@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
   const isAuthenticated = request.cookies.get(COOKIE_NAME)?.value === '1'
 
   if (!isAuthenticated && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // 인증된 사용자가 인증 화면 접근 시 대시보드로
