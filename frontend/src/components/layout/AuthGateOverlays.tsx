@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAccessToken } from '@/lib/auth/auth-token'
+import { getAccessToken, clearAccessToken } from '@/lib/auth/auth-token'
 import type { AuthMe } from '@/lib/types'
 
 interface AuthGateOverlaysProps {
@@ -16,6 +16,7 @@ export default function AuthGateOverlays({ me: _me, pathname: _pathname }: AuthG
   useEffect(() => {
     const token = getAccessToken()
     if (!token) {
+      clearAccessToken()
       router.replace('/')
     }
   }, [router])
