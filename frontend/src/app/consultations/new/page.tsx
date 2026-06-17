@@ -2,18 +2,15 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import AppShell from '@/components/layout/AppShell'
 import Spinner from '@/components/ui/Spinner'
 import PageHeader from '@/components/ui/PageHeader'
 import ReportExitModal from '@/components/ui/ReportExitModal'
-import PatientInfoBar, { getFlagSrc } from '@/components/patient/PatientInfoBar'
-import StepIndicator from '@/components/ui/StepIndicator'
 import { consultationApi, patientApi } from '@/lib/api'
 import type { Consultation, Patient } from '@/lib/types'
-import { useEnumLabels } from '@/lib/i18n/enumLabels'
 import { useTranslation } from '@/lib/i18n/I18nContext'
-import { formatKoreanDate, parseAppDate } from '@/lib/utils/dateFormat'
-import { CalendarPicker, TimeScrollPicker } from '@/components/ui/DateTimePicker'
+import { CalendarPicker } from '@/components/ui/DateTimePicker'
 import { useSpeechToText } from '@/hooks/useSpeechToText'
 
 function calcAge(birthDate?: string | null): string {
@@ -42,7 +39,6 @@ function ReportWriteInner() {
 
   const { t } = useTranslation()
   const tc = t.consultation
-  const labels = useEnumLabels()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [recentHistory, setRecentHistory] = useState<Consultation[]>([])
   const [rmConsultation, setRmConsultation] = useState<Consultation | null>(null)
@@ -250,11 +246,6 @@ function ReportWriteInner() {
   }
 
   const ageStr = calcAge(patient?.birthDate)
-  const patientName = patient?.name ?? ''
-  const demographics = patient
-    ? [labels.nationality[patient.nationality], labels.gender[patient.gender], ageStr].filter(Boolean).join(' | ')
-    : ''
-  const flagSrc = patient ? getFlagSrc(patient.nationality) : undefined
 
   // 완료 화면 (762-1680)
   if (done) {
@@ -287,27 +278,16 @@ function ReportWriteInner() {
 
   const title = stepTitles[step] ?? ''
 
+  const consultDateLabel = consultationDate
+    ? consultationDate.slice(5, 10).replace('-', '.')
+    : ''
+
   return (
     <AppShell noPadding>
       <PageHeader title={tc.write_report} showClose onClose={() => setShowExitModal(true)} />
 
-      {/* 환자 정보 바 */}
-      <PatientInfoBar
-        patientId={patientId || null}
-        patientName={patientName}
-        subtitle={demographics}
-        flagSrc={flagSrc}
-      />
-
-      {/* 타이틀 */}
-      <div className="bg-white px-4 pt-8 pb-0">
-        <h2 className="text-[26px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
-          {title}
-        </h2>
-      </div>
-
       {/* 스텝 인디케이터 */}
-      <div className="bg-white px-4 pt-4 pb-5">
+      <div className="bg-white px-4 pt-4 pb-0">
         <div className="flex gap-2">
           {Array.from({ length: 5 }, (_, i) => i + 1).map(n => {
             const isDone = n < stepLabel
@@ -330,8 +310,23 @@ function ReportWriteInner() {
         </div>
       </div>
 
+      {/* 타이틀 + 날짜 */}
+      <div className="bg-white px-4 pt-6 pb-0 flex flex-col gap-1">
+        <h2 className="text-[24px] font-semibold text-[#161616] leading-[1.4] whitespace-pre-line">
+          {title}
+        </h2>
+        <p className="text-[16px] font-medium text-[#808080]">
+          진료일 {consultDateLabel}
+        </p>
+      </div>
+
+      {/* 환자 정보 카드 */}
+      <div className="bg-white px-4 pt-3 pb-0">
+        <CompactPatientCard patientId={patientId || null} patient={patient} ageStr={ageStr} />
+      </div>
+
       {/* 스텝별 컨텐츠 */}
-      <div className="bg-white px-4 pt-2 pb-36">
+      <div className="bg-white px-4 pt-3 pb-36">
         {!fromMemo && step === 1 && (
           <Step1Scratch
             workDescription={workDescription}
@@ -378,11 +373,11 @@ function ReportWriteInner() {
       </div>
 
       {/* 하단 네비게이션 */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-4 pt-4 pb-8 flex gap-2.5">
+      <div className="fixed bottom-0 left-0 right-0 max-w-[402px] mx-auto bg-white border-t border-[#EEEEEE] px-6 pt-6 pb-8 flex gap-2.5">
         {step > 1 && (
           <button
             onClick={() => setStep(s => s - 1)}
-            className="w-[111px] h-[60px] bg-[#F0F1F5] rounded-lg text-lg font-medium text-[#494949]"
+            className="w-[110px] h-[60px] bg-[#f3f9ff] rounded-lg text-lg font-semibold text-[#2592FF]"
           >
             {t.common.prev_page}
           </button>
@@ -412,6 +407,43 @@ function ReportWriteInner() {
       )}
     </AppShell>
   )
+}
+
+// ─── 환자 정보 카드 (컴팩트) ──────────────────────────────────────────────────
+
+function CompactPatientCard({ patientId, patient, ageStr }: {
+  patientId: string | null
+  patient: Patient | null
+  ageStr: string
+}) {
+  const isFemale = patient?.gender === 'FEMALE'
+  const name = patient?.name ?? ''
+
+  const inner = (
+    <div className="flex items-center justify-between px-2 py-2">
+      <div className="flex items-center gap-2">
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${isFemale ? 'bg-[#fff2f7]' : 'bg-[#f0f4ff]'}`}>
+          <span className={`text-[13px] leading-none ${isFemale ? 'text-[#FF7FAB]' : 'text-[#2592FF]'}`}>
+            {isFemale ? '♀' : '♂'}
+          </span>
+        </div>
+        <span className="font-semibold text-[#161616] text-[18px]">{name}</span>
+        <span className="text-[#494949] text-[18px]">{ageStr}</span>
+      </div>
+      <svg width="8" height="14" viewBox="0 0 8 14" fill="none" className="shrink-0">
+        <path d="M1 1l6 6-6 6" stroke="#C7C7C7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  )
+
+  if (patientId) {
+    return (
+      <Link href={`/patients/${patientId}`} className="block rounded-[20px] bg-white">
+        {inner}
+      </Link>
+    )
+  }
+  return <div className="rounded-[20px] bg-white">{inner}</div>
 }
 
 // ─── 공통 필드 컴포넌트 ──────────────────────────────────────────────────────
@@ -465,6 +497,18 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
 }) {
   const { t } = useTranslation()
   const tc = t.consultation
+
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!workDescription) return
+    const timer = setTimeout(() => {
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      setSavedAt(`${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`)
+    }, 2000)
+    return () => clearTimeout(timer)
+  }, [workDescription])
 
   const workDescriptionRef = useRef(workDescription)
   workDescriptionRef.current = workDescription
@@ -534,6 +578,12 @@ function Step1Scratch({ workDescription, onChange, aiParsing }: {
           </div>
         )}
       </div>
+      {savedAt && (
+        <div className="flex flex-col items-end gap-1">
+          <p className="text-[#808080] text-[15px] tracking-[-0.15px]">{savedAt}</p>
+          <p className="text-[#2592FF] text-[14px] tracking-[-0.14px]">자동저장 되었습니다</p>
+        </div>
+      )}
     </div>
   )
 }

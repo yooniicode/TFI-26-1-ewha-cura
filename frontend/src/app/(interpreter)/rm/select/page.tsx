@@ -71,7 +71,7 @@ function RmSelectInner() {
 
         {/* 스텝 인디케이터 — 2단계 */}
         <div className="mb-8">
-          <StepIndicator current={2} total={6} />
+          <StepIndicator current={2} total={5} />
         </div>
 
         {/* 목록 */}

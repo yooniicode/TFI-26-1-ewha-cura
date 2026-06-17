@@ -159,7 +159,7 @@ function PatientSelectInner() {
             <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#2592ff] text-white text-base font-semibold shrink-0">
               2
             </div>
-            {[3, 4, 5, 6].map(n => (
+            {[3, 4, 5].map(n => (
               <div key={n} className="w-6 h-6 rounded-full flex items-center justify-center bg-[#F7F7F7] text-[#808080] text-base font-semibold shrink-0">
                 {n}
               </div>

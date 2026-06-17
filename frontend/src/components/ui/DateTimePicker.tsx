@@ -152,14 +152,15 @@ export function CalendarPicker({ value, onChange, time, onTimeChange }: {
       {openPicker === 'time' && onTimeChange && (
         <TimeScrollPicker
           value={time ?? ''}
-          onChange={(v) => { onTimeChange(v); setOpenPicker(null) }}
+          onChange={onTimeChange}
+          onClose={() => setOpenPicker(null)}
         />
       )}
     </div>
   )
 }
 
-export function TimeScrollPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function TimeScrollPicker({ value, onChange, onClose }: { value: string; onChange: (v: string) => void; onClose?: () => void }) {
   const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
   const minutes = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
   const periods = ['AM', 'PM']
@@ -204,11 +205,15 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
   function selectHour(h: string) {
     setSelH(h)
     hourRef.current?.scrollTo({ top: hours.indexOf(h) * ITEM_H, behavior: 'smooth' })
+    const h24 = toH24(h, selP)
+    onChange(`${String(h24).padStart(2, '0')}:${selM}`)
   }
 
   function selectMinute(m: string) {
     setSelM(m)
     minRef.current?.scrollTo({ top: minutes.indexOf(m) * ITEM_H, behavior: 'smooth' })
+    const h24 = toH24(selH, selP)
+    onChange(`${String(h24).padStart(2, '0')}:${m}`)
   }
 
   function selectPeriod(p: 'AM' | 'PM') {
@@ -216,6 +221,7 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
     periodRef.current?.scrollTo({ top: periods.indexOf(p) * ITEM_H, behavior: 'smooth' })
     const h24 = toH24(selH, p)
     onChange(`${String(h24).padStart(2, '0')}:${selM}`)
+    onClose?.()
   }
 
   // 스크롤이 snap 위치에 정착하면 100ms 후 상태 동기화
@@ -237,12 +243,21 @@ export function TimeScrollPicker({ value, onChange }: { value: string; onChange:
     }
   }
 
-  const onHourScroll = makeScrollHandler(hourRef, hours, 'h', h => setSelH(h))
-  const onMinuteScroll = makeScrollHandler(minRef, minutes, 'm', m => setSelM(m))
+  const onHourScroll = makeScrollHandler(hourRef, hours, 'h', h => {
+    setSelH(h)
+    const h24 = toH24(h, cur.current.p)
+    onChange(`${String(h24).padStart(2, '0')}:${cur.current.m}`)
+  })
+  const onMinuteScroll = makeScrollHandler(minRef, minutes, 'm', m => {
+    setSelM(m)
+    const h24 = toH24(cur.current.h, cur.current.p)
+    onChange(`${String(h24).padStart(2, '0')}:${m}`)
+  })
   const onPeriodScroll = makeScrollHandler(periodRef, periods, 'p', p => {
     setSelP(p as 'AM' | 'PM')
     const h24 = toH24(cur.current.h, p as 'AM' | 'PM')
     onChange(`${String(h24).padStart(2, '0')}:${cur.current.m}`)
+    onClose?.()
   })
 
   const colStyle: React.CSSProperties = {

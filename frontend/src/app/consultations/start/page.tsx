@@ -48,7 +48,7 @@ function ConsultationStartInner() {
         {/* 스텝 인디케이터 — 1단계 */}
         <div className="flex gap-2 mb-8">
           <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#2592FF] text-white text-sm font-semibold shrink-0">1</div>
-          {[2, 3, 4, 5, 6].map(n => (
+          {[2, 3, 4, 5].map(n => (
             <div key={n} className="w-6 h-6 rounded-full flex items-center justify-center bg-[#F7F7F7] text-[#808080] text-sm font-semibold shrink-0">
               {n}
             </div>

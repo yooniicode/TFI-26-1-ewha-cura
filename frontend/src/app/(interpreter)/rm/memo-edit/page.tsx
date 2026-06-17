@@ -122,7 +122,7 @@ function RmMemoEditInner() {
         </div>
 
         <div className="mb-7">
-          <StepIndicator current={3} total={6} />
+          <StepIndicator current={3} total={5} />
         </div>
       </div>
 
