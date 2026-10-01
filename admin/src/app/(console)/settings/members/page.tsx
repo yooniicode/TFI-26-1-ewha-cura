@@ -15,9 +15,10 @@ import { ApiError } from '@/lib/api/client'
 import { queryKeys } from '@/lib/queryKeys'
 import type { Member } from '@/lib/schemas'
 
+// 매칭 상태 색(수락 대기·배정 완료)과 겹치지 않도록 횟수 뱃지(신규/기본)의 중립 색을 쓴다
 const ROLE_BADGE: Record<string, { label: string; className: string }> = {
-  admin:       { label: '센터 관리자', className: 'bg-status-sky-bg text-status-sky' },
-  interpreter: { label: '통번역가',   className: 'bg-status-teal-bg text-status-teal' },
+  admin:       { label: '센터 관리자', className: 'bg-brand-blue-bg font-semibold text-brand-blue' },
+  interpreter: { label: '통번역가',   className: 'bg-button-bluegrey font-medium text-ink-grey2' },
 }
 
 const cell = 'shrink-0 truncate text-center'
@@ -86,7 +87,7 @@ export default function MembersPage() {
                   </span>
                   <span className="flex w-[120px] shrink-0 justify-center">
                     {role && (
-                      <span className={clsx('inline-flex h-7 items-center rounded-[12px] px-[10px] text-[14px] font-semibold', role.className)}>
+                      <span className={clsx('inline-flex h-[26px] items-center rounded-[12px] px-[10px] py-[5px] text-[12px]', role.className)}>
                         {role.label}
                       </span>
                     )}
@@ -97,7 +98,8 @@ export default function MembersPage() {
                     {m.active === false ? '비활성' : '활성'}
                   </span>
                   <span className="flex w-[120px] shrink-0 justify-center">
-                    {!isMe && (m.role === 'admin' || m.interpreterId) && (
+                    {/* 비활성 계정은 로그인할 수 없어 관리자로 지정하지 않는다 (해제는 가능) */}
+                    {!isMe && (m.role === 'admin' || (m.interpreterId && m.active !== false)) && (
                       <ActionButton
                         variant={m.role === 'admin' ? 'soft' : 'primary'}
                         onClick={() => { setError(''); setTarget(m) }}

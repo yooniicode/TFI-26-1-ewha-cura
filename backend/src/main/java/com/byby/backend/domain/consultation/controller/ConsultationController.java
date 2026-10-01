@@ -70,6 +70,14 @@ public class ConsultationController {
                 Response.success(SuccessCode.OK, consultationService.accept(id, req, principal)));
     }
 
+    @GetMapping("/assignments")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "센터장이 나에게 배정한 요청 (수락 대기)")
+    public ResponseEntity<Response<List<ConsultationResponse.AssignmentItem>>> getAssignments(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, consultationService.getAssignments(principal)));
+    }
+
     @PatchMapping("/{id}/assignment/accept")
     @PreAuthorize("hasRole('interpreter')")
     @Operation(summary = "센터장이 배정한 요청 수락", description = "수락 대기 → 배정 확정")

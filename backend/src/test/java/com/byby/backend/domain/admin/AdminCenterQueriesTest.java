@@ -234,6 +234,26 @@ class AdminCenterQueriesTest {
     }
 
     @Test
+    @DisplayName("통번역가: 수락 대기 배정은 배정 요청 목록에만 보이고 내 진료 목록에서는 빠진다")
+    void awaitingAssignmentsAreSeparatedFromMyConsultations() {
+        saveConsultation(interpreter, LocalDateTime.now());                // 직접 작성 → 확정
+        Consultation awaiting = saveConsultation(null, LocalDateTime.now().plusDays(1));
+        awaiting.assignByAdmin(interpreter, null, UUID.randomUUID());
+        consultationRepository.flush();
+
+        assertThat(consultationRepository.findByInterpreter_IdAndMatchingStatusOrderByConsultationDateAsc(
+                interpreter.getId(), MatchingStatus.AWAITING_ACCEPTANCE))
+                .extracting(Consultation::getId).containsExactly(awaiting.getId());
+        assertThat(consultationRepository.searchByInterpreter(
+                interpreter.getId(), null, PageRequest.of(0, 20)).getTotalElements()).isEqualTo(1);
+
+        awaiting.acceptAssignment();
+        consultationRepository.flush();
+        assertThat(consultationRepository.searchByInterpreter(
+                interpreter.getId(), null, PageRequest.of(0, 20)).getTotalElements()).isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("AD-06-2: 동행 횟수는 같은 환자·통번역가의 확정 진료 수(현재 요청 제외)")
     void companionCountExcludesCurrentRequest() {
         saveConsultation(interpreter, LocalDateTime.now().minusDays(7));   // 통번역가 직접 작성 → 확정

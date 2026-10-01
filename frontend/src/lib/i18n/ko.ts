@@ -845,6 +845,27 @@
   },
 
   // ── 일정 추가 ────────────────────────────────────────────────────────────────
+  assignment: {
+    title: '배정 요청',
+    heading: '센터에서 배정한\n진료 요청이에요',
+    desc: '수락하면 내 일정에 추가되고, 거절하면 센터에서 다시 배정해요.',
+    banner: (n: number) => `센터에서 배정한 요청 ${n}건`,
+    banner_desc: '확인하고 수락해주세요',
+    empty: '새로 배정된 요청이 없어요',
+    date: '진료 일시',
+    place: '진료 장소',
+    no_comment: '남긴 요청사항이 없어요',
+    accept: '수락',
+    decline: '거절',
+    decline_title: '이 배정을 거절할까요?',
+    decline_desc: '거절하면 센터에서 다른 통번역가를 다시 배정해요.',
+    decline_confirm: '거절하기',
+    cancel: '취소',
+    accepted: '수락했어요. 내 일정에 추가됐어요.',
+    declined: '배정을 거절했어요.',
+    err: '처리하지 못했어요. 다시 시도해주세요.',
+  },
+
   schedule: {
     title: '일정 추가',
     select_request_title: '센터에 접수된\n통번역 요청을 선택해주세요',

@@ -52,7 +52,7 @@ export default function AccountPage() {
   const dirty = nickname.trim() !== (profile?.nickname ?? '') && nickname.trim() !== ''
 
   return (
-    <div className="grid max-w-[1120px] grid-cols-[1fr_360px] items-start gap-5">
+    <div className="grid grid-cols-[1fr_360px] items-start gap-5">
       <Card title="프로필" description="사이드바와 보고서 승인 기록에 보이는 이름이에요">
         <form className="flex flex-col gap-5" onSubmit={e => { e.preventDefault(); if (dirty) save.mutate() }}>
           <div className="grid grid-cols-2 gap-6">

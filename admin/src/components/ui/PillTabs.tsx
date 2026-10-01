@@ -21,7 +21,7 @@ export default function PillTabs<T extends string>({ tabs, value, onChange, labe
   label: string
 }) {
   return (
-    <div role="tablist" aria-label={label} className="flex h-9 items-center gap-2">
+    <div role="tablist" aria-label={label} className="flex min-h-9 flex-wrap items-center gap-2">
       {tabs.map(tab => tab.href ? (
         <Link key={tab.value} href={tab.href} role="tab" aria-selected={value === tab.value} className={tabClass(value === tab.value)}>
           {tab.label}

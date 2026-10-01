@@ -35,4 +35,8 @@ export const consultationApi = {
   pending:   () => get('/consultations/pending?size=50', schemas.pendingConsultations),
   accept:    (id: string, body: { consultationDate?: string | null }) =>
     patch(`/consultations/${id}/accept`, body, schemas.consultation),
+  /** 센터장이 나에게 배정한 요청 (수락 대기) */
+  assignments:      () => get('/consultations/assignments', schemas.assignments),
+  acceptAssignment: (id: string) => patch(`/consultations/${id}/assignment/accept`, {}, schemas.consultation),
+  declineAssignment: (id: string) => patch<void>(`/consultations/${id}/assignment/decline`, {}),
 }

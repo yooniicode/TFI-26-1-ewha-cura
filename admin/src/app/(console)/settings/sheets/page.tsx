@@ -33,7 +33,7 @@ export default function SheetsPage() {
   })
 
   return (
-    <div className="flex max-w-[1120px] flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <Card
         title="보고서 내보내기"
         description="센터의 전체 보고서를 센터 전용 구글 시트로 보내요. 처음 내보내면 시트가 새로 만들어져요."

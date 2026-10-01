@@ -47,7 +47,7 @@ export default function CenterSettingsPage() {
   const dirty = form.name !== center.name || form.address !== (center.address ?? '') || form.phone !== (center.phone ?? '')
 
   return (
-    <div className="grid max-w-[1120px] grid-cols-[1fr_360px] items-start gap-5">
+    <div className="grid grid-cols-[1fr_360px] items-start gap-5">
       <Card title="기본 정보" description="이주민과 통번역가 앱에 보이는 센터 정보예요">
         <form
           className="flex flex-col gap-5"

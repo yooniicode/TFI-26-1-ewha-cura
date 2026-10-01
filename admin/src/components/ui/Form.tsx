@@ -32,7 +32,7 @@ export function TextField({ label, hint, className, ...input }: React.InputHTMLA
       <span className="text-[12px] font-medium text-modal-label">{label}</span>
       <input
         {...input}
-        className="h-11 rounded-[10px] border border-line bg-white px-[14px] text-[14px] font-medium text-ink outline-none placeholder:text-ink-grey2 focus:border-brand-blue/40 disabled:bg-surface-muted disabled:text-ink-grey2"
+        className="h-10 rounded-[8px] border border-line bg-white px-[14px] text-[14px] font-medium text-ink outline-none placeholder:text-ink-grey2 focus:border-brand-blue/40 disabled:bg-surface-muted disabled:text-ink-grey2"
       />
       {hint && <span className="text-[12px] text-ink-grey2">{hint}</span>}
     </label>

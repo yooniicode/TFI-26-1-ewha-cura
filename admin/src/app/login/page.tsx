@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { TextField } from '@/components/ui/Form'
+import { ModalButton } from '@/components/ui/Modal'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
 import { clearAuthState, markAuthenticated } from '@/lib/auth/auth-token'
@@ -43,43 +45,38 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface-sidebar px-4">
-      <form onSubmit={handleSubmit} className="flex w-full max-w-[400px] flex-col gap-5 rounded-[20px] bg-white p-10 shadow-sm">
-        <div className="flex flex-col gap-2">
-          <img src="/icons/logo.svg" alt="Cura" width={100} height={54.33} />
-          <h1 className="text-[20px] font-semibold text-ink-grey">관리자 로그인</h1>
+      {/* 설정 카드와 같은 패널 · 폼 필드 · 모달 버튼으로 구성 */}
+      <form onSubmit={handleSubmit} className="flex w-full max-w-[400px] flex-col gap-6 rounded-[20px] border border-line bg-white p-10">
+        <div className="flex flex-col gap-3">
+          <img src="/icons/logo.svg" alt="Cura" width={103} height={54.33} />
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[19px] font-semibold text-modal-title">관리자 로그인</h1>
+            <p className="text-[13px] font-medium text-modal-sub">센터 관리자 계정으로 로그인해주세요</p>
+          </div>
         </div>
 
-        <label className="flex flex-col gap-1.5 text-[14px] font-medium text-ink">
-          이메일
-          <input
+        <div className="flex flex-col gap-4">
+          <TextField
+            label="이메일"
             type="email"
             autoComplete="username"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="h-12 rounded-[12px] bg-surface-card px-4 text-[14px] outline-none focus:ring-2 focus:ring-brand-blue/20"
           />
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-[14px] font-medium text-ink">
-          비밀번호
-          <input
+          <TextField
+            label="비밀번호"
             type="password"
             autoComplete="current-password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            className="h-12 rounded-[12px] bg-surface-card px-4 text-[14px] outline-none focus:ring-2 focus:ring-brand-blue/20"
           />
-        </label>
+        </div>
 
-        {error && <p role="alert" className="text-[13px] text-red-500">{error}</p>}
+        {error && <p role="alert" className="text-[13px] text-danger-text">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading || !email.trim() || !password}
-          className="h-12 rounded-[12px] bg-brand-blue text-[15px] font-semibold text-white transition-colors hover:bg-[#1a7ee6] disabled:opacity-40"
-        >
+        <ModalButton type="submit" variant="primary" disabled={loading || !email.trim() || !password}>
           {loading ? '로그인 중...' : '로그인'}
-        </button>
+        </ModalButton>
       </form>
     </main>
   )

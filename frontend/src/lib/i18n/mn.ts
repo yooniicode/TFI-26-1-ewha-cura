@@ -839,6 +839,27 @@ export const mn: AppTranslation = {
     exit_leave: 'Гарах',
   },
 
+  assignment: {
+    title: 'Assigned requests',
+    heading: 'Requests assigned\nby your center',
+    desc: 'Accept to add it to your schedule. If you decline, the center will assign someone else.',
+    banner: (n: number) => `${n} request${n === 1 ? '' : 's'} assigned by your center`,
+    banner_desc: 'Please review and accept',
+    empty: 'No new assigned requests',
+    date: 'Appointment',
+    place: 'Location',
+    no_comment: 'No request note',
+    accept: 'Accept',
+    decline: 'Decline',
+    decline_title: 'Decline this assignment?',
+    decline_desc: 'The center will assign another interpreter.',
+    decline_confirm: 'Decline',
+    cancel: 'Cancel',
+    accepted: 'Accepted. It has been added to your schedule.',
+    declined: 'You declined the assignment.',
+    err: 'Something went wrong. Please try again.',
+  },
+
   schedule: {
     title: 'Хуваарь нэмэх',
     select_request_title: 'Төвд ирсэн орчуулгын\nхүсэлтийг сонгоно уу',

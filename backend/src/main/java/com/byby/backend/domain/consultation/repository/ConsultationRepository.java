@@ -43,9 +43,11 @@ public interface ConsultationRepository
             @Param("patientQuery") String patientQuery,
             Pageable pageable);
 
+    /** 통번역가 본인의 진료 목록 — 센터장이 배정했지만 아직 수락하지 않은 요청은 제외 */
     @Query("""
             SELECT c FROM Consultation c
             WHERE c.interpreter.id = :interpreterId
+              AND c.matchingStatus <> com.byby.backend.common.enums.MatchingStatus.AWAITING_ACCEPTANCE
               AND (
                   :patientQuery IS NULL
                   OR :patientQuery = ''
@@ -117,6 +119,10 @@ public interface ConsultationRepository
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
             Pageable pageable);
+
+    /** 통번역가에게 온 배정 요청 (수락 대기) — 진료일이 가까운 순 */
+    List<Consultation> findByInterpreter_IdAndMatchingStatusOrderByConsultationDateAsc(
+            UUID interpreterId, MatchingStatus matchingStatus);
 
     /** AD-05-1 통번역가 카드의 누적 통번역 횟수 */
     long countByInterpreter_IdAndMatchingStatus(UUID interpreterId, MatchingStatus matchingStatus);

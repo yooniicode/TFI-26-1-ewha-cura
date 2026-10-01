@@ -77,6 +77,13 @@ export default function DashboardPage() {
     enabled: isInterpreter,
   })
 
+  // 센터장이 배정해 수락을 기다리는 요청
+  const { data: awaitingAssignments = [] } = useQuery({
+    queryKey: queryKeys.consultations.assignments(),
+    queryFn: () => consultationApi.assignments().then(r => r.payload ?? []),
+    enabled: isInterpreter,
+  })
+
   const { data: announcementResponse, isLoading: announcementsLoading, error: announcementsError } = useQuery({
     queryKey: queryKeys.announcements.list(0),
     queryFn: () => announcementApi.list(0),
@@ -385,6 +392,24 @@ export default function DashboardPage() {
 
         {/* 일정 섹션 */}
         <div className="px-4 pt-4 pb-10">
+          {/* 센터 배정 요청 — 수락 대기 건이 있을 때만 */}
+          {awaitingAssignments.length > 0 && (
+            <Link
+              href="/consultations/assignments"
+              className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-[#F3F9FF] px-4 py-4 active:opacity-70 transition-opacity"
+            >
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[16px] font-semibold text-[#2592FF]">
+                  {t.assignment.banner(awaitingAssignments.length)}
+                </span>
+                <span className="text-[13px] text-[#808080]">{t.assignment.banner_desc}</span>
+              </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2592FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
+          )}
+
           {/* 날짜 헤더 + 통역 일정 추가 버튼 (기존 유지) */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-0.5">

@@ -164,6 +164,18 @@ public class ConsultationService {
         return ConsultationResponse.Detail.from(saved, resolvePatientAvatarUrl(saved.getPatient()));
     }
 
+    /** 센터장이 나에게 배정해 수락을 기다리는 요청 목록 */
+    public List<ConsultationResponse.AssignmentItem> getAssignments(UserPrincipal principal) {
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        return consultationRepository
+                .findByInterpreter_IdAndMatchingStatusOrderByConsultationDateAsc(
+                        interpreter.getId(), MatchingStatus.AWAITING_ACCEPTANCE)
+                .stream()
+                .map(c -> ConsultationResponse.AssignmentItem.from(c, resolvePatientAvatarUrl(c.getPatient())))
+                .toList();
+    }
+
     /** 센터장이 배정한 요청을 통번역가가 수락 → 배정 확정 */
     @Transactional
     public ConsultationResponse.Detail acceptAssignment(UUID id, UserPrincipal principal) {

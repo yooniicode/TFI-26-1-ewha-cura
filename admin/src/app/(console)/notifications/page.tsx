@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import PageHeader from '@/components/PageHeader'
 import Spinner from '@/components/Spinner'
-import { ModalButton } from '@/components/ui/Modal'
 import PillTabs from '@/components/ui/PillTabs'
 import { adminApi } from '@/lib/api'
 import { alertKey, alertMeta, loadReadAlerts, saveReadAlerts } from '@/lib/alerts'
@@ -47,14 +46,20 @@ export default function NotificationsPage() {
   const unread = visible.filter(a => !read.has(alertKey(a)))
 
   return (
-    <div className="flex max-w-[1120px] flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <PageHeader title="새로운 알림" subtitle="처리가 필요한 매칭 요청과 보고서를 모아 보여줘요" />
 
       <div className="flex h-10 items-center justify-between">
         <PillTabs tabs={TABS} value={tab} onChange={setTab} label="알림 종류" />
-        <ModalButton disabled={unread.length === 0} onClick={() => markRead(unread.map(alertKey))}>
+        {/* 툴바 높이(40)에 맞춘 버튼 — 필터 트리거와 같은 테두리 스타일 */}
+        <button
+          type="button"
+          disabled={unread.length === 0}
+          onClick={() => markRead(unread.map(alertKey))}
+          className="flex h-10 items-center rounded-[8px] border border-line bg-white px-[14px] text-[14px] font-medium text-ink-grey hover:bg-surface-muted disabled:opacity-40"
+        >
           모두 읽음으로 표시
-        </ModalButton>
+        </button>
       </div>
 
       {isLoading ? (

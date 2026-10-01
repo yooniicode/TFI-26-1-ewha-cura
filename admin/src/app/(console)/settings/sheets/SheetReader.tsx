@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { TextField } from '@/components/ui/Form'
+import { ModalButton } from '@/components/ui/Modal'
+import PillTabs from '@/components/ui/PillTabs'
 
 const LS_KEY = 'byby_sheets_url'
 const LS_RANGE_KEY = 'byby_sheets_range'
@@ -106,106 +109,58 @@ export default function SheetReader() {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-3">
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink">
-            Google Sheets URL / ID
-          </label>
-          <input
-            type="text"
+      <div className="flex flex-col gap-5">
+        <div className="grid grid-cols-[2fr_1fr] gap-5">
+          <TextField
+            label="Google Sheets URL / ID"
             value={url}
             onChange={e => setUrl(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleFetch()}
             placeholder="https://docs.google.com/spreadsheets/d/..."
-            className="w-full rounded-[10px] border border-line bg-white px-4 py-3 text-sm text-ink outline-none placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-brand-blue/20"
           />
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-ink">
-            시트 이름 / 범위
-            <span className="ml-1 text-xs font-normal text-[#A0A0A0]">예: Sheet1, 상담기록!A:Z</span>
-          </label>
-          <input
-            type="text"
+          <TextField
+            label="시트 이름 / 범위"
+            hint="예: Sheet1, 상담기록!A:Z"
             value={range}
             onChange={e => setRange(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleFetch()}
             placeholder="Sheet1"
-            className="w-full rounded-[10px] border border-line bg-white px-4 py-3 text-sm text-ink outline-none placeholder:text-[#A0A0A0] focus:ring-2 focus:ring-brand-blue/20"
           />
         </div>
 
-        {/* 탭 목록 */}
+        {/* 시트 탭 — 보고서 관리와 같은 알약 탭 */}
         {data && data.sheets.length > 1 && (
-          <div className="flex flex-wrap gap-2 pt-1">
-            {data.sheets.map(s => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => { setRange(s); handleFetch(url, s) }}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  range === s
-                    ? 'bg-brand-blue text-white'
-                    : 'bg-white text-ink-grey hover:bg-[#e4e4e8]'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+          <PillTabs
+            tabs={data.sheets.map(s => ({ value: s, label: s }))}
+            value={range}
+            onChange={s => { setRange(s); handleFetch(url, s) }}
+            label="시트"
+          />
         )}
 
-        <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => handleFetch()}
-            disabled={loading || !url.trim()}
-            className="flex h-12 flex-1 items-center justify-center gap-2 rounded-[10px] bg-brand-blue text-sm font-bold text-white transition-colors hover:bg-[#1a7ee6] disabled:opacity-40"
-          >
-            {loading ? (
-              <>
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-                불러오는 중...
-              </>
-            ) : (
-              <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="23 4 23 10 17 10" />
-                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-                </svg>
-                {data ? '새로고침' : '불러오기'}
-              </>
-            )}
-          </button>
-          {data && (
-            <button
-              type="button"
-              onClick={handleDisconnect}
-              className="h-12 rounded-[10px] border border-line bg-white px-4 text-sm font-semibold text-ink-grey transition-colors hover:bg-[#e4e4e8]"
-            >
-              연결 해제
-            </button>
-          )}
-        </div>
-
-        {/* 안내 */}
-        <div className="rounded-xl bg-[#FFF8E1] px-4 py-3 text-xs leading-relaxed text-[#7B5E00]">
-          <p className="mb-1 font-semibold">연결 전 확인사항</p>
-          <p>• 구글 시트를 &quot;링크가 있는 모든 사용자 — 뷰어&quot;로 공유 설정해야 합니다.</p>
-          <p>• 서버에 GOOGLE_SHEETS_API_KEY 환경변수가 설정되어 있어야 합니다.</p>
-          <p>• 데이터는 읽기 전용으로 표시되며 앱 내에서 수정할 수 없습니다.</p>
+        {/* 안내 — 내보내기 카드의 안내 박스와 같은 회색 박스 */}
+        <div className="rounded-[12px] bg-surface-muted px-5 py-4 text-[13px] leading-relaxed text-modal-sub">
+          <p className="mb-1 text-[14px] font-semibold text-modal-value">연결 전 확인사항</p>
+          <p>• 구글 시트를 &quot;링크가 있는 모든 사용자 — 뷰어&quot;로 공유 설정해야 해요.</p>
+          <p>• 서버에 GOOGLE_SHEETS_API_KEY 환경변수가 설정되어 있어야 해요.</p>
+          <p>• 데이터는 읽기 전용으로 보여주고, 여기서 수정할 수 없어요.</p>
         </div>
 
         {apiKeyMissing && (
-          <div className="rounded-xl bg-red-50 px-4 py-3 text-xs text-red-600">
-            GOOGLE_SHEETS_API_KEY 환경변수가 설정되지 않았습니다. 서버 관리자에게 문의하세요.
-          </div>
+          <p role="alert" className="text-[13px] text-danger-text">
+            GOOGLE_SHEETS_API_KEY 환경변수가 설정되지 않았어요. 서버 관리자에게 문의해주세요.
+          </p>
         )}
         {error && !apiKeyMissing && (
-          <p className="text-sm text-red-500">{error}</p>
+          <p role="alert" className="text-[13px] text-danger-text">{error}</p>
         )}
+
+        <div className="flex justify-end gap-[10px]">
+          {data && <ModalButton onClick={handleDisconnect}>연결 해제</ModalButton>}
+          <ModalButton variant="primary" onClick={() => handleFetch()} disabled={loading || !url.trim()}>
+            {loading ? '불러오는 중...' : data ? '새로고침' : '불러오기'}
+          </ModalButton>
+        </div>
       </div>
 
       {/* 데이터 테이블 */}
