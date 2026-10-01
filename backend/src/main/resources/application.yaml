@@ -169,10 +169,14 @@ spring:
       keepalive-time: 30000        # 30초 keepalive ping
       validation-timeout: 5000
       data-source-properties:
-        # verify-full: 서버 인증서와 호스트명까지 검증 (require 는 암호화만 하고 검증을 안 해 MITM 에 취약).
-        # 배포 환경 인증서 문제로 기동이 막히면 DB_SSLMODE=require 로 즉시 되돌릴 수 있다.
-        sslmode: ${DB_SSLMODE:verify-full}
-        sslrootcert: system
+        # 기본은 require (암호화만, 인증서 검증 없음).
+        # verify-full 로 올리려면 Supabase CA 인증서(prod-ca-2021.crt)를 이미지에 넣고 두 값을 함께 설정한다:
+        #   DB_SSLMODE=verify-full, DB_SSLROOTCERT=/app/certs/prod-ca-2021.crt
+        # pgjdbc 는 libpq 의 sslrootcert=system 을 지원하지 않아 "system" 이라는 파일을 찾다 기동에 실패한다.
+        # Supabase CA 는 공용 신뢰 저장소에 없으므로 JVM 기본 truststore 로도 검증되지 않는다.
+        # (require 일 때 pgjdbc 는 sslrootcert 를 읽지 않으므로 기본값 system 은 무시된다)
+        sslmode: ${DB_SSLMODE:require}
+        sslrootcert: ${DB_SSLROOTCERT:system}
         prepareThreshold: 0        # PgBouncer Transaction Mode: 서버 측 Prepared Statement 금지
         socketTimeout: 60          # JDBC 소켓 응답 대기 60초 (초 단위)
         connectTimeout: 10         # JDBC TCP 연결 수립 타임아웃 10초
