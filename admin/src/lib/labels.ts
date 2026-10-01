@@ -48,10 +48,16 @@ export function nationalityLanguageCode(value?: string | null) {
   return value ? NATIONALITY_LANGUAGE[value] ?? null : null
 }
 
-/** 국기 에셋이 있는 국적만 — Figma 에 아직 몽골 국기만 있다 */
-const NATIONALITY_FLAGS: Record<string, string> = {
-  MONGOLIA: '/icons/flag-mn.svg',
+/** 국적 → 국기 (Figma: flag 모음, ISO 3166-1 코드). 기타(OTHER)는 국기 없이 이름만 */
+const NATIONALITY_FLAG_CODES: Record<string, string> = {
+  KOREA: 'kr', UNITED_STATES: 'us', VIETNAM: 'vn', CHINA: 'cn', CAMBODIA: 'kh', MYANMAR: 'mm',
+  PHILIPPINES: 'ph', INDONESIA: 'id', THAILAND: 'th', NEPAL: 'np', MONGOLIA: 'mn', UZBEKISTAN: 'uz',
+  SRI_LANKA: 'lk', BANGLADESH: 'bd', PAKISTAN: 'pk',
 }
+
+const NATIONALITY_FLAGS: Record<string, string> = Object.fromEntries(
+  Object.entries(NATIONALITY_FLAG_CODES).map(([nationality, code]) => [nationality, `/icons/flags/${code}.svg`]),
+)
 
 export function nationalityFlag(value?: string | null) {
   return value ? NATIONALITY_FLAGS[value] ?? null : null

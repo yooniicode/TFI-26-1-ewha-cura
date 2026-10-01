@@ -6,13 +6,17 @@ function IconText({ icon, text, iconAfter, flag, className }: {
   icon: string | null
   text: string
   iconAfter?: boolean
-  /** Figma flag_XX: 18px 칸 가운데 13.5 × 9.64 국기 */
+  /**
+   * Figma flag_XX: 정사각 칸 가운데 국기. 18px 칸에서는 국기를 0.75배(높이 9.64)로 줄여 쓴다.
+   * 네팔처럼 비율이 다른 국기도 있어 높이만 고정하고 너비는 원본 비율을 따른다.
+   */
   flag?: boolean
   className?: string
 }) {
-  const img = icon && (flag ? (
+  // 국기가 없는 국적(기타)도 다른 줄과 글자 시작점이 맞도록 빈 칸을 둔다
+  const img = flag && !icon ? <span aria-hidden className="size-[18px] shrink-0" /> : icon && (flag ? (
     <span className="flex size-[18px] shrink-0 items-center justify-center">
-      <img src={icon} alt="" width={13.5} height={9.643} />
+      <img src={icon} alt="" height={9.643} className="h-[9.643px] w-auto" />
     </span>
   ) : (
     <img src={icon} alt="" width={18} height={18} className="size-[18px] shrink-0" />
