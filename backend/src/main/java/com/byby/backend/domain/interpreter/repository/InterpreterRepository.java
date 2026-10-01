@@ -1,5 +1,6 @@
 package com.byby.backend.domain.interpreter.repository;
 
+import com.byby.backend.common.enums.Gender;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -67,4 +68,44 @@ public interface InterpreterRepository extends JpaRepository<Interpreter, UUID> 
             @Param("query") String query,
             @Param("language") String language,
             Pageable pageable);
+
+    /**
+     * AD-05-1 통번역가 관리 목록 — 비활성 통번역가도 포함해서 조회한다.
+     * activeFilter: "all" | "true" | "false"
+     */
+    @Query("""
+            SELECT DISTINCT i FROM Interpreter i
+            LEFT JOIN i.languages language
+            WHERE i.center.id = :centerId
+              AND (
+                  :activeFilter = 'all'
+                  OR (:activeFilter = 'true' AND i.active = true)
+                  OR (:activeFilter = 'false' AND i.active = false)
+              )
+              AND (
+                  :query IS NULL
+                  OR :query = ''
+                  OR LOWER(i.name) LIKE LOWER(CONCAT('%', :query, '%'))
+                  OR LOWER(COALESCE(i.phone, '')) LIKE LOWER(CONCAT('%', :query, '%'))
+              )
+              AND (
+                  :anyLanguage = true
+                  OR LOWER(COALESCE(language, '')) IN :languages
+              )
+              AND (
+                  :anyGender = true
+                  OR i.gender IN :genders
+              )
+            """)
+    Page<Interpreter> searchByCenterForAdmin(
+            @Param("centerId") UUID centerId,
+            @Param("query") String query,
+            @Param("anyLanguage") boolean anyLanguage,
+            @Param("languages") Collection<String> languages,
+            @Param("anyGender") boolean anyGender,
+            @Param("genders") Collection<Gender> genders,
+            @Param("activeFilter") String activeFilter,
+            Pageable pageable);
+
+    long countByCenter_Id(UUID centerId);
 }

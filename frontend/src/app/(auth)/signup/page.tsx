@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { authApi } from '@/lib/api'
-import { setAccessToken } from '@/lib/auth/auth-token'
+import { markAuthenticated } from '@/lib/auth/auth-token'
 import PasswordInput from '@/components/ui/PasswordInput'
 import CenterSearchSelect from '@/components/center/CenterSearchSelect'
 import { NATIONALITIES, VISA_TYPES, GENDERS, useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -203,7 +203,7 @@ function SignupPageInner() {
             birthDate: birthDate || undefined,
           } : {}),
         })
-        if (res.payload?.token) setAccessToken(res.payload.token)
+        if (res.payload?.token) markAuthenticated()
       } else {
         const res = await authApi.signup({
           email: email.trim(),
@@ -221,7 +221,7 @@ function SignupPageInner() {
           } : {}),
           ...(accountType === 'interpreter' ? { interpreterRole: 'ACTIVIST' as const } : {}),
         })
-        if (res.payload?.token) setAccessToken(res.payload.token)
+        if (res.payload?.token) markAuthenticated()
       }
       setStep(5)
     } catch (e) {
@@ -255,7 +255,7 @@ function SignupPageInner() {
       const res = await authApi.phoneLogin(pfPhone.trim(), pfCode)
       if (!res.payload) throw new Error('응답 오류')
       if (res.payload.exists && res.payload.token) {
-        setAccessToken(res.payload.token)
+        markAuthenticated()
         router.replace('/dashboard')
       } else {
         // 신규 유저 → 공통 플로우 진입 (전화번호 pre-fill)

@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="18" height="12.8571" viewBox="0 0 18 12.8571" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="MN" clip-path="url(#clip0_0_15)">
+<mask id="mask0_0_15" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="18" height="13">
+<g id="b">
+<path id="Vector" d="M16.2857 0H1.71429C0.767512 0 0 0.767512 0 1.71429V11.1429C0 12.0896 0.767512 12.8571 1.71429 12.8571H16.2857C17.2325 12.8571 18 12.0896 18 11.1429V1.71429C18 0.767512 17.2325 0 16.2857 0Z" fill="white"/>
+</g>
+</mask>
+<g mask="url(#mask0_0_15)">
+<path id="Vector_2" d="M16.2857 0H1.71429C0.767512 0 0 0.767512 0 1.71429V11.1429C0 12.0896 0.767512 12.8571 1.71429 12.8571H16.2857C17.2325 12.8571 18 12.0896 18 11.1429V1.71429C18 0.767512 17.2325 0 16.2857 0Z" fill="#004F99"/>
+<path id="Vector_3" fill-rule="evenodd" clip-rule="evenodd" d="M0 0H6V12.8571H0V0Z" fill="#C62429"/>
+<path id="Vector_4" fill-rule="evenodd" clip-rule="evenodd" d="M1.71429 6.0001H2.57143V9.42868H1.71429V6.0001ZM4.28571 6.0001H5.14286V9.42868H4.28571V6.0001Z" fill="#FAD000"/>
+<path id="Vector_5" d="M3.42857 9.42868C3.90196 9.42868 4.28571 9.04492 4.28571 8.57153C4.28571 8.09815 3.90196 7.71439 3.42857 7.71439C2.95518 7.71439 2.57143 8.09815 2.57143 8.57153C2.57143 9.04492 2.95518 9.42868 3.42857 9.42868Z" fill="#FAD000"/>
+<path id="Vector_6" d="M3.42857 6.85725C3.90196 6.85725 4.28571 6.47349 4.28571 6.0001C4.28571 5.52672 3.90196 5.14296 3.42857 5.14296C2.95518 5.14296 2.57143 5.52672 2.57143 6.0001C2.57143 6.47349 2.95518 6.85725 3.42857 6.85725Z" fill="#FAD000"/>
+<path id="Vector_7" fill-rule="evenodd" clip-rule="evenodd" d="M3.42857 2.57153L4.28571 4.28582H2.57143L3.42857 2.57153Z" fill="#FAD000"/>
+<path id="Vector_8" fill-rule="evenodd" clip-rule="evenodd" d="M12 0.000104632H18V12.8572H12V0.000104632Z" fill="#C62429"/>
+<path id="Vector_9" d="M16.2857 0.428676H1.71429C1.00421 0.428676 0.428571 1.00431 0.428571 1.71439V11.143C0.428571 11.853 1.00421 12.4287 1.71429 12.4287H16.2857C16.9958 12.4287 17.5714 11.853 17.5714 11.143V1.71439C17.5714 1.00431 16.9958 0.428676 16.2857 0.428676Z" stroke="black" stroke-opacity="0.1" stroke-width="0.857143"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_15">
+<rect width="18" height="12.8571" fill="white"/>
+</clipPath>
+</defs>
+</svg>

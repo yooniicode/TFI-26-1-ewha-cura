@@ -103,7 +103,9 @@ public class AuthService {
         AuthRequest.RegisterProfile profileReq = new AuthRequest.RegisterProfile(
                 req.name(), role, req.nationality(), req.gender(), req.visaType(),
                 req.visaNote(), req.birthDate(), req.phone(), req.region(), req.workplace(), req.interpreterRole(),
-                req.centerId(), req.centerName(), req.languages(), req.availabilityNote()
+                req.centerId(), req.centerName(), req.languages(), req.availabilityNote(),
+                // 센터장 가입은 /register-admin 또는 /register-profile(adminCode 포함) 경로만 허용
+                null
         );
         registerProfile(profileReq, principal);
 
@@ -211,7 +213,7 @@ public class AuthService {
                 req.name(), role, req.nationality(), req.gender(), req.visaType(),
                 null, req.birthDate(), req.phone(), null, req.workplace(),
                 role == UserRole.interpreter ? com.byby.backend.common.enums.InterpreterRole.ACTIVIST : null,
-                req.centerId(), req.centerName(), null, null
+                req.centerId(), req.centerName(), null, null, null
         );
         registerProfile(profileReq, principal);
 
@@ -271,6 +273,12 @@ public class AuthService {
                     .ifPresent(c -> updateRole(c, UserRole.interpreter));
             return;
         }
+        if (effectiveRole == UserRole.admin || req.role() == UserRole.admin) {
+            registerAdminProfile(req, principal);
+            userCredentialRepository.findByAuthUserId(principal.getAuthUserId())
+                    .ifPresent(c -> updateRole(c, UserRole.admin));
+            return;
+        }
         if (effectiveRole == UserRole.patient || req.role() == UserRole.patient) {
             registerPatientProfile(req, principal);
             userCredentialRepository.findByAuthUserId(principal.getAuthUserId())
@@ -278,6 +286,32 @@ public class AuthService {
             return;
         }
         throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+    }
+
+    /**
+     * AU-05 회원가입 위저드에서 계정유형을 '센터장'으로 선택한 경우.
+     * 센터 전체 데이터를 볼 수 있는 권한이므로 이미 센터장인 계정이 아니면 가입 코드를 요구한다.
+     */
+    private void registerAdminProfile(AuthRequest.RegisterProfile req, UserPrincipal principal) {
+        boolean alreadyAdmin = adminProfileRepository.findByAuthUserId(principal.getAuthUserId()).isPresent();
+        if (!alreadyAdmin) {
+            if (!StringUtils.hasText(adminBootstrapCode)
+                    || !adminBootstrapCode.equals(trim(req.adminCode()))) {
+                throw new GeneralException(GeneralErrorCode.FORBIDDEN, "센터장 가입 코드가 올바르지 않습니다");
+            }
+        }
+        if (StringUtils.hasText(req.phone())) {
+            syncPhone(principal.getAuthUserId(), req.phone());
+        }
+        if (req.centerId() == null && !StringUtils.hasText(req.centerName())) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "centerId 또는 centerName이 필요합니다");
+        }
+        Center center = req.centerId() != null
+                ? centerService.find(req.centerId())
+                : centerService.getOrCreateByName(req.centerName());
+
+        AdminProfile profile = adminService.assignCenter(principal.getAuthUserId(), center);
+        profile.update(center, trim(req.name()));
     }
 
     // ─── Account linking ─────────────────────────────────────────────────────────
@@ -395,11 +429,10 @@ public class AuthService {
                 : (StringUtils.hasText(req.centerName()) ? centerService.getOrCreateByName(req.centerName()) : null);
 
         UserPrincipal principal = new UserPrincipal(authUserId, UserRole.admin);
-        adminService.getOrCreateProfile(authUserId);
-        if (center != null) adminService.assignCenter(authUserId, center);
-
+        AdminProfile profile = adminService.getOrCreateProfile(authUserId);
+        if (center != null) profile = adminService.assignCenter(authUserId, center);
         // 이름 저장 (AdminProfile nickname)
-        adminService.getOrCreateProfile(authUserId);
+        profile.update(profile.getCenter(), trim(req.name()));
 
         String token = jwtUtil.generate(authUserId, UserRole.admin, cred.getSessionVersion());
         AuthResponse.Me me = getMe(principal);
@@ -411,8 +444,10 @@ public class AuthService {
     @Transactional
     public AuthResponse.Me bootstrapAdmin(AuthRequest.BootstrapAdmin req, UserPrincipal principal) {
         if (principal == null) throw new GeneralException(GeneralErrorCode.UNAUTHORIZED);
-        if (!StringUtils.hasText(req.secretCode()))
-            throw new GeneralException(GeneralErrorCode.FORBIDDEN, "관리자 초기 가입 코드가 필요합니다");
+        if (!StringUtils.hasText(adminBootstrapCode)
+                || !adminBootstrapCode.equals(trim(req.secretCode()))) {
+            throw new GeneralException(GeneralErrorCode.FORBIDDEN, "관리자 초기 가입 코드가 올바르지 않습니다");
+        }
 
         if (!adminProfileRepository.findAll().isEmpty()) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN, "이미 센터 직원 계정이 있습니다");

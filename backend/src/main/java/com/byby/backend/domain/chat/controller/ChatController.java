@@ -46,13 +46,16 @@ public class ChatController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, room));
     }
 
-    @Operation(summary = "이주민과 채팅방 생성/조회", description = "통번역가가 담당 이주민과의 채팅방을 생성하거나 기존 방을 조회합니다.")
+    @Operation(summary = "이주민과 채팅방 생성/조회",
+            description = "통번역가는 담당 이주민과, 센터장은 내 센터 소속 이주민과의 채팅방을 생성하거나 기존 방을 조회합니다.")
     @PostMapping("/rooms/with-patient/{patientId}")
     public ResponseEntity<Response<ChatResponse.RoomSummary>> roomWithPatient(
             @PathVariable UUID patientId,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(Response.success(SuccessCode.OK,
-                chatService.getOrCreateRoomWithMatchedPatient(patientId, principal)));
+        ChatResponse.RoomSummary room = principal.isAdmin()
+                ? chatService.getOrCreateRoomWithCenterPatient(patientId, principal)
+                : chatService.getOrCreateRoomWithMatchedPatient(patientId, principal);
+        return ResponseEntity.ok(Response.success(SuccessCode.OK, room));
     }
 
     @Operation(summary = "메시지 목록 조회", description = "채팅방의 메시지를 오래된 순으로 페이징 조회합니다.")

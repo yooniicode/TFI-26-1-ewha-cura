@@ -36,7 +36,7 @@ public class AnnouncementController {
     private final AnnouncementService announcementService;
 
     @GetMapping
-    @PreAuthorize("hasRole('patient')")
+    @PreAuthorize("hasAnyRole('patient', 'admin')")
     @Operation(summary = "공지사항 목록 조회", description = "센터 관리자는 자기 센터 공지사항을, 이주민은 소속 센터 공지사항을 조회합니다.")
     public ResponseEntity<Response<List<AnnouncementResponse.Summary>>> list(
             @PageableDefault(size = 20) Pageable pageable,
@@ -44,11 +44,11 @@ public class AnnouncementController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK, announcementService.list(pageable, principal)));
     }
 
-    /*
-     * Admin announcement management endpoints disabled.
-     *
+    // ─── AD-01 공지 관리 (센터장) ───────────────────────────────────────────
+
     @PostMapping
     @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "AD-01 공지 작성", description = "카테고리(NOTICE/POLICY/RESOURCE) · 상단 고정 · 링크 첨부")
     public ResponseEntity<Response<AnnouncementResponse.Summary>> create(
             @Valid @RequestBody AnnouncementRequest.Upsert req,
             @AuthenticationPrincipal UserPrincipal principal) {
@@ -58,6 +58,7 @@ public class AnnouncementController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "AD-01 공지 수정")
     public ResponseEntity<Response<AnnouncementResponse.Summary>> update(
             @PathVariable UUID id,
             @Valid @RequestBody AnnouncementRequest.Upsert req,
@@ -67,11 +68,11 @@ public class AnnouncementController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "AD-01 공지 삭제")
     public ResponseEntity<Response<Void>> delete(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserPrincipal principal) {
         announcementService.delete(id, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
-    */
 }

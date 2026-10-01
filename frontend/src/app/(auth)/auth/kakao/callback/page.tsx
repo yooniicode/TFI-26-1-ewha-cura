@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authApi } from '@/lib/api'
-import { setAccessToken, setLastLoginMethod } from '@/lib/auth/auth-token'
+import { markAuthenticated, setLastLoginMethod } from '@/lib/auth/auth-token'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import CuraSpinner from '@/components/ui/CuraSpinner'
 
@@ -56,7 +56,7 @@ function KakaoCallbackInner() {
     authApi.kakaoLogin(code, redirectUri)
       .then(res => {
         if (res.payload?.token) {
-          setAccessToken(res.payload.token)
+          markAuthenticated()
           setLastLoginMethod('kakao')
           // 프로필 미완성(신규 유저)이면 정보 입력 페이지로
           if (!res.payload.me?.entityId) {

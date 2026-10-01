@@ -12,10 +12,11 @@ import { getNavItems } from '@/components/layout/navItems'
 import { useLayoutMode } from '@/hooks/useLayoutMode'
 import { useMe } from '@/hooks/useMe'
 import { authApi, chatApi } from '@/lib/api'
-import { clearAccessToken } from '@/lib/auth/auth-token'
+import { clearAuthState } from '@/lib/auth/auth-token'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { queryKeys } from '@/lib/queryKeys'
 import type { AuthMe } from '@/lib/types'
+import { ADMIN_URL } from '@/lib/utils/constants'
 
 // ─── 역할별 드로어 네비 아이템 ──────────────────────────────────────────────────
 
@@ -65,9 +66,7 @@ function getDrawerNavItems(me: AuthMe | null | undefined, t: AppTranslation, unr
       home,
       { href: '/patients',      label: t.nav.patients,      inlineSvg: 'patients' },
       { href: '/consultations', label: t.nav.consultations, inlineSvg: 'report' },
-      { href: '/members',       label: t.nav.members,       inlineSvg: 'members' },
-      { href: '/interpreters',  label: t.nav.interpreters,  inlineSvg: 'interpreters' },
-      { href: '/sheets',        label: t.nav.sheets,        inlineSvg: 'sheets' },
+      { href: ADMIN_URL,        label: t.nav.admin_console, inlineSvg: 'admin' },
       { ...chat },
       mypage,
     ]
@@ -187,7 +186,6 @@ export default function AppShell({ children, noPadding = false }: { children: Re
     ? getNavItems(t)
       .filter(item => item.roles.includes(me.role!))
       .map(item => {
-        if (item.href === '/members') return { ...item, badgeCount: pendingApprovals }
         if (item.href === '/chat') return { ...item, badgeCount: unreadChatCount }
         return item
       })
@@ -201,7 +199,7 @@ export default function AppShell({ children, noPadding = false }: { children: Re
     } catch {
       // 토큰이 이미 만료된 경우에도 클라이언트 세션은 정리한다.
     } finally {
-      clearAccessToken()
+      clearAuthState()
       queryClient.clear()
       router.replace('/')
       router.refresh()

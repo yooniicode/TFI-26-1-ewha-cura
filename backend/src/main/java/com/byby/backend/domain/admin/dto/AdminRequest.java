@@ -1,5 +1,6 @@
 package com.byby.backend.domain.admin.dto;
 
+import com.byby.backend.common.enums.UserRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,5 +32,10 @@ public class AdminRequest {
             String publicMemo,
             String privateMemo,
             boolean interpreterVisible
+    ) {}
+
+    /** AD-04 구성원 권한 변경 */
+    public record UpdateMemberRole(
+            @NotNull UserRole role
     ) {}
 }

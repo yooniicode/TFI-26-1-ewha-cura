@@ -1,5 +1,6 @@
 package com.byby.backend.domain.consultation.service;
 
+import com.byby.backend.common.privacy.PiiScrubber;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,13 @@ public class TranslationService {
 
     @Value("${byby.openai.model:gpt-4o-mini}")
     private String model;
+
+    /**
+     * 진료 내용의 국외 이전(OpenAI)을 끌 수 있는 스위치.
+     * 민감정보 국외이전 동의를 받지 못한 센터는 false 로 두고 번역 없이 운영한다.
+     */
+    @Value("${byby.openai.translation.enabled:true}")
+    private boolean translationEnabled;
 
     public TranslationService(
             @Qualifier("openAiRestClient") RestClient openAiRestClient,
@@ -47,7 +55,27 @@ public class TranslationService {
             String medicationInstruction,
             String diagnosisNameCode,
             String sourceLangCode) {
+        return translateToKorean(patientComment, diagnosisContent, treatmentResult,
+                medicationInstruction, diagnosisNameCode, sourceLangCode, new String[0]);
+    }
 
+    /**
+     * @param namesToMask 본문에 섞여 들어올 수 있는 실명(환자·통번역가·의사).
+     *                    외부 전송 전에 가명처리해 개인이 특정되지 않도록 한다.
+     */
+    public MedicalTranslation translateToKorean(
+            String patientComment,
+            String diagnosisContent,
+            String treatmentResult,
+            String medicationInstruction,
+            String diagnosisNameCode,
+            String sourceLangCode,
+            String... namesToMask) {
+
+        if (!translationEnabled) {
+            log.debug("[translation] 번역 비활성화 설정 — 국외 이전 없이 원문 유지");
+            return null;
+        }
         if (!StringUtils.hasText(openAiApiKey)) {
             log.warn("[translation] OPENAI_API_KEY 없음 — 번역 스킵");
             return null;
@@ -55,6 +83,13 @@ public class TranslationService {
         if ("ko".equals(sourceLangCode)) {
             return null;
         }
+
+        // 외부(OpenAI)로 나가기 전에 식별정보를 제거한다
+        patientComment = PiiScrubber.scrub(patientComment, namesToMask);
+        diagnosisContent = PiiScrubber.scrub(diagnosisContent, namesToMask);
+        treatmentResult = PiiScrubber.scrub(treatmentResult, namesToMask);
+        medicationInstruction = PiiScrubber.scrub(medicationInstruction, namesToMask);
+        diagnosisNameCode = PiiScrubber.scrub(diagnosisNameCode, namesToMask);
 
         boolean hasContent = StringUtils.hasText(patientComment)
                 || StringUtils.hasText(diagnosisContent)

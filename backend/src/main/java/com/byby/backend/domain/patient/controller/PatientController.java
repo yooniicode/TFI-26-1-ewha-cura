@@ -42,7 +42,7 @@ public class PatientController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('interpreter')")
+    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
     @Operation(summary = "이주민 목록 조회")
     public ResponseEntity<Response<List<PatientResponse.Summary>>> getAll(
             @RequestParam(required = false) String query,
@@ -53,7 +53,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient', 'admin')")
     @Operation(summary = "이주민 상세 조회")
     public ResponseEntity<Response<PatientResponse.Detail>> getById(
             @PathVariable UUID id,
@@ -63,7 +63,7 @@ public class PatientController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient', 'admin')")
     @Operation(summary = "이주민 정보 수정")
     public ResponseEntity<Response<PatientResponse.Detail>> update(
             @PathVariable UUID id,
@@ -84,7 +84,7 @@ public class PatientController {
     }
 
     @PostMapping("/{id}/centers/{centerId}")
-    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient', 'admin')")
     @Operation(summary = "이주민 센터 추가")
     public ResponseEntity<Response<PatientResponse.Detail>> addCenter(
             @PathVariable UUID id,
@@ -95,8 +95,8 @@ public class PatientController {
     }
 
     @DeleteMapping("/{id}/centers/{centerId}")
-    @PreAuthorize("hasRole('interpreter')")
-    @Operation(summary = "이주민 센터 제거")
+    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "이주민 센터 제거 (센터장)")
     public ResponseEntity<Response<PatientResponse.Detail>> removeCenter(
             @PathVariable UUID id,
             @PathVariable UUID centerId,
@@ -106,7 +106,7 @@ public class PatientController {
     }
 
     @GetMapping("/{id}/history")
-    @PreAuthorize("hasAnyRole('interpreter', 'patient')")
+    @PreAuthorize("hasAnyRole('interpreter', 'patient', 'admin')")
     @Operation(summary = "이주민 상담 이력 조회")
     public ResponseEntity<Response<List<ConsultationResponse.Detail>>> getHistory(
             @PathVariable UUID id,

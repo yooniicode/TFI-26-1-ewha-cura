@@ -1,10 +1,13 @@
 package com.byby.backend.domain.admin.service;
 
+import com.byby.backend.common.enums.UserRole;
 import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
 import com.byby.backend.common.response.code.BusinessErrorCode;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.security.UserPrincipal;
+import com.byby.backend.domain.auth.entity.UserCredential;
+import com.byby.backend.domain.auth.repository.UserCredentialRepository;
 import com.byby.backend.domain.admin.dto.AdminRequest;
 import com.byby.backend.domain.admin.dto.AdminResponse;
 import com.byby.backend.domain.admin.entity.AdminProfile;
@@ -33,7 +36,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +53,7 @@ public class AdminService {
     private final InterpreterRepository interpreterRepository;
     private final PatientMatchRepository patientMatchRepository;
     private final ConsultationRepository consultationRepository;
+    private final UserCredentialRepository userCredentialRepository;
     private final CenterService centerService;
 
     @Transactional
@@ -180,6 +186,98 @@ public class AdminService {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN);
         }
         centerPatientMemoRepository.delete(memo);
+    }
+
+    // ─── AD-04 구성원 관리 (조회 · 권한 변경) ───────────────────────────────
+
+    public List<AdminResponse.Member> getMembers(String query, UserPrincipal principal) {
+        Center center = getAdminCenter(principal);
+        String keyword = StringUtils.hasText(query) ? query.trim().toLowerCase(Locale.ROOT) : null;
+
+        Stream<AdminResponse.Member> admins = adminProfileRepository.findByCenter_Id(center.getId()).stream()
+                .map(profile -> new AdminResponse.Member(
+                        profile.getAuthUserId(), UserRole.admin,
+                        profile.getNickname(), null, emailOf(profile.getAuthUserId()),
+                        center.getId(), center.getName(), true, null));
+
+        Stream<AdminResponse.Member> interpreters = interpreterRepository.findByCenterId(center.getId()).stream()
+                // 센터 관리자 권한을 함께 가진 계정은 admin 행으로만 노출한다
+                .filter(i -> i.getAuthUserId() == null
+                        || adminProfileRepository.findByAuthUserId(i.getAuthUserId()).isEmpty())
+                .map(i -> new AdminResponse.Member(
+                        i.getAuthUserId(), UserRole.interpreter,
+                        i.getName(), i.getPhone(), emailOf(i.getAuthUserId()),
+                        center.getId(), center.getName(), i.isActive(), i.getId()));
+
+        return Stream.concat(admins, interpreters)
+                .filter(m -> keyword == null || matchesKeyword(m, keyword))
+                .toList();
+    }
+
+    @Transactional
+    public AdminResponse.Member updateMemberRole(UUID targetAuthUserId, AdminRequest.UpdateMemberRole req,
+                                                 UserPrincipal principal) {
+        Center center = getAdminCenter(principal);
+        if (principal.getAuthUserId().equals(targetAuthUserId)) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "본인 권한은 변경할 수 없습니다");
+        }
+        if (req.role() == UserRole.patient) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이주민 권한으로는 변경할 수 없습니다");
+        }
+
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(targetAuthUserId).orElse(null);
+        boolean belongsToCenter = interpreter != null
+                && interpreter.getCenter() != null
+                && interpreter.getCenter().getId().equals(center.getId());
+        AdminProfile existingAdmin = adminProfileRepository.findByAuthUserId(targetAuthUserId).orElse(null);
+        boolean adminOfCenter = existingAdmin != null
+                && existingAdmin.getCenter() != null
+                && existingAdmin.getCenter().getId().equals(center.getId());
+        if (!belongsToCenter && !adminOfCenter) {
+            throw new GeneralException(GeneralErrorCode.FORBIDDEN, "내 센터 구성원이 아닙니다");
+        }
+
+        if (req.role() == UserRole.admin) {
+            AdminProfile granted = assignCenter(targetAuthUserId, center);
+            // 통번역가에서 승격한 경우 기본 닉네임 대신 실명을 사용한다
+            if (interpreter != null && StringUtils.hasText(interpreter.getName())
+                    && (!StringUtils.hasText(granted.getNickname()) || "관리자".equals(granted.getNickname()))) {
+                granted.update(center, interpreter.getName());
+            }
+            return new AdminResponse.Member(targetAuthUserId, UserRole.admin,
+                    granted.getNickname(), interpreter != null ? interpreter.getPhone() : null,
+                    emailOf(targetAuthUserId), center.getId(), center.getName(), true,
+                    interpreter != null ? interpreter.getId() : null);
+        }
+
+        // interpreter 로 강등 — 통번역가 프로필이 있어야 로그인 권한이 유지된다
+        if (interpreter == null) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST,
+                    "통번역가 프로필이 없어 권한을 회수할 수 없습니다");
+        }
+        if (existingAdmin != null) {
+            adminProfileRepository.delete(existingAdmin);
+        }
+        return new AdminResponse.Member(targetAuthUserId, UserRole.interpreter,
+                interpreter.getName(), interpreter.getPhone(), emailOf(targetAuthUserId),
+                center.getId(), center.getName(), interpreter.isActive(), interpreter.getId());
+    }
+
+    private String emailOf(UUID authUserId) {
+        if (authUserId == null) return null;
+        return userCredentialRepository.findByAuthUserId(authUserId)
+                .map(UserCredential::getEmail)
+                .orElse(null);
+    }
+
+    private boolean matchesKeyword(AdminResponse.Member member, String keyword) {
+        return contains(member.name(), keyword)
+                || contains(member.phone(), keyword)
+                || contains(member.email(), keyword);
+    }
+
+    private boolean contains(String value, String keyword) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(keyword);
     }
 
     @Transactional

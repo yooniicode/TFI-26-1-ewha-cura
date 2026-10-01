@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getAccessToken, clearAccessToken } from '@/lib/auth/auth-token'
+import { isAuthenticated, clearAuthState } from '@/lib/auth/auth-token'
 import type { AuthMe } from '@/lib/types'
 
 interface AuthGateOverlaysProps {
@@ -14,9 +14,8 @@ export default function AuthGateOverlays({ me, pathname }: AuthGateOverlaysProps
   const router = useRouter()
 
   useEffect(() => {
-    const token = getAccessToken()
-    if (!token) {
-      clearAccessToken()
+    if (!isAuthenticated()) {
+      clearAuthState()
       router.replace('/')
       return
     }

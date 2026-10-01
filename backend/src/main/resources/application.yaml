@@ -60,6 +60,11 @@ byby:
       secret: ${JWT_SECRET:local-secret-for-dev-only-MUST-override-in-production}
       expiration-ms: 86400000
     swagger-secret: ${SWAGGER_SECRET:}
+    # JWT는 httpOnly 쿠키로 전달한다. 프론트가 /api/v1/* 를 동일 출처로 리라이트하므로 Lax 로 충분하다.
+    cookie:
+      secure: ${AUTH_COOKIE_SECURE:true}
+      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+    require-https: ${REQUIRE_HTTPS:true}
     cors:
       allowed-origins:
         - http://localhost:3000
@@ -69,6 +74,10 @@ byby:
         - https://tfi-26-1-archive-production.up.railway.app
         - https://cura-ewha.kr
         - https://www.cura-ewha.kr
+        # 관리자 콘솔 (admin/) — 프록시 경유 요청도 Origin 헤더가 그대로 전달되므로 허용 필요
+        - http://localhost:3001
+        - ${ADMIN_URL:http://localhost:3001}
+        - https://admin.cura-ewha.kr
 
   supabase:
     url: ${SUPABASE_URL:}
@@ -90,6 +99,20 @@ byby:
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: gpt-4o-mini
+    translation:
+      # 진료 내용의 국외 이전(OpenAI). 민감정보 국외이전 동의를 받지 못했다면 false 로 둔다.
+      # 전송 전 실명·연락처·등록번호는 가명처리된다.
+      enabled: ${OPENAI_TRANSLATION_ENABLED:true}
+
+  export:
+    monthly:
+      # 월간 자동 시트 내보내기의 개인정보 마스킹 (기본 마스킹)
+      mask-personal-data: ${EXPORT_MASK_PERSONAL_DATA:true}
+
+  audit:
+    # 개인정보 접속기록 보관기간 — 민감정보 처리 시 법정 최소 2년(730일)
+    retention-days: ${AUDIT_RETENTION_DAYS:730}
+    cleanup-cron: ${AUDIT_CLEANUP_CRON:0 30 4 * * *}
 
   google:
     service-account-json: ${GOOGLE_SERVICE_ACCOUNT_JSON:}
@@ -115,6 +138,13 @@ spring:
     hibernate:
       ddl-auto: update
 
+byby:
+  security:
+    # 로컬은 http 로 띄우므로 HTTPS 강제와 Secure 쿠키를 끈다
+    require-https: false
+    cookie:
+      secure: false
+
 logging:
   level:
     com.byby: DEBUG
@@ -139,7 +169,9 @@ spring:
       keepalive-time: 30000        # 30초 keepalive ping
       validation-timeout: 5000
       data-source-properties:
-        sslmode: require
+        # verify-full: 서버 인증서와 호스트명까지 검증 (require 는 암호화만 하고 검증을 안 해 MITM 에 취약).
+        # 배포 환경 인증서 문제로 기동이 막히면 DB_SSLMODE=require 로 즉시 되돌릴 수 있다.
+        sslmode: ${DB_SSLMODE:verify-full}
         sslrootcert: system
         prepareThreshold: 0        # PgBouncer Transaction Mode: 서버 측 Prepared Statement 금지
         socketTimeout: 60          # JDBC 소켓 응답 대기 60초 (초 단위)

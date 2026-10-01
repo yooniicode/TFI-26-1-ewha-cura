@@ -19,6 +19,7 @@ import com.byby.backend.domain.chat.repository.ChatRoomRepository;
 import com.byby.backend.domain.consultation.repository.ConsultationRepository;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.entity.Patient;
+import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,6 +41,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final InterpreterRepository interpreterRepository;
     private final PatientRepository patientRepository;
+    private final PatientCenterRepository patientCenterRepository;
     private final PatientMatchRepository patientMatchRepository;
     private final ConsultationRepository consultationRepository;
     private final AdminService adminService;
@@ -92,6 +94,28 @@ public class ChatService {
                 principal.getAuthUserId(), interpreter.getAuthUserId(),
                 interpreter.getName() != null ? interpreter.getName() : "통번역가",
                 patient.getName(), "patient", interpreter.getName(), "interpreter"
+        );
+    }
+
+    /** 센터장 → 이주민 1:1 채팅방 (내 센터 소속 이주민만) */
+    @Transactional
+    public ChatResponse.RoomSummary getOrCreateRoomWithCenterPatient(UUID patientId, UserPrincipal principal) {
+        if (!principal.isAdmin()) throw new GeneralException(GeneralErrorCode.FORBIDDEN);
+
+        var adminCenter = adminService.getAdminCenter(principal);
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.PATIENT_NOT_FOUND));
+        if (!patientCenterRepository.existsByPatientIdAndCenterId(patient.getId(), adminCenter.getId())) {
+            throw new GeneralException(GeneralErrorCode.FORBIDDEN, "다른 센터 이주민입니다");
+        }
+        if (patient.getAuthUserId() == null) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "Linked patient account is required");
+        }
+
+        return getOrCreateDirectRoom(
+                principal.getAuthUserId(), patient.getAuthUserId(),
+                patient.getName() != null ? patient.getName() : "이주민",
+                resolveSenderName(principal), "admin", patient.getName(), "patient"
         );
     }
 

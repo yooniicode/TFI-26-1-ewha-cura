@@ -1,0 +1,26 @@
+import { useQuery } from '@tanstack/react-query'
+import { authApi } from '@/lib/api'
+import { ApiError } from '@/lib/api/client'
+import { clearAuthState, isAuthenticated } from '@/lib/auth/auth-token'
+import { queryKeys } from '@/lib/queryKeys'
+
+export function useMe() {
+  return useQuery({
+    queryKey: queryKeys.me,
+    queryFn: async () => {
+      if (!isAuthenticated()) return null
+      try {
+        return await authApi.me().then(r => r.payload ?? null)
+      } catch (e) {
+        if (e instanceof ApiError && (e.isUnauthorized || e.isForbidden)) {
+          clearAuthState()
+          return null
+        }
+        throw e
+      }
+    },
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && (error.isUnauthorized || error.isForbidden)) && failureCount < 1,
+    refetchOnWindowFocus: false,
+  })
+}

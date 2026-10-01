@@ -164,6 +164,30 @@ public class ConsultationResponse {
         }
     }
 
+    /** 센터장이 통번역가에게 배정해 수락을 기다리는 요청 */
+    public record AssignmentItem(
+            UUID id,
+            LocalDateTime consultationDate,
+            UUID patientId,
+            String patientName,
+            Gender patientGender,
+            Nationality patientNationality,
+            String patientComment,
+            String hospitalName,
+            String department,
+            LocalDateTime assignedAt,
+            String patientAvatarUrl
+    ) {
+        public static AssignmentItem from(Consultation c, String patientAvatarUrl) {
+            return new AssignmentItem(
+                    c.getId(), c.getConsultationDate(),
+                    c.getPatient().getId(), c.getPatient().getName(),
+                    c.getPatient().getGender(), c.getPatient().getNationality(),
+                    c.getPatientComment(), c.getResolvedHospitalName(), c.getDepartment(),
+                    c.getAssignedAt(), patientAvatarUrl);
+        }
+    }
+
     // 이주민용 간소화 뷰 — 운영 정보(통역비, 확인자 등) 제외
     public record PatientView(
             UUID id,

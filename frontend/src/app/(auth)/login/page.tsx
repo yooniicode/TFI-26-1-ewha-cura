@@ -4,7 +4,7 @@ import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { authApi } from '@/lib/api'
 import { ApiError } from '@/lib/api/client'
-import { setAccessToken, setLastLoginMethod } from '@/lib/auth/auth-token'
+import { markAuthenticated, setLastLoginMethod } from '@/lib/auth/auth-token'
 import PasswordInput from '@/components/ui/PasswordInput'
 import CuraSpinner from '@/components/ui/CuraSpinner'
 
@@ -52,7 +52,7 @@ function LoginPageInner() {
     try {
       const res = await authApi.login({ email: email.trim(), password })
       if (res.payload?.token) {
-        setAccessToken(res.payload.token)
+        markAuthenticated()
         setLastLoginMethod('email')
         router.replace('/dashboard')
       }
@@ -86,7 +86,7 @@ function LoginPageInner() {
       const res = await authApi.phoneLogin(pfPhone.trim(), pfCode)
       if (!res.payload) throw new Error('응답 오류')
       if (res.payload.exists && res.payload.token) {
-        setAccessToken(res.payload.token)
+        markAuthenticated()
         setLastLoginMethod('phone')
         router.replace('/dashboard')
       } else {

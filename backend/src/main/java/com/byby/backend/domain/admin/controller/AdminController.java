@@ -39,9 +39,6 @@ public class AdminController {
 
     private final AdminService adminService;
 
-    /*
-     * Admin-only profile/stat/work-log endpoints disabled.
-     *
     @GetMapping("/stats")
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "센터 통계 조회 (이주민·동번역가·활성 매칭 수)")
@@ -69,7 +66,7 @@ public class AdminController {
 
     @GetMapping("/work-logs")
     @PreAuthorize("hasRole('admin')")
-    @Operation(summary = "내 센터장 근무일지 목록 조회")
+    @Operation(summary = "센터장 근무일지 목록 조회")
     public ResponseEntity<Response<List<AdminResponse.WorkLog>>> getWorkLogs(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -108,7 +105,36 @@ public class AdminController {
         adminService.deleteWorkLog(id, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
-    */
+
+    // ─── AD-04 구성원 관리 — 조회·권한 변경 ─────────────────────────────────
+
+    @GetMapping("/members")
+    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "AD-04 센터 구성원 목록 조회",
+            description = "센터에 소속된 통번역가·센터 관리자 계정을 권한과 함께 조회합니다.")
+    public ResponseEntity<Response<List<AdminResponse.Member>>> getMembers(
+            @RequestParam(required = false) String query,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK,
+                adminService.getMembers(query, principal)));
+    }
+
+    @PatchMapping("/members/{authUserId}/role")
+    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "AD-04 구성원 권한 변경",
+            description = """
+                    센터 구성원의 권한을 변경합니다.
+                    - `admin` : 센터 관리자 권한 부여 (내 센터로 AdminProfile 생성)
+                    - `interpreter` : 센터 관리자 권한 회수 — 통번역가 프로필이 있어야 합니다.
+                    본인 권한은 변경할 수 없습니다.
+                    """)
+    public ResponseEntity<Response<AdminResponse.Member>> updateMemberRole(
+            @PathVariable UUID authUserId,
+            @Valid @RequestBody AdminRequest.UpdateMemberRole req,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK,
+                adminService.updateMemberRole(authUserId, req, principal)));
+    }
 
     @GetMapping("/patients/{patientId}/memos")
     @PreAuthorize("hasAnyRole('admin', 'interpreter')")

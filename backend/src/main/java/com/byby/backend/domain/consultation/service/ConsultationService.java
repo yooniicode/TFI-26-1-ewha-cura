@@ -1,11 +1,14 @@
 package com.byby.backend.domain.consultation.service;
 
+import com.byby.backend.common.enums.UserRole;
+import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
 import com.byby.backend.common.response.code.BusinessErrorCode;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.admin.service.AdminService;
+import com.byby.backend.domain.audit.service.AuditService;
 import com.byby.backend.domain.auth.entity.UserCredential;
 import com.byby.backend.domain.auth.repository.UserCredentialRepository;
 import com.byby.backend.domain.center.entity.Center;
@@ -27,6 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -50,6 +55,9 @@ public class ConsultationService {
     private final UserCredentialRepository userCredentialRepository;
     private final CenterRepository centerRepository;
     private final TranslationService translationService;
+    private final AuditService auditService;
+    private final GoogleSheetsExportService googleSheetsExportService;
+    private final com.byby.backend.domain.center.service.CenterService centerService;
 
     private String resolvePatientAvatarUrl(Patient patient) {
         if (patient.getAuthUserId() == null) return null;
@@ -154,6 +162,46 @@ public class ConsultationService {
         c.accept(interpreter, req.consultationDate());
         Consultation saved = consultationRepository.save(c);
         return ConsultationResponse.Detail.from(saved, resolvePatientAvatarUrl(saved.getPatient()));
+    }
+
+    /** 센터장이 나에게 배정해 수락을 기다리는 요청 목록 */
+    public List<ConsultationResponse.AssignmentItem> getAssignments(UserPrincipal principal) {
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        return consultationRepository
+                .findByInterpreter_IdAndMatchingStatusOrderByConsultationDateAsc(
+                        interpreter.getId(), MatchingStatus.AWAITING_ACCEPTANCE)
+                .stream()
+                .map(c -> ConsultationResponse.AssignmentItem.from(c, resolvePatientAvatarUrl(c.getPatient())))
+                .toList();
+    }
+
+    /** 센터장이 배정한 요청을 통번역가가 수락 → 배정 확정 */
+    @Transactional
+    public ConsultationResponse.Detail acceptAssignment(UUID id, UserPrincipal principal) {
+        Consultation c = findAwaitingAssignmentOf(id, principal);
+        c.acceptAssignment();
+        return ConsultationResponse.Detail.from(c, resolvePatientAvatarUrl(c.getPatient()));
+    }
+
+    /** 센터장이 배정한 요청을 통번역가가 거절 → 센터에 '재배정 필요'로 표시 */
+    @Transactional
+    public void declineAssignment(UUID id, UserPrincipal principal) {
+        Consultation c = findAwaitingAssignmentOf(id, principal);
+        c.declineAssignment();
+    }
+
+    private Consultation findAwaitingAssignmentOf(UUID id, UserPrincipal principal) {
+        Consultation c = findConsultation(id);
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        if (c.getInterpreter() == null || !c.getInterpreter().getId().equals(interpreter.getId())) {
+            throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
+        }
+        if (c.getMatchingStatus() != MatchingStatus.AWAITING_ACCEPTANCE) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "수락을 기다리는 배정이 아닙니다");
+        }
+        return c;
     }
 
     public Page<ConsultationResponse.Summary> getAll(Pageable pageable, UserPrincipal principal, String patientQuery) {
@@ -324,6 +372,34 @@ public class ConsultationService {
         centerRepository.findById(centerId).ifPresent(center -> center.updateSpreadsheetId(spreadsheetId));
     }
 
+    /**
+     * 구글 시트로 내보내고 URL 을 반환한다.
+     *
+     * <p>구글(제3자)로 개인정보가 이전되므로 기본은 마스킹이며, 원본 내보내기는
+     * 접속기록에 제3자 제공으로 남긴다.
+     */
+    public String exportToSheets(boolean unmasked, UserPrincipal principal) {
+        ExportData exportData = getExportData(principal);
+
+        // 트랜잭션 밖에서 호출한다 — 구글 API 응답을 기다리는 동안 DB 커넥션을 붙잡지 않기 위함
+        GoogleSheetsExportService.ExportResult result = googleSheetsExportService.createSheet(
+                "상담보고서", exportData.centerName(), exportData.existingSpreadsheetId(),
+                exportData.rows(), !unmasked);
+
+        if (exportData.existingSpreadsheetId() == null) {
+            centerService.updateSpreadsheetId(exportData.centerId(), result.spreadsheetId());
+        }
+
+        auditService.recordThirdPartyTransfer(
+                principal.getAuthUserId(), principal.getRole(), "Google Sheets",
+                "CONSULTATION_EXPORT", exportData.centerId(), null,
+                "건수=" + exportData.rows().size()
+                        + " / 개인정보=" + (unmasked ? "원본(비마스킹)" : "마스킹")
+                        + " / spreadsheetId=" + result.spreadsheetId());
+
+        return result.url();
+    }
+
     private Consultation findConsultation(UUID id) {
         return consultationRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(BusinessErrorCode.CONSULTATION_NOT_FOUND));
@@ -388,18 +464,47 @@ public class ConsultationService {
                 || StringUtils.hasText(c.getDiagnosisNameCode());
         if (!hasContent) return;
 
+        // 자유입력란에 섞여 들어온 실명은 외부 전송 전에 가명처리한다
+        String[] namesToMask = {
+                c.getPatient().getName(),
+                c.getInterpreter() != null ? c.getInterpreter().getName() : null,
+                c.getDoctorName(),
+                c.getCounselorName()
+        };
+
         try {
             TranslationService.MedicalTranslation t = translationService.translateToKorean(
                     c.getPatientComment(), c.getDiagnosisContent(),
                     c.getTreatmentResult(), c.getMedicationInstruction(),
-                    c.getDiagnosisNameCode(), langCode);
+                    c.getDiagnosisNameCode(), langCode, namesToMask);
             if (t != null) {
                 // translationLang = "ko": translated* 필드에 한국어 번역본 저장
                 c.applyTranslation("ko", t.patientComment(), t.diagnosisContent(),
                         t.treatmentResult(), t.medicationInstruction(), t.diagnosisNameCode());
+                // 진료 내용이 국외(OpenAI)로 이전된 사실을 기록한다
+                auditService.recordThirdPartyTransfer(
+                        currentAuthUserId(), currentRole(), "OpenAI API (국외)",
+                        "CONSULTATION", c.getId(), c.getPatient().getId(),
+                        "목적=진료내용 한국어 번역 / 가명처리 적용 / 원어=" + langCode);
             }
         } catch (Exception e) {
             log.warn("[translation] 번역 실패 — 원본 모국어 유지: {}", e.getMessage());
         }
+    }
+
+    private UUID currentAuthUserId() {
+        UserPrincipal principal = currentPrincipal();
+        return principal != null ? principal.getAuthUserId() : null;
+    }
+
+    private UserRole currentRole() {
+        UserPrincipal principal = currentPrincipal();
+        return principal != null ? principal.getRole() : null;
+    }
+
+    private UserPrincipal currentPrincipal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof UserPrincipal principal)) return null;
+        return principal;
     }
 }

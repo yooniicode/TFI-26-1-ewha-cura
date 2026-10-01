@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { setAccessToken } from '@/lib/auth/auth-token'
+import { markAuthenticated } from '@/lib/auth/auth-token'
 import { startRecording } from '@/lib/ut-recording'
 import Image from 'next/image'
 import CuraSpinner from '@/components/ui/CuraSpinner'
@@ -22,7 +22,7 @@ function UtSession() {
         const res = await fetch(`/api/ut-login?role=${role}`)
         const data = await res.json() as { token?: string; error?: string }
         if (data.error) throw new Error(data.error)
-        setAccessToken(data.token!)
+        markAuthenticated()
         router.replace('/dashboard')
       } catch (e) {
         setError(e instanceof Error ? e.message : 'UT 로그인 실패')

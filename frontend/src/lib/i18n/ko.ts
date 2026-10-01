@@ -53,7 +53,7 @@
     my_records: '진료',
     mypage: '내 정보',
     chat: '채팅',
-    sheets: '시트 연동',
+    admin_console: '관리자 페이지',
   },
   login: {
     app_name: 'Cura',
@@ -602,21 +602,6 @@
     role_freelancer: '프리랜서',
     role_save: '역할 저장',
   },
-  center: {
-    title: '센터 관리',
-    subtitle: '센터 직원과 통번역가는 같은 근무 센터일 때만 관리할 수 있습니다.',
-    form_edit: '센터 정보 수정',
-    form_create: '센터 생성',
-    name_label: '센터 이름',
-    name_placeholder: '예: 동행센터',
-    address_label: '주소',
-    phone_label: '연락처',
-    phone_placeholder: '02-000-0000',
-    reset: '초기화',
-    empty: '등록된 센터가 없습니다.',
-    err_save: '저장에 실패했습니다.',
-    err_name: '센터 이름을 입력해주세요.',
-  },
   chat: {
     title: '채팅',
     empty: '채팅방이 없습니다.',
@@ -901,6 +886,27 @@
   },
 
   // ── 일정 추가 ────────────────────────────────────────────────────────────────
+  assignment: {
+    title: '배정 요청',
+    heading: '센터에서 배정한\n진료 요청이에요',
+    desc: '수락하면 내 일정에 추가되고, 거절하면 센터에서 다시 배정해요.',
+    banner: (n: number) => `센터에서 배정한 요청 ${n}건`,
+    banner_desc: '확인하고 수락해주세요',
+    empty: '새로 배정된 요청이 없어요',
+    date: '진료 일시',
+    place: '진료 장소',
+    no_comment: '남긴 요청사항이 없어요',
+    accept: '수락',
+    decline: '거절',
+    decline_title: '이 배정을 거절할까요?',
+    decline_desc: '거절하면 센터에서 다른 통번역가를 다시 배정해요.',
+    decline_confirm: '거절하기',
+    cancel: '취소',
+    accepted: '수락했어요. 내 일정에 추가됐어요.',
+    declined: '배정을 거절했어요.',
+    err: '처리하지 못했어요. 다시 시도해주세요.',
+  },
+
   schedule: {
     title: '일정 추가',
     select_request_title: '센터에 접수된\n통번역 요청을 선택해주세요',
@@ -960,31 +966,6 @@
 
   // ── 랜딩 페이지 ──────────────────────────────────────────────────────────────
   // ── 구글 시트 연동 ────────────────────────────────────────────────────────────
-  sheets: {
-    title: '구글 시트 연동',
-    settings: '연결 설정',
-    sheet_range: '시트 이름 / 범위',
-    range_example: '예: Sheet1, 상담기록!A:Z',
-    loading: '불러오는 중...',
-    refresh: '새로고침',
-    fetch: '불러오기',
-    disconnect: '연결 해제',
-    notice_title: '연결 전 확인사항',
-    notice_share: '구글 시트를 "링크가 있는 모든 사용자 — 뷰어"로 공유 설정해야 합니다.',
-    notice_api_key: '서버에 GOOGLE_SHEETS_API_KEY 환경변수가 설정되어 있어야 합니다.',
-    notice_readonly: '데이터는 읽기 전용으로 표시되며 앱 내에서 수정할 수 없습니다.',
-    last_updated: '마지막 업데이트',
-    col_label: (n: number) => `열 ${n + 1}`,
-    readonly_footer: '읽기 전용 · 출처: Google Sheets',
-    empty: '시트에 데이터가 없습니다.',
-    err_invalid_id: '올바른 Google Sheets URL 또는 ID를 입력해주세요.',
-    err_fetch_failed: '데이터를 불러오지 못했습니다.',
-    err_network: '네트워크 오류가 발생했습니다.',
-    err_api_key_missing: 'GOOGLE_SHEETS_API_KEY 환경변수가 설정되지 않았습니다. 서버 관리자에게 문의하세요.',
-    row_count: (n: number) => `${n}행`,
-    col_count: (n: number) => `${n}열`,
-  },
-
   // ── 통번역 의뢰 ────────────────────────────────────────────────────────────────
   interpretation_request: {
     title: '통번역 의뢰',

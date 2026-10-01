@@ -1,0 +1,16 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    font-family: 'Pretendard', system-ui, sans-serif;
+  }
+  body {
+    @apply bg-white text-ink;
+    /* Figma 텍스트는 line-height: normal 기준 */
+    line-height: normal;
+  }
+}

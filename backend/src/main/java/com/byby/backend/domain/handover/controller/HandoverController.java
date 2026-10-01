@@ -39,7 +39,7 @@ public class HandoverController {
     }
 
     @GetMapping("/patient/{patientId}")
-    @PreAuthorize("hasRole('interpreter')")
+    @PreAuthorize("hasAnyRole('interpreter', 'admin')")
     @Operation(summary = "환자별 인수인계 조회")
     public ResponseEntity<Response<List<HandoverResponse.Detail>>> getByPatient(
             @PathVariable UUID patientId,
@@ -49,15 +49,16 @@ public class HandoverController {
                 Response.success(SuccessCode.OK, handoverService.getByPatient(patientId, pageable, principal)));
     }
 
-    // IA 미포함: admin이 인수인계 담당자를 직접 배정하는 flow 없음
-    // @PatchMapping("/{id}/assign")
-    // @PreAuthorize("hasRole('admin')")
-    // @Operation(summary = "인수인계 담당 통번역가 배정")
-    // public ResponseEntity<Response<HandoverResponse.Detail>> assign(
-    //         @PathVariable UUID id,
-    //         @Valid @RequestBody HandoverRequest.Assign req,
-    //         @AuthenticationPrincipal UserPrincipal principal) {
-    //     return ResponseEntity.ok(
-    //             Response.success(SuccessCode.OK, handoverService.assign(id, req, principal)));
-    // }
+    /** HO-01 인수인계 — 센터장이 인계받을 통번역가를 지정하고 담당(PatientMatch)까지 이전한다. */
+    @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasRole('admin')")
+    @Operation(summary = "인수인계 담당 통번역가 배정",
+            description = "인계 대상 통번역가를 지정하면 기존 담당 매칭이 새 통번역가로 이전됩니다.")
+    public ResponseEntity<Response<HandoverResponse.Detail>> assign(
+            @PathVariable UUID id,
+            @Valid @RequestBody HandoverRequest.Assign req,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                Response.success(SuccessCode.OK, handoverService.assign(id, req, principal)));
+    }
 }

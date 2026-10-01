@@ -41,4 +41,12 @@ public interface PatientMatchRepository extends JpaRepository<PatientMatch, UUID
     @Modifying
     @Query("UPDATE PatientMatch pm SET pm.active = false WHERE pm.patient.id = :patientId AND pm.active = true")
     void deactivateAllActiveByPatientId(@Param("patientId") UUID patientId);
+
+    // ─── AD-04-5 담당 히스토리 / AD-06-3 매칭 현황 ──────────────────────────
+
+    /** 해제분 포함 전체 담당 이력 (최신순) */
+    List<PatientMatch> findByPatientIdOrderByCreatedAtDesc(UUID patientId);
+
+    /** AD-05-4 통번역가별 담당 이주민 이력 (해제분 포함) */
+    List<PatientMatch> findByInterpreterIdOrderByCreatedAtDesc(UUID interpreterId);
 }

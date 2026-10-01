@@ -13,6 +13,7 @@ import { useMe } from '@/hooks/useMe'
 import type { Announcement, AnnouncementCategory, Consultation } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { daysBetweenDateKeys, formatKoreanDateTime, parseAppDate, toDateKey } from '@/lib/utils/dateFormat'
+import { ADMIN_URL } from '@/lib/utils/constants'
 import PatientAvatar from '@/components/patient/PatientAvatar'
 
 function formatToday(locale: string) {
@@ -73,6 +74,13 @@ export default function DashboardPage() {
   const { data: myAssignedCount } = useQuery({
     queryKey: queryKeys.matching.myCount(),
     queryFn: () => matchApi.myCount().then(r => r.payload),
+    enabled: isInterpreter,
+  })
+
+  // 센터장이 배정해 수락을 기다리는 요청
+  const { data: awaitingAssignments = [] } = useQuery({
+    queryKey: queryKeys.consultations.assignments(),
+    queryFn: () => consultationApi.assignments().then(r => r.payload ?? []),
     enabled: isInterpreter,
   })
 
@@ -384,6 +392,24 @@ export default function DashboardPage() {
 
         {/* 일정 섹션 */}
         <div className="px-4 pt-4 pb-10">
+          {/* 센터 배정 요청 — 수락 대기 건이 있을 때만 */}
+          {awaitingAssignments.length > 0 && (
+            <Link
+              href="/consultations/assignments"
+              className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-[#F3F9FF] px-4 py-4 active:opacity-70 transition-opacity"
+            >
+              <span className="flex flex-col gap-0.5">
+                <span className="text-[16px] font-semibold text-[#2592FF]">
+                  {t.assignment.banner(awaitingAssignments.length)}
+                </span>
+                <span className="text-[13px] text-[#808080]">{t.assignment.banner_desc}</span>
+              </span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2592FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </Link>
+          )}
+
           {/* 날짜 헤더 + 통역 일정 추가 버튼 (기존 유지) */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex flex-col gap-0.5">
@@ -572,8 +598,8 @@ export default function DashboardPage() {
           <div className="mt-5 grid grid-cols-3 gap-2">
             {([
               { href: '/patients',     icon: 'P', label: t.nav.patients,    count: centerStats?.patientCount },
-              { href: '/interpreters', icon: 'I', label: t.nav.interpreters, count: centerStats?.interpreterCount },
-              { href: '/matching',     icon: 'M', label: t.nav.matching,     count: centerStats?.activeMatchCount },
+              { href: `${ADMIN_URL}/interpreters`, icon: 'I', label: t.nav.interpreters, count: centerStats?.interpreterCount },
+              { href: `${ADMIN_URL}/matching`,     icon: 'M', label: t.nav.matching,     count: centerStats?.activeMatchCount },
             ] as const).map(item => (
               <Link key={item.href} href={item.href}
                 className="flex flex-col items-center py-4 gap-1 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">

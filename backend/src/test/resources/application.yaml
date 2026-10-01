@@ -23,6 +23,9 @@ byby:
       secret: test-secret-key-minimum-256-bits-long-for-testing-only!!
       expiration-ms: 86400000
     swagger-secret: ""
+    require-https: false
+    cookie:
+      secure: false
     cors:
       allowed-origins: http://localhost:3000
 

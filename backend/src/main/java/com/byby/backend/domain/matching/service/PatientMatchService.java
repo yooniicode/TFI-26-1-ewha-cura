@@ -59,6 +59,7 @@ public class PatientMatchService {
         PatientMatch match = PatientMatch.builder()
                 .patient(patient)
                 .interpreter(interpreter)
+                .assignedByAuthUserId(principal.getAuthUserId())
                 .build();
         return MatchResponse.Detail.from(patientMatchRepository.save(match));
     }
@@ -142,6 +143,7 @@ public class PatientMatchService {
             PatientMatch newMatch = patientMatchRepository.saveAndFlush(PatientMatch.builder()
                     .patient(patient)
                     .interpreter(interpreter)
+                    .assignedByAuthUserId(principal.getAuthUserId())
                     .build());
             return MatchResponse.Detail.from(newMatch);
         } catch (DataIntegrityViolationException e) {

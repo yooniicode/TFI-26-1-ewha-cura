@@ -56,7 +56,9 @@ public class AuthRequest {
             UUID centerId,
             String centerName,
             List<String> languages,
-            String availabilityNote
+            String availabilityNote,
+            /** role=admin(센터장)으로 가입할 때만 필요 — 환경변수 ADMIN_BOOTSTRAP_CODE 와 일치해야 합니다. */
+            String adminCode
     ) {}
 
     public record UpdateMemberRole(

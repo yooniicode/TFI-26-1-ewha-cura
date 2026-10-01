@@ -320,6 +320,23 @@ export const pendingConsultationSchema = z.object({
 
 export type PendingConsultation = z.infer<typeof pendingConsultationSchema>
 
+/** 센터장이 나에게 배정해 수락을 기다리는 요청 */
+export const assignmentSchema = z.object({
+  id:                 z.string().uuid(),
+  consultationDate:   z.string(),
+  patientId:          z.string().uuid(),
+  patientName:        z.string(),
+  patientGender:      genderSchema.nullable().optional(),
+  patientNationality: nationalitySchema.nullable().optional(),
+  patientComment:     nullableString,
+  hospitalName:       nullableString,
+  department:         nullableString,
+  assignedAt:         nullableString,
+  patientAvatarUrl:   nullableString,
+})
+
+export type Assignment = z.infer<typeof assignmentSchema>
+
 // ─── 배열 스키마 ─────────────────────────────────────────────
 export const schemas = {
   patient:       patientSchema,
@@ -334,6 +351,7 @@ export const schemas = {
   consultations:        z.array(consultationSchema),
   pendingConsultation:  pendingConsultationSchema,
   pendingConsultations: z.array(pendingConsultationSchema),
+  assignments: z.array(assignmentSchema),
   patientReport: patientReportSchema,
   patientReports: z.array(patientReportSchema),
   handover:      handoverSchema,

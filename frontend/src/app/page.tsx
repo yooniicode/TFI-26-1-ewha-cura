@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { getAccessToken, getLastLoginMethod, type LoginMethod } from '@/lib/auth/auth-token'
+import { isAuthenticated, getLastLoginMethod, type LoginMethod } from '@/lib/auth/auth-token'
 
 const TAGLINES = [
   '의료와 당신을 잇다',
@@ -46,7 +46,7 @@ export default function SplashPage() {
   const [lastMethod, setLastMethod] = useState<LoginMethod | null>(null)
 
   useEffect(() => {
-    if (getAccessToken()) {
+    if (isAuthenticated()) {
       router.replace('/dashboard')
       return
     }

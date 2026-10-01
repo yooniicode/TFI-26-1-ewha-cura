@@ -1,6 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { z } from 'zod'
-import { getAccessToken, clearAccessToken } from '../auth/auth-token'
+import { isAuthenticated, clearAuthState } from '../auth/auth-token'
 import type { ApiResponse } from '../types'
 
 export class ApiError extends Error {
@@ -17,22 +17,18 @@ export class ApiError extends Error {
   get isNotFound()     { return this.status === 404 }
 }
 
-const instance = axios.create({ baseURL: '/api/v1' })
-
-instance.interceptors.request.use(config => {
-  const token = getAccessToken()
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
+// 인증은 httpOnly 쿠키로 이뤄진다. baseURL 이 상대경로라 동일 출처 요청이므로
+// 쿠키가 자동 전송되며, JS 는 토큰을 읽지도 붙이지도 않는다.
+const instance = axios.create({ baseURL: '/api/v1', withCredentials: true })
 
 instance.interceptors.response.use(
   res => res,
   (err) => {
     if (axios.isAxiosError(err)) {
       const status = err.response?.status ?? 0
-      // 401/403 + 토큰 없음: Spring Security는 미인증 요청에 403을 반환하기도 함
-      if (status === 401 || (status === 403 && !getAccessToken())) {
-        clearAccessToken()
+      // 401/403 + 미로그인: Spring Security는 미인증 요청에 403을 반환하기도 함
+      if (status === 401 || (status === 403 && !isAuthenticated())) {
+        clearAuthState()
         if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
           window.location.href = '/login'
         }

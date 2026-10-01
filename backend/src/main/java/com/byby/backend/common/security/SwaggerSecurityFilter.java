@@ -14,13 +14,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 
 /**
  * Swagger UI / v3/api-docs 경로에 HTTP Basic 인증을 추가합니다.
- * 환경변수 SWAGGER_SECRET 이 설정된 경우에만 활성화됩니다.
  *
- * 사용자명: swagger (고정)
- * 비밀번호: SWAGGER_SECRET 값
+ * <p>사용자명: swagger (고정) / 비밀번호: SWAGGER_SECRET 값.
+ * SWAGGER_SECRET 미설정 시 로컬에서는 그대로 열어두지만, 운영(prod)에서는 문서를 아예 차단합니다.
+ * API 스펙이 공개되면 이주민·진료정보 엔드포인트 구조가 그대로 노출되기 때문입니다.
  */
 @Slf4j
 @Component
@@ -32,20 +33,34 @@ public class SwaggerSecurityFilter extends OncePerRequestFilter {
     @Value("${byby.security.swagger-secret:}")
     private String swaggerSecret;
 
+    private final boolean productionProfile;
+
+    public SwaggerSecurityFilter(org.springframework.core.env.Environment environment) {
+        this.productionProfile = List.of(environment.getActiveProfiles()).contains("prod");
+    }
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        // SWAGGER_SECRET 미설정 → 필터 비활성화 (로컬 개발 편의)
-        if (!StringUtils.hasText(swaggerSecret)) return true;
-
         String path = request.getRequestURI();
-        return !path.startsWith("/swagger-ui") && !path.startsWith("/v3/api-docs");
+        boolean swaggerPath = path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs");
+        if (!swaggerPath) return true;
+
+        // 시크릿 미설정: 운영에서는 계속 필터를 태워 차단하고, 로컬에서만 통과시킨다
+        return !StringUtils.hasText(swaggerSecret) && !productionProfile;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        String authHeader = request.getHeader("Authorization");
+        if (!StringUtils.hasText(swaggerSecret)) {
+            log.warn("SWAGGER_SECRET 미설정 — 운영 환경에서 API 문서 접근을 차단했습니다");
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"message\":\"Not found\"}");
+            return;
+        }
 
+        String authHeader = request.getHeader("Authorization");
         if (isValidBasicAuth(authHeader)) {
             chain.doFilter(request, response);
             return;

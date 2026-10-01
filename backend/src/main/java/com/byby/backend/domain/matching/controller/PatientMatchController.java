@@ -5,9 +5,13 @@ import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
 import com.byby.backend.domain.matching.dto.MatchResponse;
 import com.byby.backend.domain.matching.service.PatientMatchService;
+import com.byby.backend.domain.matching.dto.MatchRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,9 +28,8 @@ public class PatientMatchController {
 
     private final PatientMatchService patientMatchService;
 
-    /*
-     * Admin matching management endpoints disabled.
-     *
+    // ─── AD-06 센터장 매칭 배정 ─────────────────────────────────────────────
+
     @PostMapping
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "매칭 생성/재배정")
@@ -50,13 +53,12 @@ public class PatientMatchController {
     @GetMapping("/patient/{patientId}")
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "환자별 활성 매칭 조회")
-    public ResponseEntity<Response<MatchResponse.Detail>> getByPatient(
+    public ResponseEntity<Response<List<MatchResponse.Detail>>> getByPatient(
             @PathVariable UUID patientId,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(
                 Response.success(SuccessCode.OK, patientMatchService.getByPatient(patientId, principal)));
     }
-    */
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('patient')")
@@ -96,9 +98,6 @@ public class PatientMatchController {
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
 
-    /*
-     * Admin matching deactivation endpoint disabled.
-     *
     @DeleteMapping("/{matchId}")
     @PreAuthorize("hasRole('admin')")
     @Operation(summary = "매칭 비활성화")
@@ -108,5 +107,4 @@ public class PatientMatchController {
         patientMatchService.deactivate(matchId, principal);
         return ResponseEntity.ok(Response.success(SuccessCode.OK));
     }
-    */
 }

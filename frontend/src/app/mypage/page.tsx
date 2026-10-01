@@ -6,7 +6,7 @@ import AppShell from '@/components/layout/AppShell'
 import PageHeader from '@/components/ui/PageHeader'
 import { adminApi, centerApi, patientApi, interpreterApi, authApi } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
-import { clearAccessToken } from '@/lib/auth/auth-token'
+import { clearAuthState } from '@/lib/auth/auth-token'
 import { useMe } from '@/hooks/useMe'
 import type { Center, Patient, Interpreter, VisaType } from '@/lib/types'
 import { VISA_TYPES, useEnumLabels } from '@/lib/i18n/enumLabels'
@@ -283,7 +283,7 @@ export default function MyPage() {
     if (!confirm(t.mypage.delete_confirm)) return
     try {
       await authApi.deleteAccount()
-      clearAccessToken()
+      clearAuthState()
       window.location.href = '/login'
     } catch { alert(t.mypage.delete_error) }
   }
@@ -294,7 +294,7 @@ export default function MyPage() {
     } catch {
       // 토큰이 이미 만료된 경우에도 클라이언트 세션은 정리한다.
     } finally {
-      clearAccessToken()
+      clearAuthState()
       queryClient.clear()
       window.location.href = '/'
     }

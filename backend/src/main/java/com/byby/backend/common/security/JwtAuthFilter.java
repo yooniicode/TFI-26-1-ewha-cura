@@ -14,6 +14,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,15 +30,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final AuthRoleResolver authRoleResolver;
+    private final AuthCookieManager authCookieManager;
+    private final SessionVersionValidator sessionVersionValidator;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain chain) throws ServletException, IOException {
-        String token = extractToken(request);
+        String token = authCookieManager.read(request);
         if (StringUtils.hasText(token)) {
             try {
                 Claims claims = jwtUtil.parse(token);
-                UserPrincipal principal = authRoleResolver.resolve(jwtUtil.toPrincipal(claims));
+                UserPrincipal parsed = jwtUtil.toPrincipal(claims);
+                requireCurrentSession(claims, parsed.getAuthUserId());
+
+                UserPrincipal principal = authRoleResolver.resolve(parsed);
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);
@@ -47,6 +53,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                     log.debug("JWT ignored on public auth endpoint: {}", e.getMessage());
                 } else {
                     log.debug("JWT principal extraction failed: {}", e.getMessage());
+                    // 무효 토큰이 브라우저에 남아 401 루프가 나지 않도록 쿠키를 정리한다
+                    authCookieManager.clear(response);
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
                     return;
                 }
@@ -55,12 +63,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private String extractToken(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
-        if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
-            return header.substring(7);
+    /** 로그아웃·비밀번호 변경 이후 발급된 토큰만 통과시킨다. */
+    private void requireCurrentSession(Claims claims, UUID authUserId) {
+        // JJWT는 작은 정수를 Integer로 역직렬화하므로 Number로 받아 변환한다
+        Object raw = claims.get(JwtUtil.SESSION_VERSION_CLAIM);
+        Long tokenVersion = (raw instanceof Number number) ? number.longValue() : null;
+        if (!sessionVersionValidator.isCurrent(authUserId, tokenVersion)) {
+            throw new IllegalStateException("session revoked");
         }
-        return null;
     }
 
     private boolean allowsStaleToken(HttpServletRequest request) {

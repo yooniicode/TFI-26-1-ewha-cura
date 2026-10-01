@@ -15,6 +15,7 @@ import com.byby.backend.domain.handover.dto.HandoverRequest;
 import com.byby.backend.domain.handover.dto.HandoverResponse;
 import com.byby.backend.domain.handover.entity.Handover;
 import com.byby.backend.domain.handover.repository.HandoverRepository;
+import com.byby.backend.domain.matching.entity.PatientMatch;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.entity.Patient;
 import com.byby.backend.domain.patient.repository.PatientRepository;
@@ -97,10 +98,19 @@ public class HandoverService {
         }
         handover.assign(toInterpreter);
 
-        // PatientMatch 업데이트: fromInterpreter의 매칭을 새 통번역가로 변경
-        patientMatchRepository.findByPatientIdAndInterpreterIdAndActiveTrue(
-                handover.getPatient().getId(), handover.getFromInterpreter().getId())
-                .ifPresent(match -> match.reassign(toInterpreter));
+        // 담당 이전: 기존 매칭은 해제하고 새 매칭을 생성해 AD-04-5 담당 히스토리에 변경 이력을 남긴다
+        UUID patientId = handover.getPatient().getId();
+        patientMatchRepository.findByPatientIdAndActiveTrue(patientId).stream()
+                .filter(match -> !match.getInterpreter().getId().equals(toInterpreter.getId()))
+                .forEach(PatientMatch::deactivate);
+
+        if (!patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(patientId, toInterpreter.getId())) {
+            patientMatchRepository.save(PatientMatch.builder()
+                    .patient(handover.getPatient())
+                    .interpreter(toInterpreter)
+                    .assignedByAuthUserId(principal.getAuthUserId())
+                    .build());
+        }
 
         return HandoverResponse.Detail.from(handover);
     }

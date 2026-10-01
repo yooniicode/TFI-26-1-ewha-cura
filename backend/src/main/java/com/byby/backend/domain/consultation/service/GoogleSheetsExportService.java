@@ -1,6 +1,7 @@
 package com.byby.backend.domain.consultation.service;
 
 import com.byby.backend.common.exception.GeneralException;
+import com.byby.backend.common.privacy.PiiMasker;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.domain.consultation.dto.ConsultationResponse;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -59,6 +60,15 @@ public class GoogleSheetsExportService {
      */
     public ExportResult createSheet(String title, String centerName, String existingSpreadsheetId,
                                     List<ConsultationResponse.Detail> rows) {
+        return createSheet(title, centerName, existingSpreadsheetId, rows, true);
+    }
+
+    /**
+     * @param maskPersonalData true 면 실명·생년월일·사업장 등 식별정보를 마스킹해서 내보낸다.
+     *                         구글(제3자)로 나가는 데이터이므로 기본값은 마스킹이다.
+     */
+    public ExportResult createSheet(String title, String centerName, String existingSpreadsheetId,
+                                    List<ConsultationResponse.Detail> rows, boolean maskPersonalData) {
         if (!StringUtils.hasText(serviceAccountJson)) {
             throw new GeneralException(GeneralErrorCode.INTERNAL_SERVER_ERROR,
                     "GOOGLE_SERVICE_ACCOUNT_JSON 이 설정되지 않았습니다");
@@ -67,12 +77,13 @@ public class GoogleSheetsExportService {
         String exportTitle = buildExportTitle(title, centerName);
 
         if (StringUtils.hasText(existingSpreadsheetId)) {
-            String url = appendSheetToExistingSpreadsheet(token, existingSpreadsheetId, exportTitle, rows);
+            String url = appendSheetToExistingSpreadsheet(token, existingSpreadsheetId, exportTitle, rows,
+                    maskPersonalData);
             return new ExportResult(url, existingSpreadsheetId);
         }
 
         String spreadsheetId = createSpreadsheet(token, exportTitle);
-        writeRows(token, spreadsheetId, "Sheet1", rows);
+        writeRows(token, spreadsheetId, "Sheet1", rows, maskPersonalData);
         String url = "https://docs.google.com/spreadsheets/d/" + spreadsheetId;
         return new ExportResult(url, spreadsheetId);
     }
@@ -161,10 +172,11 @@ public class GoogleSheetsExportService {
     }
 
     private String appendSheetToExistingSpreadsheet(String accessToken, String spreadsheetId, String title,
-                                                    List<ConsultationResponse.Detail> rows) {
+                                                    List<ConsultationResponse.Detail> rows,
+                                                    boolean maskPersonalData) {
         String sheetTitle = buildExportSheetTitle(title);
         int sheetId = addSheet(accessToken, spreadsheetId, sheetTitle);
-        writeRows(accessToken, spreadsheetId, sheetTitle, rows);
+        writeRows(accessToken, spreadsheetId, sheetTitle, rows, maskPersonalData);
         return "https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit#gid=" + sheetId;
     }
 
@@ -204,7 +216,7 @@ public class GoogleSheetsExportService {
     }
 
     private void writeRows(String accessToken, String spreadsheetId, String sheetTitle,
-                           List<ConsultationResponse.Detail> rows) {
+                           List<ConsultationResponse.Detail> rows, boolean maskPersonalData) {
         try {
             ArrayNode values = objectMapper.createArrayNode();
 
@@ -222,12 +234,18 @@ public class GoogleSheetsExportService {
                 ArrayNode row = objectMapper.createArrayNode();
                 row.add(s.id().toString());
                 row.add(s.consultationDate() != null ? s.consultationDate().toString() : "");
-                row.add(s.patientName() != null ? s.patientName() : "");
-                row.add(s.patientBirthDate() != null ? s.patientBirthDate().toString() : "");
+                row.add(maskPersonalData
+                        ? PiiMasker.maskName(s.patientName())
+                        : (s.patientName() != null ? s.patientName() : ""));
+                row.add(maskPersonalData
+                        ? PiiMasker.maskBirthDate(s.patientBirthDate())
+                        : (s.patientBirthDate() != null ? s.patientBirthDate().toString() : ""));
                 row.add(s.patientNationality() != null ? s.patientNationality().name() : "");
                 row.add(s.patientGender() != null ? s.patientGender().name() : "");
                 row.add(s.patientVisaType() != null ? s.patientVisaType().name() : "");
-                row.add(s.patientWorkplace() != null ? s.patientWorkplace() : "");
+                row.add(maskPersonalData
+                        ? PiiMasker.maskFreeText(s.patientWorkplace())
+                        : (s.patientWorkplace() != null ? s.patientWorkplace() : ""));
                 row.add(s.patientRegion() != null ? s.patientRegion() : "");
                 row.add(s.interpreterName() != null ? s.interpreterName() : "");
                 row.add(s.hospitalName() != null ? s.hospitalName() : "");
@@ -271,7 +289,8 @@ public class GoogleSheetsExportService {
         }
     }
 
-    public void overwriteMonthlyTab(String spreadsheetId, String centerName, List<ConsultationResponse.Detail> rows) {
+    public void overwriteMonthlyTab(String spreadsheetId, String centerName,
+                                    List<ConsultationResponse.Detail> rows, boolean maskPersonalData) {
         String token = fetchAccessToken();
         String tabTitle = centerName + " 상담 데이터";
 
@@ -281,7 +300,7 @@ public class GoogleSheetsExportService {
         } else {
             addSheet(token, spreadsheetId, tabTitle);
         }
-        writeRows(token, spreadsheetId, tabTitle, rows);
+        writeRows(token, spreadsheetId, tabTitle, rows, maskPersonalData);
     }
 
     private Integer findSheetIdByTitle(String accessToken, String spreadsheetId, String title) {

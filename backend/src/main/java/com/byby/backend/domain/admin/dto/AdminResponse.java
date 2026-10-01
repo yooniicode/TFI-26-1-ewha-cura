@@ -1,5 +1,6 @@
 package com.byby.backend.domain.admin.dto;
 
+import com.byby.backend.common.enums.UserRole;
 import com.byby.backend.domain.admin.entity.AdminProfile;
 import com.byby.backend.domain.admin.entity.AdminWorkLog;
 import com.byby.backend.domain.admin.entity.AdminWorkLogTask;
@@ -54,6 +55,19 @@ public class AdminResponse {
             long patientCount,
             long interpreterCount,
             long activeMatchCount
+    ) {}
+
+    /** AD-04 구성원 관리 — 센터 소속 계정과 권한 */
+    public record Member(
+            UUID authUserId,
+            UserRole role,
+            String name,
+            String phone,
+            String email,
+            UUID centerId,
+            String centerName,
+            boolean active,
+            UUID interpreterId
     ) {}
 
     public record PatientMemo(
