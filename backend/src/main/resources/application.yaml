@@ -74,6 +74,10 @@ byby:
         - https://tfi-26-1-archive-production.up.railway.app
         - https://cura-ewha.kr
         - https://www.cura-ewha.kr
+        # 관리자 콘솔 (admin/) — 프록시 경유 요청도 Origin 헤더가 그대로 전달되므로 허용 필요
+        - http://localhost:3001
+        - ${ADMIN_URL:http://localhost:3001}
+        - https://admin.cura-ewha.kr
 
   supabase:
     url: ${SUPABASE_URL:}

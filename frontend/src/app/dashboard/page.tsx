@@ -13,6 +13,7 @@ import { useMe } from '@/hooks/useMe'
 import type { Announcement, AnnouncementCategory, Consultation } from '@/lib/types'
 import { useTranslation } from '@/lib/i18n/I18nContext'
 import { daysBetweenDateKeys, formatKoreanDateTime, parseAppDate, toDateKey } from '@/lib/utils/dateFormat'
+import { ADMIN_URL } from '@/lib/utils/constants'
 import PatientAvatar from '@/components/patient/PatientAvatar'
 
 function formatToday(locale: string) {
@@ -572,8 +573,8 @@ export default function DashboardPage() {
           <div className="mt-5 grid grid-cols-3 gap-2">
             {([
               { href: '/patients',     icon: 'P', label: t.nav.patients,    count: centerStats?.patientCount },
-              { href: '/interpreters', icon: 'I', label: t.nav.interpreters, count: centerStats?.interpreterCount },
-              { href: '/matching',     icon: 'M', label: t.nav.matching,     count: centerStats?.activeMatchCount },
+              { href: `${ADMIN_URL}/interpreters`, icon: 'I', label: t.nav.interpreters, count: centerStats?.interpreterCount },
+              { href: `${ADMIN_URL}/matching`,     icon: 'M', label: t.nav.matching,     count: centerStats?.activeMatchCount },
             ] as const).map(item => (
               <Link key={item.href} href={item.href}
                 className="flex flex-col items-center py-4 gap-1 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">

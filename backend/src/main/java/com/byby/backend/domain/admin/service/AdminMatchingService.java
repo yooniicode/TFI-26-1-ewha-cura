@@ -1,5 +1,7 @@
 package com.byby.backend.domain.admin.service;
 
+import com.byby.backend.common.enums.LanguageNames;
+import com.byby.backend.common.enums.MatchingDisplayStatus;
 import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
@@ -11,6 +13,7 @@ import com.byby.backend.domain.admin.dto.AdminMatchingResponse;
 import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.consultation.entity.Consultation;
 import com.byby.backend.domain.consultation.repository.ConsultationRepository;
+import com.byby.backend.domain.consultation.repository.ConsultationSpecs;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
 import com.byby.backend.domain.matching.entity.PatientMatch;
@@ -18,7 +21,10 @@ import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.entity.Patient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -39,10 +45,6 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AdminMatchingService {
 
-    /** 요청 목록·캘린더 조회 시 기간을 지정하지 않았을 때의 기본 범위 */
-    private static final LocalDateTime MIN_DATE = LocalDate.of(2000, 1, 1).atStartOfDay();
-    private static final LocalDateTime MAX_DATE = LocalDate.of(2999, 12, 31).atTime(23, 59, 59);
-
     private final AdminService adminService;
     private final ConsultationRepository consultationRepository;
     private final InterpreterRepository interpreterRepository;
@@ -50,14 +52,24 @@ public class AdminMatchingService {
 
     // ─── AD-06-1 요청 목록 ──────────────────────────────────────────────────
 
+    /**
+     * 화면 상태 · 요청 언어 · 이름 검색으로 거른 요청 목록. 요청 순서대로 최신순.
+     * 거절 · 취소된 요청은 노출하지 않는다.
+     */
     public Page<AdminMatchingResponse.RequestItem> getRequests(
-            MatchingStatus status, LocalDate from, LocalDate to, Pageable pageable, UserPrincipal principal) {
+            List<MatchingDisplayStatus> statuses, List<String> languages, String query,
+            LocalDate from, LocalDate to, Pageable pageable, UserPrincipal principal) {
         Center center = adminService.getAdminCenter(principal);
-        List<MatchingStatus> statuses = status != null
-                ? List.of(status)
-                : List.of(MatchingStatus.values());
-        return consultationRepository.findRequestsByCenter(
-                        center.getId(), statuses, startOf(from), endOf(to), pageable)
+        Specification<Consultation> spec = ConsultationSpecs.allOf(
+                ConsultationSpecs.inCenter(center.getId()),
+                ConsultationSpecs.displayStatusIn(statuses),
+                ConsultationSpecs.languageIn(languages),
+                ConsultationSpecs.patientOrInterpreterName(query),
+                ConsultationSpecs.dateFrom(from != null ? from.atStartOfDay() : null),
+                ConsultationSpecs.dateTo(to != null ? to.atTime(23, 59, 59) : null));
+        Pageable latestFirst = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+        return consultationRepository.findAll(spec, latestFirst)
                 .map(AdminMatchingResponse.RequestItem::from);
     }
 
@@ -69,11 +81,10 @@ public class AdminMatchingService {
         Center center = adminService.getAdminCenter(principal);
 
         String targetLanguage = language;
-        if (!StringUtils.hasText(targetLanguage) && consultationId != null) {
-            Consultation c = findInCenter(consultationId, center);
-            if (c.getPatient().getNationality() != null) {
-                targetLanguage = c.getPatient().getNationality().getLanguageCode();
-            }
+        Consultation consultation = consultationId != null ? findInCenter(consultationId, center) : null;
+        if (!StringUtils.hasText(targetLanguage) && consultation != null
+                && consultation.getPatient().getNationality() != null) {
+            targetLanguage = consultation.getPatient().getNationality().getLanguageCode();
         }
         final String matchLanguage = normalize(targetLanguage);
 
@@ -86,13 +97,16 @@ public class AdminMatchingService {
                 .map(i -> AdminMatchingResponse.InterpreterCandidate.from(
                         i,
                         matchesLanguage(i, matchLanguage),
+                        companionCount(consultation, i),
                         patientMatchRepository.countByInterpreterIdAndActiveTrue(i.getId()),
                         consultationRepository.countByInterpreterIdAndDateBetween(i.getId(), monthStart, monthEnd),
                         consultationRepository.sumDurationHoursByInterpreterIdAndDateTimeBetween(
                                 i.getId(), monthStart, monthEnd)))
-                // 언어가 맞는 통번역가를 먼저, 그 다음 담당 부하가 적은 순서로
+                // 언어가 맞는 통번역가 → 이 환자와 많이 동행한 순 → 담당 부하가 적은 순
                 .sorted(Comparator
                         .comparing(AdminMatchingResponse.InterpreterCandidate::languageMatched).reversed()
+                        .thenComparing(Comparator.comparingLong(
+                                AdminMatchingResponse.InterpreterCandidate::companionCount).reversed())
                         .thenComparingLong(AdminMatchingResponse.InterpreterCandidate::activePatientCount)
                         .thenComparing(AdminMatchingResponse.InterpreterCandidate::name,
                                 Comparator.nullsLast(Comparator.naturalOrder())))
@@ -220,6 +234,14 @@ public class AdminMatchingService {
 
     // ─── helpers ────────────────────────────────────────────────────────────
 
+    /** 이 요청을 제외하고, 해당 환자와 배정 확정된 진료를 함께한 횟수 */
+    private long companionCount(Consultation consultation, Interpreter interpreter) {
+        if (consultation == null) return 0;
+        return consultationRepository.countByPatient_IdAndInterpreter_IdAndMatchingStatusAndIdNot(
+                consultation.getPatient().getId(), interpreter.getId(), MatchingStatus.ASSIGNED,
+                consultation.getId());
+    }
+
     private void ensureActiveMatch(Patient patient, Interpreter interpreter, UUID adminAuthUserId) {
         if (patientMatchRepository.existsByPatientIdAndInterpreterIdAndActiveTrue(
                 patient.getId(), interpreter.getId())) {
@@ -252,21 +274,14 @@ public class AdminMatchingService {
         }
     }
 
+    /** 통번역가 언어는 "베트남어"처럼 한국어 이름으로도 저장되므로 코드와 이름을 함께 비교한다 */
     private boolean matchesLanguage(Interpreter interpreter, String language) {
         if (language == null) return false;
         return interpreter.getLanguages().stream()
-                .anyMatch(l -> language.equals(normalize(l)));
+                .anyMatch(l -> LanguageNames.matches(l, language));
     }
 
     private String normalize(String value) {
         return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : null;
-    }
-
-    private LocalDateTime startOf(LocalDate date) {
-        return date != null ? date.atStartOfDay() : MIN_DATE;
-    }
-
-    private LocalDateTime endOf(LocalDate date) {
-        return date != null ? date.atTime(23, 59, 59) : MAX_DATE;
     }
 }

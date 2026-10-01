@@ -1,5 +1,6 @@
 package com.byby.backend.domain.admin.controller;
 
+import com.byby.backend.common.enums.Gender;
 import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
@@ -31,15 +32,30 @@ public class AdminInterpreterController {
 
     @GetMapping
     @Operation(summary = "AD-05-1 통번역가 목록·검색",
-            description = "`active` 미지정 시 비활성 통번역가까지 모두 조회합니다.")
+            description = """
+                    `active` 미지정 시 비활성 통번역가까지 모두 조회합니다.
+                    - language : 언어 코드 (여러 개 가능, 예: mn, vi) — 한국어 이름으로 저장된 언어도 함께 찾습니다
+                    - gender : MALE / FEMALE / OTHER (여러 개 가능)
+                    """)
     public ResponseEntity<Response<List<AdminInterpreterResponse.Item>>> getInterpreters(
             @RequestParam(required = false) String query,
-            @RequestParam(required = false) String language,
+            @RequestParam(required = false) List<String> language,
+            @RequestParam(required = false) List<Gender> gender,
             @RequestParam(required = false) Boolean active,
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK,
-                adminInterpreterService.getInterpreters(query, language, active, pageable, principal)));
+                adminInterpreterService.getInterpreters(query, language, gender, active, pageable, principal)));
+    }
+
+    @GetMapping("/{interpreterId}/consultations")
+    @Operation(summary = "AD-05-4 통번역 이력", description = "배정 확정된 진료를 최신순으로 반환합니다.")
+    public ResponseEntity<Response<List<AdminInterpreterResponse.ConsultationHistoryItem>>> getConsultations(
+            @PathVariable UUID interpreterId,
+            @PageableDefault(size = 50) Pageable pageable,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(Response.success(SuccessCode.OK,
+                adminInterpreterService.getConsultations(interpreterId, pageable, principal)));
     }
 
     @GetMapping("/{interpreterId}")

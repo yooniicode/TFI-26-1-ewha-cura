@@ -25,6 +25,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      admin: ${{ steps.filter.outputs.admin }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -37,6 +38,9 @@ jobs:
               - '.github/workflows/**'
             frontend:
               - 'frontend/**'
+              - '.github/workflows/**'
+            admin:
+              - 'admin/**'
               - '.github/workflows/**'
 
   # ─── 백엔드 CI ───────────────────────────────────────────────────────────────
@@ -99,6 +103,34 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+  # ─── 관리자 콘솔 CI ──────────────────────────────────────────────────────────
+  admin-ci:
+    name: Admin CI
+    needs: changes
+    if: needs.changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build check
+        run: npm run build
 
   # ─── 백엔드 배포 → Railway (무중단) ──────────────────────────────────────────
   # 무중단 원리: railway up 은 새 컨테이너의 healthcheck(/actuator/health) 통과 후
@@ -170,3 +202,32 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+  # ─── 관리자 콘솔 배포 → Vercel (별도 프로젝트, admin.cura-ewha.kr) ──────────
+  # Vercel 프로젝트 Root Directory = admin, Git 자동배포 비활성화(admin/vercel.json)
+  deploy-admin:
+    name: Deploy Admin → Vercel
+    needs: admin-ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: deploy-admin-main
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel (빌드 완료 후 atomic 전환)
+        run: vercel --prod --token "${{ secrets.VERCEL_TOKEN }}" --yes
+        working-directory: ${{ github.workspace }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_ADMIN_PROJECT_ID }}

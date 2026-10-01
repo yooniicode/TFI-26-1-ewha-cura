@@ -1,4 +1,4 @@
-.PHONY: dev db backend frontend down db-reset build test gen-key install
+.PHONY: dev db backend frontend admin down db-reset build test gen-key install
 
 # 전체 스택 실행 (docker compose)
 dev:
@@ -17,9 +17,14 @@ backend:
 frontend:
 	cd frontend && npm run dev
 
+# 관리자 콘솔 로컬 실행 (http://localhost:3001)
+admin:
+	cd admin && npm run dev
+
 # 프론트엔드 의존성 설치
 install:
 	cd frontend && npm install
+	cd admin && npm install
 
 # 전체 중지
 down:

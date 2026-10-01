@@ -1,5 +1,8 @@
 package com.byby.backend.domain.admin.service;
 
+import com.byby.backend.common.enums.Gender;
+import com.byby.backend.common.enums.LanguageNames;
+import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
 import com.byby.backend.common.response.code.BusinessErrorCode;
@@ -14,7 +17,9 @@ import com.byby.backend.domain.interpreter.repository.InterpreterRepository;
 import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,9 +46,13 @@ public class AdminInterpreterService {
 
     // ─── AD-05-1 목록·검색 ──────────────────────────────────────────────────
 
-    /** activeFilter: null(전체) / true(활동 가능) / false(비활성) */
+    /**
+     * activeFilter: null(전체) / true(활동 가능) / false(비활성).
+     * languages 는 언어 코드("vi")로 받고, 한국어 이름("베트남어")으로 저장된 값까지 함께 찾는다.
+     */
     public Page<AdminInterpreterResponse.Item> getInterpreters(
-            String query, String language, Boolean active, Pageable pageable, UserPrincipal principal) {
+            String query, List<String> languages, List<Gender> genders, Boolean active,
+            Pageable pageable, UserPrincipal principal) {
         Center center = adminService.getAdminCenter(principal);
         String activeFilter = active == null ? "all" : active.toString();
 
@@ -51,10 +60,19 @@ public class AdminInterpreterService {
         LocalDateTime from = month.atDay(1).atStartOfDay();
         LocalDateTime to = month.atEndOfMonth().atTime(23, 59, 59);
 
+        List<String> languageAliases = LanguageNames.aliases(languages);
+        boolean anyLanguage = languageAliases.isEmpty();
+        boolean anyGender = genders == null || genders.isEmpty();
+
         return interpreterRepository
-                .searchByCenterForAdmin(center.getId(), query, language, activeFilter, pageable)
+                .searchByCenterForAdmin(center.getId(), query,
+                        // IN 절에 빈 목록을 넘기지 않도록 필터가 없을 때는 자리표시 값을 쓴다
+                        anyLanguage, anyLanguage ? List.of("") : languageAliases,
+                        anyGender, anyGender ? List.of(Gender.OTHER) : genders,
+                        activeFilter, pageable)
                 .map(i -> AdminInterpreterResponse.Item.from(
                         i,
+                        consultationRepository.countByInterpreter_IdAndMatchingStatus(i.getId(), MatchingStatus.ASSIGNED),
                         patientMatchRepository.countByInterpreterIdAndActiveTrue(i.getId()),
                         consultationRepository.countByInterpreterIdAndDateBetween(i.getId(), from, to),
                         consultationRepository.sumDurationHoursByInterpreterIdAndDateTimeBetween(
@@ -100,6 +118,18 @@ public class AdminInterpreterService {
             cursor = cursor.minusMonths(1);
         }
         return result;
+    }
+
+    /** 통번역 이력 — 배정 확정된 진료를 최신순으로 */
+    public List<AdminInterpreterResponse.ConsultationHistoryItem> getConsultations(
+            UUID interpreterId, Pageable pageable, UserPrincipal principal) {
+        findInCenter(interpreterId, principal);
+        return consultationRepository.findByInterpreter_IdAndMatchingStatus(
+                        interpreterId, MatchingStatus.ASSIGNED,
+                        PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                                Sort.by(Sort.Direction.DESC, "consultationDate")))
+                .map(AdminInterpreterResponse.ConsultationHistoryItem::from)
+                .getContent();
     }
 
     /** 담당 환자 이력 (해제분 포함) */

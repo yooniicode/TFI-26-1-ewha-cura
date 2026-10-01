@@ -1,5 +1,6 @@
 package com.byby.backend.domain.interpreter.repository;
 
+import com.byby.backend.common.enums.Gender;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -88,15 +89,21 @@ public interface InterpreterRepository extends JpaRepository<Interpreter, UUID> 
                   OR LOWER(COALESCE(i.phone, '')) LIKE LOWER(CONCAT('%', :query, '%'))
               )
               AND (
-                  :language IS NULL
-                  OR :language = ''
-                  OR LOWER(COALESCE(language, '')) = LOWER(:language)
+                  :anyLanguage = true
+                  OR LOWER(COALESCE(language, '')) IN :languages
+              )
+              AND (
+                  :anyGender = true
+                  OR i.gender IN :genders
               )
             """)
     Page<Interpreter> searchByCenterForAdmin(
             @Param("centerId") UUID centerId,
             @Param("query") String query,
-            @Param("language") String language,
+            @Param("anyLanguage") boolean anyLanguage,
+            @Param("languages") Collection<String> languages,
+            @Param("anyGender") boolean anyGender,
+            @Param("genders") Collection<Gender> genders,
             @Param("activeFilter") String activeFilter,
             Pageable pageable);
 

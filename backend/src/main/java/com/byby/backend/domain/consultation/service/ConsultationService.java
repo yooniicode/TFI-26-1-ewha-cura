@@ -1,6 +1,7 @@
 package com.byby.backend.domain.consultation.service;
 
 import com.byby.backend.common.enums.UserRole;
+import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
 import com.byby.backend.common.response.code.BusinessErrorCode;
@@ -161,6 +162,34 @@ public class ConsultationService {
         c.accept(interpreter, req.consultationDate());
         Consultation saved = consultationRepository.save(c);
         return ConsultationResponse.Detail.from(saved, resolvePatientAvatarUrl(saved.getPatient()));
+    }
+
+    /** 센터장이 배정한 요청을 통번역가가 수락 → 배정 확정 */
+    @Transactional
+    public ConsultationResponse.Detail acceptAssignment(UUID id, UserPrincipal principal) {
+        Consultation c = findAwaitingAssignmentOf(id, principal);
+        c.acceptAssignment();
+        return ConsultationResponse.Detail.from(c, resolvePatientAvatarUrl(c.getPatient()));
+    }
+
+    /** 센터장이 배정한 요청을 통번역가가 거절 → 센터에 '재배정 필요'로 표시 */
+    @Transactional
+    public void declineAssignment(UUID id, UserPrincipal principal) {
+        Consultation c = findAwaitingAssignmentOf(id, principal);
+        c.declineAssignment();
+    }
+
+    private Consultation findAwaitingAssignmentOf(UUID id, UserPrincipal principal) {
+        Consultation c = findConsultation(id);
+        Interpreter interpreter = interpreterRepository.findByAuthUserId(principal.getAuthUserId())
+                .orElseThrow(() -> new BusinessException(BusinessErrorCode.INTERPRETER_NOT_FOUND));
+        if (c.getInterpreter() == null || !c.getInterpreter().getId().equals(interpreter.getId())) {
+            throw new BusinessException(BusinessErrorCode.ACCESS_DENIED_NOT_ASSIGNED);
+        }
+        if (c.getMatchingStatus() != MatchingStatus.AWAITING_ACCEPTANCE) {
+            throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "수락을 기다리는 배정이 아닙니다");
+        }
+        return c;
     }
 
     public Page<ConsultationResponse.Summary> getAll(Pageable pageable, UserPrincipal principal, String patientQuery) {

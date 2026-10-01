@@ -1,9 +1,12 @@
 package com.byby.backend.domain.consultation.repository;
 
+import com.byby.backend.common.enums.MatchingDisplayStatus;
+import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.enums.Nationality;
 import com.byby.backend.common.enums.ReportStatus;
 import com.byby.backend.domain.consultation.entity.Consultation;
 import com.byby.backend.domain.patient.entity.PatientCenter;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -12,7 +15,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -103,5 +108,53 @@ public final class ConsultationSpecs {
                 cb.like(cb.lower(root.get("patient").get("name")), pattern),
                 cb.like(cb.lower(cb.coalesce(root.get("patient").get("phone"), "")), pattern),
                 cb.like(cb.lower(cb.coalesce(root.get("patient").get("region"), "")), pattern));
+    }
+
+    // ─── AD-06 매칭 관리 ────────────────────────────────────────────────────
+
+    /** 화면 상태 필터. 비어 있으면 매칭 관리에 노출되는 모든 상태(거절·취소 제외). */
+    public static Specification<Consultation> displayStatusIn(Collection<MatchingDisplayStatus> statuses) {
+        Collection<MatchingDisplayStatus> targets = statuses == null || statuses.isEmpty()
+                ? List.of(MatchingDisplayStatus.values())
+                : statuses;
+        return (root, query, cb) -> cb.or(targets.stream()
+                .map(s -> displayStatus(root, cb, s))
+                .toArray(Predicate[]::new));
+    }
+
+    /** {@link MatchingDisplayStatus#of} 와 같은 규칙을 쿼리 조건으로 옮긴 것 */
+    private static Predicate displayStatus(Root<Consultation> root, CriteriaBuilder cb, MatchingDisplayStatus status) {
+        var matching = root.get("matchingStatus");
+        var reassign = root.<Boolean>get("reassignmentRequired");
+        var report = root.get("reportStatus");
+        return switch (status) {
+            case NEEDS_ASSIGNMENT -> cb.and(cb.equal(matching, MatchingStatus.PENDING), cb.isFalse(reassign));
+            case NEEDS_REASSIGNMENT -> cb.and(cb.equal(matching, MatchingStatus.PENDING), cb.isTrue(reassign));
+            case AWAITING_ACCEPTANCE -> cb.equal(matching, MatchingStatus.AWAITING_ACCEPTANCE);
+            case ASSIGNED -> cb.and(cb.equal(matching, MatchingStatus.ASSIGNED),
+                    cb.or(cb.isNull(report), cb.equal(report, ReportStatus.DRAFT)));
+            case COMPLETED -> cb.and(cb.equal(matching, MatchingStatus.ASSIGNED),
+                    cb.isNotNull(report), cb.notEqual(report, ReportStatus.DRAFT));
+        };
+    }
+
+    /** 요청 언어(이주민 국적의 언어 코드)로 필터 */
+    public static Specification<Consultation> languageIn(Collection<String> languageCodes) {
+        if (languageCodes == null || languageCodes.isEmpty()) return null;
+        List<Nationality> nationalities = Arrays.stream(Nationality.values())
+                .filter(n -> languageCodes.contains(n.getLanguageCode()))
+                .toList();
+        if (nationalities.isEmpty()) return (root, query, cb) -> cb.disjunction();
+        return (root, query, cb) -> root.get("patient").get("nationality").in(nationalities);
+    }
+
+    /** 이주민 또는 배정된 통번역가 이름 검색 */
+    public static Specification<Consultation> patientOrInterpreterName(String keyword) {
+        if (!StringUtils.hasText(keyword)) return null;
+        String pattern = "%" + keyword.trim().toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("patient").get("name")), pattern),
+                cb.like(cb.lower(cb.coalesce(
+                        root.join("interpreter", JoinType.LEFT).get("name"), "")), pattern));
     }
 }

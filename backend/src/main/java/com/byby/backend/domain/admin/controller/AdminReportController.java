@@ -38,12 +38,16 @@ public class AdminReportController {
     @Operation(summary = "AD-보고서 목록 조회",
             description = """
                     센터 전체 보고서를 조회합니다.
-                    - `status` : PENDING(승인 대기) / APPROVED(승인 완료) / REJECTED(반려) / DRAFT(작성중)
+                    - `status` : PENDING(승인 대기) / APPROVED(승인 완료) / REJECTED(반려) / DRAFT(작성중), 여러 개 가능
                     - AD-보고서-4 필터: `nationality`, `hospitalId`, `hospitalName`, `interpreterId`, `from`, `to`, `patientQuery`
+                    - `language` : 요청 언어 코드 (여러 개 가능, 예: mn, vi)
+                    - `query` : 이주민 또는 통번역가 이름
                     - 정렬 미지정 시 작성일자(진료일) 최신순
                     """)
     public ResponseEntity<Response<List<AdminReportResponse.Item>>> getReports(
-            @RequestParam(required = false) ReportStatus status,
+            @RequestParam(required = false) List<ReportStatus> status,
+            @RequestParam(required = false) List<String> language,
+            @RequestParam(required = false) String query,
             @RequestParam(required = false) Nationality nationality,
             @RequestParam(required = false) UUID hospitalId,
             @RequestParam(required = false) String hospitalName,
@@ -54,7 +58,7 @@ public class AdminReportController {
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK,
-                adminReportService.getReports(status, nationality, hospitalId, hospitalName,
+                adminReportService.getReports(status, language, query, nationality, hospitalId, hospitalName,
                         interpreterId, from, to, patientQuery, pageable, principal)));
     }
 

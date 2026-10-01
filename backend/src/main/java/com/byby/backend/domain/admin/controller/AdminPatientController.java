@@ -1,5 +1,6 @@
 package com.byby.backend.domain.admin.controller;
 
+import com.byby.backend.common.enums.Gender;
 import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
@@ -31,13 +32,20 @@ public class AdminPatientController {
     private final AdminPatientService adminPatientService;
 
     @GetMapping
-    @Operation(summary = "AD-04-1 이주민 목록·검색", description = "이름·전화번호·거주지로 검색합니다.")
+    @Operation(summary = "AD-04-1 이주민 목록·검색",
+            description = """
+                    이름·전화번호·거주지로 검색합니다.
+                    - language : 요청 언어 코드 (여러 개 가능, 예: mn, vi)
+                    - gender : MALE / FEMALE / OTHER (여러 개 가능)
+                    """)
     public ResponseEntity<Response<List<AdminPatientResponse.Item>>> getPatients(
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) List<String> language,
+            @RequestParam(required = false) List<Gender> gender,
             @PageableDefault(size = 20) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK,
-                adminPatientService.getPatients(query, pageable, principal)));
+                adminPatientService.getPatients(query, language, gender, pageable, principal)));
     }
 
     @GetMapping("/{patientId}")

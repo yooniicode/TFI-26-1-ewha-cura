@@ -1,6 +1,6 @@
 package com.byby.backend.domain.admin.controller;
 
-import com.byby.backend.common.enums.MatchingStatus;
+import com.byby.backend.common.enums.MatchingDisplayStatus;
 import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
@@ -33,15 +33,23 @@ public class AdminMatchingController {
     private final AdminMatchingService adminMatchingService;
 
     @GetMapping("/requests")
-    @Operation(summary = "AD-06-1 요청 목록", description = "이주민 통번역 요청을 날짜·언어·증상과 함께 조회합니다.")
+    @Operation(summary = "AD-06-1 요청 목록",
+            description = """
+                    이주민 통번역 요청을 요청 순서대로(최신순) 조회합니다.
+                    - status: 화면 상태 (여러 개 가능, 미지정 시 거절·취소 제외 전체)
+                    - language: 요청 언어 코드 (여러 개 가능, 예: mn, vi)
+                    - query: 환자 또는 통번역가 이름
+                    """)
     public ResponseEntity<Response<List<AdminMatchingResponse.RequestItem>>> getRequests(
-            @RequestParam(required = false) MatchingStatus status,
+            @RequestParam(required = false) List<MatchingDisplayStatus> status,
+            @RequestParam(required = false) List<String> language,
+            @RequestParam(required = false) String query,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @PageableDefault(size = 20) Pageable pageable,
+            @PageableDefault(size = 9) Pageable pageable,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(Response.success(SuccessCode.OK,
-                adminMatchingService.getRequests(status, from, to, pageable, principal)));
+                adminMatchingService.getRequests(status, language, query, from, to, pageable, principal)));
     }
 
     @GetMapping("/candidates")

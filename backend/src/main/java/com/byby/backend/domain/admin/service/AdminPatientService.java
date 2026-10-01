@@ -1,5 +1,7 @@
 package com.byby.backend.domain.admin.service;
 
+import com.byby.backend.common.enums.Gender;
+import com.byby.backend.common.enums.Nationality;
 import com.byby.backend.common.enums.ReportStatus;
 import com.byby.backend.common.exception.BusinessException;
 import com.byby.backend.common.exception.GeneralException;
@@ -23,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -41,10 +44,22 @@ public class AdminPatientService {
 
     // ─── AD-04-1 목록·검색 ──────────────────────────────────────────────────
 
-    public Page<AdminPatientResponse.Item> getPatients(String query, Pageable pageable, UserPrincipal principal) {
+    /** 이름·전화번호·거주지 검색 + 요청 언어(국적의 언어 코드) · 성별 필터 */
+    public Page<AdminPatientResponse.Item> getPatients(String query, List<String> languages, List<Gender> genders,
+                                                       Pageable pageable, UserPrincipal principal) {
         Center center = adminService.getAdminCenter(principal);
-        return patientRepository.searchByCenterIdentity(
-                        center.getId(), center.getName(), compactName(center.getName()), query, pageable)
+        List<Nationality> nationalities = languages == null ? List.of() : Arrays.stream(Nationality.values())
+                .filter(n -> languages.contains(n.getLanguageCode()))
+                .toList();
+        boolean anyNationality = languages == null || languages.isEmpty();
+        boolean anyGender = genders == null || genders.isEmpty();
+        if (!anyNationality && nationalities.isEmpty()) return Page.empty(pageable);
+        return patientRepository.searchByCenterForAdmin(
+                        center.getId(), center.getName(), compactName(center.getName()), query,
+                        // IN 절에 빈 목록을 넘기지 않도록 필터가 없을 때는 자리표시 값을 쓴다
+                        anyNationality, nationalities.isEmpty() ? List.of(Nationality.OTHER) : nationalities,
+                        anyGender, anyGender ? List.of(Gender.OTHER) : genders,
+                        pageable)
                 .map(p -> AdminPatientResponse.Item.from(
                         p, activeMatch(p.getId()),
                         consultationRepository.countByPatientId(p.getId()),

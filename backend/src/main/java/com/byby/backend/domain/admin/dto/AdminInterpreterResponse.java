@@ -3,6 +3,7 @@ package com.byby.backend.domain.admin.dto;
 import com.byby.backend.common.enums.Gender;
 import com.byby.backend.common.enums.InterpreterRole;
 import com.byby.backend.common.enums.Nationality;
+import com.byby.backend.domain.consultation.entity.Consultation;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.matching.entity.PatientMatch;
 
@@ -24,17 +25,34 @@ public class AdminInterpreterResponse {
             Nationality nationality,
             List<String> languages,
             boolean active,
+            /** 누적 통번역 횟수 (배정 확정 진료) — 0이면 화면에서 "신규" */
+            long totalConsultationCount,
             long activePatientCount,
             long monthlyConsultationCount,
             BigDecimal monthlyWorkHours
     ) {
-        public static Item from(Interpreter i, long activePatientCount,
+        public static Item from(Interpreter i, long totalConsultationCount, long activePatientCount,
                                 long monthlyConsultationCount, BigDecimal monthlyWorkHours) {
             return new Item(
                     i.getId(), i.getName(), i.getPhone(), i.getRole(),
                     i.getGender(), i.getNationality(), List.copyOf(i.getLanguages()), i.isActive(),
-                    activePatientCount, monthlyConsultationCount,
+                    totalConsultationCount, activePatientCount, monthlyConsultationCount,
                     monthlyWorkHours != null ? monthlyWorkHours : BigDecimal.ZERO);
+        }
+    }
+
+    /** 통번역 이력 한 줄 — 날짜 · 병원 · 이주민 */
+    public record ConsultationHistoryItem(
+            UUID consultationId,
+            LocalDateTime consultationDate,
+            String hospitalName,
+            UUID patientId,
+            String patientName
+    ) {
+        public static ConsultationHistoryItem from(Consultation c) {
+            return new ConsultationHistoryItem(
+                    c.getId(), c.getConsultationDate(), c.getResolvedHospitalName(),
+                    c.getPatient().getId(), c.getPatient().getName());
         }
     }
 

@@ -3,6 +3,7 @@ package com.byby.backend.domain.consultation.entity;
 import com.byby.backend.common.entity.BaseEntity;
 import com.byby.backend.common.enums.ConsultationMethod;
 import com.byby.backend.common.enums.IssueType;
+import com.byby.backend.common.enums.MatchingDisplayStatus;
 import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.enums.ProcessingType;
 import com.byby.backend.common.enums.ReportStatus;
@@ -146,6 +147,10 @@ public class Consultation extends BaseEntity {
 
     private UUID assignedByAuthUserId;
 
+    /** 통번역가 거절 또는 센터장 배정 취소로 다시 배정해야 하는 요청 */
+    @Column(nullable = false)
+    private boolean reassignmentRequired = false;
+
     // ─── AD-보고서 승인 관리 ────────────────────────────────────────────────
 
     @Enumerated(EnumType.STRING)
@@ -210,18 +215,35 @@ public class Consultation extends BaseEntity {
         }
     }
 
+    /** 통번역가가 대기 중인 요청을 직접 맡음 — 본인이 고른 것이므로 바로 배정 확정 */
     public void accept(Interpreter interpreter, LocalDateTime confirmedDate) {
         this.interpreter = interpreter;
         if (confirmedDate != null) this.consultationDate = confirmedDate;
         this.matchingStatus = MatchingStatus.ASSIGNED;
         this.matchingRejectReason = null;
+        this.reassignmentRequired = false;
         this.assignedAt = LocalDateTime.now();
     }
 
-    /** AD-06-2 센터장이 통번역가를 배정 */
+    /** AD-06-2 센터장이 통번역가를 배정 → 통번역가 수락 대기 */
     public void assignByAdmin(Interpreter interpreter, LocalDateTime confirmedDate, UUID adminAuthUserId) {
-        accept(interpreter, confirmedDate);
+        this.interpreter = interpreter;
+        if (confirmedDate != null) this.consultationDate = confirmedDate;
+        this.matchingStatus = MatchingStatus.AWAITING_ACCEPTANCE;
+        this.matchingRejectReason = null;
+        this.reassignmentRequired = false;
+        this.assignedAt = LocalDateTime.now();
         this.assignedByAuthUserId = adminAuthUserId;
+    }
+
+    /** 통번역가가 센터장의 배정을 수락 */
+    public void acceptAssignment() {
+        this.matchingStatus = MatchingStatus.ASSIGNED;
+    }
+
+    /** 통번역가가 센터장의 배정을 거절 → 재배정 필요 */
+    public void declineAssignment() {
+        unassign();
     }
 
     /** AD-06-3 요청 거절 */
@@ -232,13 +254,18 @@ public class Consultation extends BaseEntity {
         this.assignedAt = LocalDateTime.now();
     }
 
-    /** 배정 해제 — 다시 미배정 요청 목록으로 돌아감 */
+    /** 배정 해제 — 미배정 요청으로 돌아가며 '재배정 필요'로 표시 */
     public void unassign() {
         this.interpreter = null;
         this.matchingStatus = MatchingStatus.PENDING;
         this.matchingRejectReason = null;
+        this.reassignmentRequired = true;
         this.assignedAt = null;
         this.assignedByAuthUserId = null;
+    }
+
+    public MatchingDisplayStatus getDisplayStatus() {
+        return MatchingDisplayStatus.of(matchingStatus, reassignmentRequired, reportStatus);
     }
 
     /** CS-04-4 통번역가 제출 → 센터 승인 대기 */

@@ -40,10 +40,11 @@ public class AdminReportService {
     /**
      * AD-보고서 목록.
      * status 미지정 시 센터 전체 보고서를 반환하며, 정렬 기본값은 작성일자(진료일) 최신순이다.
-     * AD-보고서-4 필터: 환자 국적 / 병원 / 통번역가 / 기간 / 이름 검색.
+     * AD-보고서-4 필터: 환자 국적 / 요청 언어 / 병원 / 통번역가 / 기간 / 이름 검색.
      */
     public Page<AdminReportResponse.Item> getReports(
-            ReportStatus status, Nationality nationality, UUID hospitalId, String hospitalName,
+            List<ReportStatus> statuses, List<String> languages, String query,
+            Nationality nationality, UUID hospitalId, String hospitalName,
             UUID interpreterId, LocalDate from, LocalDate to, String patientQuery,
             Pageable pageable, UserPrincipal principal) {
 
@@ -51,7 +52,9 @@ public class AdminReportService {
 
         Specification<Consultation> spec = ConsultationSpecs.allOf(
                 ConsultationSpecs.inCenter(center.getId()),
-                ConsultationSpecs.reportStatusIn(status != null ? List.of(status) : null),
+                ConsultationSpecs.reportStatusIn(statuses),
+                ConsultationSpecs.languageIn(languages),
+                ConsultationSpecs.patientOrInterpreterName(query),
                 ConsultationSpecs.nationality(nationality),
                 ConsultationSpecs.hospitalId(hospitalId),
                 ConsultationSpecs.hospitalNameLike(hospitalName),

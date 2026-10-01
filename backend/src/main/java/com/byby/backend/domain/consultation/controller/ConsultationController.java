@@ -70,6 +70,26 @@ public class ConsultationController {
                 Response.success(SuccessCode.OK, consultationService.accept(id, req, principal)));
     }
 
+    @PatchMapping("/{id}/assignment/accept")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "센터장이 배정한 요청 수락", description = "수락 대기 → 배정 확정")
+    public ResponseEntity<Response<ConsultationResponse.Detail>> acceptAssignment(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(
+                Response.success(SuccessCode.OK, consultationService.acceptAssignment(id, principal)));
+    }
+
+    @PatchMapping("/{id}/assignment/decline")
+    @PreAuthorize("hasRole('interpreter')")
+    @Operation(summary = "센터장이 배정한 요청 거절", description = "배정이 해제되고 센터에 '재배정 필요'로 표시됩니다.")
+    public ResponseEntity<Response<Void>> declineAssignment(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        consultationService.declineAssignment(id, principal);
+        return ResponseEntity.ok(Response.success(SuccessCode.OK));
+    }
+
     @GetMapping
     @PreAuthorize("hasAnyRole('interpreter', 'admin')")
     @Operation(summary = "상담/통역 보고서 목록 조회")

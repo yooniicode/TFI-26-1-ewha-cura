@@ -118,6 +118,17 @@ public interface ConsultationRepository
             @Param("to") LocalDateTime to,
             Pageable pageable);
 
+    /** AD-05-1 통번역가 카드의 누적 통번역 횟수 */
+    long countByInterpreter_IdAndMatchingStatus(UUID interpreterId, MatchingStatus matchingStatus);
+
+    /** AD-05 통번역가 통번역 이력 */
+    Page<Consultation> findByInterpreter_IdAndMatchingStatus(
+            UUID interpreterId, MatchingStatus matchingStatus, Pageable pageable);
+
+    /** AD-06-2 배정 후보의 동행 횟수 — 같은 환자·통번역가로 확정된 진료 수 (현재 요청 제외) */
+    long countByPatient_IdAndInterpreter_IdAndMatchingStatusAndIdNot(
+            UUID patientId, UUID interpreterId, MatchingStatus matchingStatus, UUID excludeId);
+
     /** AD-06-4 일정 캘린더 — 기간 내 센터 전체 일정 */
     @Query("""
             SELECT DISTINCT c FROM Consultation c
