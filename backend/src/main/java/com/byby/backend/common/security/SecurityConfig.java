@@ -2,8 +2,11 @@ package com.byby.backend.common.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.http.HttpMethod;
@@ -21,6 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -35,8 +39,14 @@ public class SecurityConfig {
     private final AuthCookieManager authCookieManager;
     private final SessionVersionValidator sessionVersionValidator;
 
-    @Value("${byby.security.cors.allowed-origins:http://localhost:3000}")
-    private List<String> allowedOrigins;
+    private final Environment environment;
+
+    /**
+     * 관리자 콘솔 출처 — 환경변수로 덮어쓴 허용 목록에도 항상 더한다.
+     * (Railway 의 BYBY_SECURITY_CORS_ALLOWED_ORIGINS 는 YAML 목록 전체를 대체하므로 따로 둔다)
+     */
+    @Value("${byby.security.cors.admin-origins:https://admin.cura-ewha.kr,http://localhost:3001}")
+    private List<String> adminOrigins;
 
     /** 로컬 개발은 http 로 띄우므로 프로필별로 끌 수 있게 한다. */
     @Value("${byby.security.require-https:true}")
@@ -96,8 +106,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        List<String> origins = allowedOrigins.stream().filter(StringUtils::hasText).toList();
-        config.setAllowedOrigins(origins.isEmpty() ? List.of("http://localhost:3000") : origins);
+        config.setAllowedOrigins(resolveAllowedOrigins());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "X-Requested-With", "Origin"));
         config.setExposedHeaders(List.of("Authorization"));
@@ -106,5 +115,21 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    /**
+     * @Value 는 YAML 목록(allowed-origins[0], [1] …)을 읽지 못하므로 Binder 로 바인딩한다.
+     * Binder 는 YAML 목록과 쉼표로 구분한 환경변수를 모두 지원한다.
+     */
+    List<String> resolveAllowedOrigins() {
+        List<String> configured = Binder.get(environment)
+                .bind("byby.security.cors.allowed-origins", Bindable.listOf(String.class))
+                .orElse(List.of());
+        List<String> origins = Stream.concat(configured.stream(), adminOrigins.stream())
+                .filter(StringUtils::hasText)
+                .map(String::trim)
+                .distinct()
+                .toList();
+        return origins.isEmpty() ? List.of("http://localhost:3000") : origins;
     }
 }
