@@ -41,4 +41,31 @@ public class CenterRequest {
             return new Upsert(name, address, phone, active);
         }
     }
+
+    /** 개발자 전용 — 센터 등록과 동시에 센터 관리자 계정을 발급한다. */
+    public record DevCreateWithAdmin(
+            @NotBlank
+            @Schema(description = "환경변수 CENTER_DEV_SECRET 값", example = "your-secret")
+            String devSecret,
+
+            @NotBlank
+            @Schema(description = "센터 이름", example = "동행센터")
+            String name,
+
+            @Schema(description = "주소 (선택)", example = "서울시 강남구 ...")
+            String address,
+
+            @Schema(description = "전화번호 (선택)", example = "02-1234-5678")
+            String phone,
+
+            @Schema(description = "관리자 로그인 이메일 (선택) — 비우면 admin-{센터ID 앞 8자}@cura-ewha.kr", example = "center@cura-ewha.kr")
+            String adminEmail,
+
+            @Schema(description = "관리자 이름 (선택) — 비우면 '{센터 이름} 관리자'", example = "김센터")
+            String adminName
+    ) {
+        public Upsert toUpsert() {
+            return new Upsert(name, address, phone, true);
+        }
+    }
 }
