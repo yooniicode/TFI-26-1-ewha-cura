@@ -2,7 +2,9 @@
 const nextConfig = {
   ...(process.env.NEXT_OUTPUT === 'standalone' ? { output: 'standalone' } : {}),
   async rewrites() {
-    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080'
+    const raw = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080').trim()
+    // "api.cura-ewha.kr" 처럼 스킴 없이 넣어도 동작하도록 https:// 를 붙이고 끝의 / 는 뗀다
+    const apiUrl = (/^https?:\/\//.test(raw) ? raw : `https://${raw}`).replace(/\/+$/, '')
     return [
       {
         source: '/api/v1/:path*',
