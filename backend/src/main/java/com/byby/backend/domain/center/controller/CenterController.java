@@ -5,6 +5,7 @@ import com.byby.backend.common.response.Response;
 import com.byby.backend.common.response.code.GeneralErrorCode;
 import com.byby.backend.common.response.code.SuccessCode;
 import com.byby.backend.common.security.UserPrincipal;
+import com.byby.backend.domain.auth.service.AuthService;
 import com.byby.backend.domain.center.dto.CenterRequest;
 import com.byby.backend.domain.center.dto.CenterResponse;
 import com.byby.backend.domain.center.service.CenterService;
@@ -30,6 +31,7 @@ import java.util.UUID;
 public class CenterController {
 
     private final CenterService centerService;
+    private final AuthService authService;
 
     @Value("${CENTER_DEV_SECRET:${byby.center.dev-secret:}}")
     private String centerDevSecret;
@@ -70,6 +72,25 @@ public class CenterController {
         validateDevSecret(req.devSecret());
         return ResponseEntity.status(201)
                 .body(Response.success(SuccessCode.CREATED, centerService.create(req.toUpsert(), principal)));
+    }
+
+    @PostMapping("/dev/with-admin")
+    @Operation(
+        summary = "센터 등록 + 센터 관리자 계정 발급 [개발자 전용]",
+        description = """
+            **센터를 등록하고 그 센터의 관리자 계정을 함께 만듭니다.**
+
+            - `devSecret` 필드에 환경변수 `CENTER_DEV_SECRET` 값을 입력해야 합니다.
+            - 비밀번호는 무작위 16자로 생성되어 **응답에서 한 번만** 확인할 수 있습니다.
+            - `adminEmail` 을 비우면 `admin-{센터ID 앞 8자}@cura-ewha.kr` 로 만듭니다.
+            - 이름이 기존 센터와 유사하면(88% 이상 일치) 기존 센터에 관리자 계정이 추가됩니다.
+            """
+    )
+    public ResponseEntity<Response<CenterResponse.WithAdmin>> devCreateWithAdmin(
+            @Valid @RequestBody CenterRequest.DevCreateWithAdmin req) {
+        validateDevSecret(req.devSecret());
+        return ResponseEntity.status(201)
+                .body(Response.success(SuccessCode.CREATED, authService.registerCenterWithAdmin(req)));
     }
 
     @PutMapping("/dev/{id}")

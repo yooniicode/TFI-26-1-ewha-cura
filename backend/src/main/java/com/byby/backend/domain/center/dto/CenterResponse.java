@@ -18,4 +18,11 @@ public class CenterResponse {
                     center.getPhone(), center.isActive());
         }
     }
+
+    /** 센터 등록과 함께 발급한 관리자 계정 — 비밀번호는 이 응답에서만 확인할 수 있다. */
+    public record WithAdmin(
+            Summary center,
+            String adminEmail,
+            String adminPassword
+    ) {}
 }

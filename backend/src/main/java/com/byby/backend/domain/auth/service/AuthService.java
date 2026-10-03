@@ -15,6 +15,8 @@ import com.byby.backend.domain.auth.dto.AuthRequest;
 import com.byby.backend.domain.auth.dto.AuthResponse;
 import com.byby.backend.domain.auth.entity.UserCredential;
 import com.byby.backend.domain.auth.repository.UserCredentialRepository;
+import com.byby.backend.domain.center.dto.CenterRequest;
+import com.byby.backend.domain.center.dto.CenterResponse;
 import com.byby.backend.domain.center.entity.Center;
 import com.byby.backend.domain.center.service.CenterService;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
@@ -406,37 +408,74 @@ public class AuthService {
         if (!StringUtils.hasText(adminBootstrapCode) || !adminBootstrapCode.equals(req.secretCode().trim())) {
             throw new GeneralException(GeneralErrorCode.FORBIDDEN, "관리자 가입 코드가 올바르지 않습니다");
         }
-        String normalizedEmail = req.email().trim().toLowerCase(Locale.ROOT);
+        // 센터 연결
+        Center center = req.centerId() != null
+                ? centerService.find(req.centerId())
+                : (StringUtils.hasText(req.centerName()) ? centerService.getOrCreateByName(req.centerName()) : null);
+
+        UserCredential cred = createAdminAccount(req.email(), req.password(), req.name(), center);
+        UUID authUserId = cred.getAuthUserId();
+
+        String token = jwtUtil.generate(authUserId, UserRole.admin, cred.getSessionVersion());
+        AuthResponse.Me me = getMe(new UserPrincipal(authUserId, UserRole.admin));
+        return new AuthResponse.TokenMe(token, me);
+    }
+
+    // ─── 센터 등록 + 센터 관리자 계정 발급 (개발자 전용) ──────────────────────────
+
+    private static final String PASSWORD_ALPHABET =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    private static final java.security.SecureRandom RANDOM = new java.security.SecureRandom();
+
+    /**
+     * 센터를 등록(유사 이름이면 기존 센터 업서트)하고 그 센터의 관리자 계정을 만든다.
+     * 비밀번호는 무작위로 생성해 응답으로 한 번만 돌려준다 — 서버에는 해시만 남는다.
+     * adminEmail 이 비어 있으면 admin-{센터ID 앞 8자}@cura-ewha.kr 을 쓴다.
+     */
+    @Transactional
+    public CenterResponse.WithAdmin registerCenterWithAdmin(CenterRequest.DevCreateWithAdmin req) {
+        CenterResponse.Summary center = centerService.create(req.toUpsert(), null);
+        String email = StringUtils.hasText(req.adminEmail())
+                ? req.adminEmail().trim()
+                : "admin-" + center.id().toString().substring(0, 8) + "@cura-ewha.kr";
+        String name = StringUtils.hasText(req.adminName()) ? req.adminName().trim() : center.name() + " 관리자";
+        String password = generatePassword(16);
+
+        createAdminAccount(email, password, name, centerService.find(center.id()));
+        return new CenterResponse.WithAdmin(center, email.toLowerCase(Locale.ROOT), password);
+    }
+
+    private UserCredential createAdminAccount(String email, String rawPassword, String name, Center center) {
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         if (userCredentialRepository.existsByEmail(normalizedEmail)) {
             throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "이미 사용 중인 이메일입니다");
         }
-        if (req.password().length() < 8) {
+        if (rawPassword.length() < 8) {
             throw new GeneralException(GeneralErrorCode.BAD_REQUEST, "비밀번호는 8자 이상이어야 합니다");
         }
 
         UUID authUserId = UUID.randomUUID();
         UserCredential cred = UserCredential.builder()
                 .email(normalizedEmail)
-                .passwordHash(passwordEncoder.encode(req.password()))
+                .passwordHash(passwordEncoder.encode(rawPassword))
                 .authUserId(authUserId)
                 .requestedRole(UserRole.admin)
                 .build();
         userCredentialRepository.save(cred);
 
-        // 센터 연결
-        Center center = req.centerId() != null
-                ? centerService.find(req.centerId())
-                : (StringUtils.hasText(req.centerName()) ? centerService.getOrCreateByName(req.centerName()) : null);
-
-        UserPrincipal principal = new UserPrincipal(authUserId, UserRole.admin);
         AdminProfile profile = adminService.getOrCreateProfile(authUserId);
         if (center != null) profile = adminService.assignCenter(authUserId, center);
         // 이름 저장 (AdminProfile nickname)
-        profile.update(profile.getCenter(), trim(req.name()));
+        profile.update(profile.getCenter(), trim(name));
+        return cred;
+    }
 
-        String token = jwtUtil.generate(authUserId, UserRole.admin, cred.getSessionVersion());
-        AuthResponse.Me me = getMe(principal);
-        return new AuthResponse.TokenMe(token, me);
+    private static String generatePassword(int length) {
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append(PASSWORD_ALPHABET.charAt(RANDOM.nextInt(PASSWORD_ALPHABET.length())));
+        }
+        return sb.toString();
     }
 
     // ─── Admin bootstrap ─────────────────────────────────────────────────────────
