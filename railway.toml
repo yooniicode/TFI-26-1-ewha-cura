@@ -5,5 +5,6 @@ dockerfilePath = "backend/Dockerfile"
 [deploy]
 startCommand = "java -jar app.jar"
 healthcheckPath = "/actuator/health"
-healthcheckTimeout = 60
+# Spring Boot 기동(DB 연결 · Flyway · JPA 초기화)에 약 60초가 걸려 여유를 둔다 (Railway 기본값 300)
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
