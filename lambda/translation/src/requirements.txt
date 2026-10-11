@@ -1,0 +1,2 @@
+# psycopg 3 — 순수 파이썬 + libpq 바이너리. Lambda(arm64) 용으로는 `sam build --use-container` 로 빌드한다.
+psycopg[binary]==3.2.3

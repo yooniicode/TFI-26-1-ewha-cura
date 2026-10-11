@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Cura 진료기록 번역 워커 (2단계).
+  Spring 이 SQS 에 {consultationId, version} 만 발행하면 이 함수가 DB 에서 원문을 읽어 가명처리 → OpenAI 번역 → DB 반영 → 감사기록.
+  Spring 쪽 TranslationWorker 와 같은 일을 한다. 함수는 VPC 밖에서 돈다 (Supabase·OpenAI 모두 공개 엔드포인트, NAT Gateway 불필요).
+
+Parameters:
+  DatabaseUrlParameter:
+    Type: String
+    Default: /cura/translation/database-url
+    Description: SSM SecureString. Supabase 풀러(PgBouncer transaction mode, 6543) 주소. 예) postgresql://user:pw@aws-0-ap-northeast-2.pooler.supabase.com:6543/postgres?sslmode=require
+  OpenAiKeyParameter:
+    Type: String
+    Default: /cura/translation/openai-api-key
+    Description: SSM SecureString. OpenAI API 키. Spring 은 더 이상 이 키를 들고 있을 필요가 없다.
+  OpenAiModel:
+    Type: String
+    Default: gpt-4o-mini
+  ReservedConcurrency:
+    Type: Number
+    Default: 5
+    Description: 동시에 돌 수 있는 함수 수 = OpenAI 동시 호출 상한 = 번역이 쓰는 DB 커넥션 상한
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures: [arm64]           # x86 보다 약 20% 저렴
+    MemorySize: 256                  # 대기(OpenAI 응답)가 대부분이라 CPU 가 필요 없다
+    Timeout: 60
+
+Resources:
+  TranslationDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: cura-translation-dlq
+      MessageRetentionPeriod: 1209600          # 14일 — 실패한 작업을 조사할 시간
+      SqsManagedSseEnabled: true
+
+  TranslationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: cura-translation
+      VisibilityTimeout: 360                   # 함수 Timeout(60) × 6 — SQS 권장 배수
+      MessageRetentionPeriod: 345600           # 4일
+      SqsManagedSseEnabled: true               # 무료. id 만 실리지만 그래도 켠다
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt TranslationDlq.Arn
+        maxReceiveCount: 3                     # 3번 실패하면 DLQ 로
+
+  # Spring(Railway) 이 큐에 넣을 때 쓰는 최소 권한 정책. 이 정책만 붙인 IAM 사용자를 만들어 키를 Railway 에 둔다.
+  PublisherPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: cura-translation-publisher
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: [sqs:SendMessage, sqs:GetQueueUrl]
+            Resource: !GetAtt TranslationQueue.Arn
+
+  TranslationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cura-translation-worker
+      CodeUri: src/
+      Handler: handler.lambda_handler
+      ReservedConcurrentExecutions: !Ref ReservedConcurrency
+      Environment:
+        Variables:
+          DATABASE_URL_PARAM: !Ref DatabaseUrlParameter
+          OPENAI_API_KEY_PARAM: !Ref OpenAiKeyParameter
+          OPENAI_MODEL: !Ref OpenAiModel
+          LOG_LEVEL: INFO
+      Policies:
+        # 함수마다 자기 큐와 자기 시크릿만. Supabase 서비스 키 같은 건 애초에 없다.
+        - SQSPollerPolicy:
+            QueueName: !GetAtt TranslationQueue.QueueName
+        - Statement:
+            - Effect: Allow
+              Action: [ssm:GetParameter, ssm:GetParameters]
+              Resource:
+                - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${DatabaseUrlParameter}
+                - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${OpenAiKeyParameter}
+            - Effect: Allow
+              Action: [kms:Decrypt]
+              Resource: !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm
+      Events:
+        Queue:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TranslationQueue.Arn
+            BatchSize: 5
+            FunctionResponseTypes: [ReportBatchItemFailures]   # 배치 중 실패한 메시지만 큐로 돌려보낸다
+            ScalingConfig:
+              MaximumConcurrency: !Ref ReservedConcurrency
+
+  TranslationLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${TranslationFunction}
+      RetentionInDays: 30                      # 기본은 무기한. 원문은 찍지 않지만 보존 기간은 명시한다
+
+Outputs:
+  QueueUrl:
+    Description: Spring 의 TRANSLATION_QUEUE_URL 에 넣을 값
+    Value: !Ref TranslationQueue
+  PublisherPolicyArn:
+    Description: Railway 용 IAM 사용자에 붙일 정책
+    Value: !Ref PublisherPolicy
