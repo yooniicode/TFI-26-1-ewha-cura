@@ -371,6 +371,8 @@ export const en: AppTranslation = {
     err_patient: 'Please select a patient.',
     err_save: 'Failed to save report.',
     err_update: 'Failed to update report.',
+    translation_pending: 'Translating to Korean…',
+    translation_failed: 'Translation failed; showing the original text',
     detail_title: 'Report',
     patient_report_title: 'Hospital visit report',
     first_author: 'Author',

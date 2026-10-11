@@ -369,6 +369,8 @@
     err_patient: '이주민을 선택해주세요.',
     err_save: '보고서 저장에 실패했습니다.',
     err_update: '보고서 수정에 실패했습니다.',
+    translation_pending: '한국어 번역 중…',
+    translation_failed: '번역에 실패해 원문을 표시합니다',
     detail_title: '보고서',
     patient_report_title: '병원 방문 보고서',
     first_author: '최초 작성자',

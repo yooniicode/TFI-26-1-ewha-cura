@@ -371,6 +371,8 @@ export const ur: AppTranslation = {
     err_patient: 'براہ کرم ایک تارک وطن منتخب کریں۔',
     err_save: 'رپورٹ محفوظ کرنا ناکام ہوا۔',
     err_update: 'رپورٹ میں ترمیم ناکام ہوئی۔',
+    translation_pending: 'کورین میں ترجمہ ہو رہا ہے…',
+    translation_failed: 'ترجمہ ناکام رہا؛ اصل متن دکھایا جا رہا ہے',
     detail_title: 'رپورٹ',
     patient_report_title: 'ہسپتال وزٹ رپورٹ',
     first_author: 'اصل مصنف',

@@ -109,6 +109,25 @@ export default function ConsultationDetailPage() {
     setForm(prev => prev ? { ...prev, [key]: value } : prev)
   }
 
+  // 번역은 저장 응답 뒤 백그라운드(워커/Lambda)에서 끝난다. PENDING 인 동안만 상태를 폴링한다.
+  useEffect(() => {
+    if (data?.translationStatus !== 'PENDING') return
+    let cancelled = false
+    const started = Date.now()
+    const timer = setInterval(async () => {
+      if (Date.now() - started > 60_000) { clearInterval(timer); return }
+      try {
+        const res = await consultationApi.get(id)
+        if (!cancelled && res.payload.translationStatus !== 'PENDING') setData(res.payload)
+      } catch { /* 다음 틱에 다시 시도 */ }
+    }, 1500)
+    return () => { cancelled = true; clearInterval(timer) }
+  }, [id, data?.translationStatus])
+
+  // 번역본은 완료된 것만 보여준다. PENDING/FAILED 때는 이전 번역이 지금 원문과 다를 수 있다.
+  const showKo = !!data && data.translationLang === 'ko'
+    && (data.translationStatus == null || data.translationStatus === 'DONE')
+
   async function handleSave() {
     if (!form) return
     setSaving(true)
@@ -285,10 +304,19 @@ export default function ConsultationDetailPage() {
               <ReportRow label={t.consultation.next_appointment_date} value={formatKoreanDateTime(data.nextAppointmentDate)} />
               <ReportRow label={t.consultation.confirm_by} value={data.confirmedBy} />
               <ReportRow label={t.consultation.confirm_date} value={formatKoreanDate(data.confirmedAt)} />
-              <ReportBlock label={t.consultation.diagnosis_content} value={data.translationLang === 'ko' ? (data.translatedDiagnosisContent ?? data.diagnosisContent) : data.diagnosisContent} />
-              <ReportBlock label={t.consultation.treatment_result} value={data.translationLang === 'ko' ? (data.translatedTreatmentResult ?? data.treatmentResult) : data.treatmentResult} />
-              <ReportBlock label={t.consultation.medication} value={data.translationLang === 'ko' ? (data.translatedMedicationInstruction ?? data.medicationInstruction) : data.medicationInstruction} />
-              <ReportBlock label={t.consultation.interpreter_comment} value={data.translationLang === 'ko' ? (data.translatedPatientComment ?? data.patientComment) : data.patientComment} />
+              {data.translationStatus === 'PENDING' && (
+                <div className="flex items-center gap-2 text-sm text-[#2592FF] pt-2" data-testid="translation-pending">
+                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-[#2592FF] border-t-transparent animate-spin" />
+                  {t.consultation.translation_pending}
+                </div>
+              )}
+              {data.translationStatus === 'FAILED' && (
+                <p className="text-sm text-[#808080] pt-2">{t.consultation.translation_failed}</p>
+              )}
+              <ReportBlock label={t.consultation.diagnosis_content} value={showKo ? (data.translatedDiagnosisContent ?? data.diagnosisContent) : data.diagnosisContent} />
+              <ReportBlock label={t.consultation.treatment_result} value={showKo ? (data.translatedTreatmentResult ?? data.treatmentResult) : data.treatmentResult} />
+              <ReportBlock label={t.consultation.medication} value={showKo ? (data.translatedMedicationInstruction ?? data.medicationInstruction) : data.medicationInstruction} />
+              <ReportBlock label={t.consultation.interpreter_comment} value={showKo ? (data.translatedPatientComment ?? data.patientComment) : data.patientComment} />
               <ReportBlock label={t.consultation.work_description} value={data.workDescription} />
               <ReportBlock label={t.consultation.memo} value={data.memo} />
               <ReportBlock label={t.consultation.doctor_signature} value={data.doctorConfirmationSignature} />

@@ -36,6 +36,11 @@ public class TranslationService {
         this.openAiApiKey = openAiApiKey;
     }
 
+    /** 번역을 요청해도 되는 상태인지. 꺼져 있거나 키가 없으면 PENDING 으로 표시할 이유가 없다. */
+    public boolean isAvailable() {
+        return translationEnabled && StringUtils.hasText(openAiApiKey);
+    }
+
     public record MedicalTranslation(
             String patientComment,
             String diagnosisContent,

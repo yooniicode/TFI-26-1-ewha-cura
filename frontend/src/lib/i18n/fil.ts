@@ -371,6 +371,8 @@ export const fil: AppTranslation = {
     err_patient: 'Pumili ng migrante.',
     err_save: 'Nabigo ang pag-save ng ulat.',
     err_update: 'Nabigo ang pag-update ng ulat.',
+    translation_pending: 'Isinasalin sa Korean…',
+    translation_failed: 'Nabigo ang pagsasalin; ipinapakita ang orihinal',
     detail_title: 'Ulat',
     patient_report_title: 'Ulat ng pagbisita sa ospital',
     first_author: 'May-akda',

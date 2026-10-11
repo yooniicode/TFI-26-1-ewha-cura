@@ -371,6 +371,8 @@ export const km: AppTranslation = {
     err_patient: 'សូមជ្រើសរើសអ្នកធ្វើចំណាកស្រុក។',
     err_save: 'ការរក្សាទុករបាយការណ៍បានបរាជ័យ។',
     err_update: 'ការកែប្រែរបាយការណ៍បានបរាជ័យ។',
+    translation_pending: 'កំពុងបកប្រែទៅភាសាកូរ៉េ…',
+    translation_failed: 'ការបកប្រែបរាជ័យ បង្ហាញអត្ថបទដើម',
     detail_title: 'របាយការណ៍',
     patient_report_title: 'របាយការណ៍ទស្សនកិច្ចមន្ទីរពេទ្យ',
     first_author: 'អ្នកនិពន្ធដំបូង',

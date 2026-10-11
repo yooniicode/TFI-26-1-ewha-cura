@@ -113,6 +113,7 @@ export const consultationSchema = z.object({
   translatedTreatmentResult: nullableString,
   translatedMedicationInstruction: nullableString,
   translatedDiagnosisNameCode: nullableString,
+  translationStatus:         nullableString,   // NONE | PENDING | DONE | FAILED
   doctorConfirmationSignature: nullableString,
   durationHours:       nullableNumber,
   fee:                 nullableNumber,
