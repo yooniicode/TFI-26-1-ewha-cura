@@ -371,6 +371,8 @@ export const bn: AppTranslation = {
     err_patient: 'অনুগ্রহ করে একজন অভিবাসী নির্বাচন করুন।',
     err_save: 'রিপোর্ট সংরক্ষণ ব্যর্থ হয়েছে।',
     err_update: 'রিপোর্ট সম্পাদনা ব্যর্থ হয়েছে।',
+    translation_pending: 'কোরিয়ানে অনুবাদ করা হচ্ছে…',
+    translation_failed: 'অনুবাদ ব্যর্থ হয়েছে; মূল লেখা দেখানো হচ্ছে',
     detail_title: 'রিপোর্ট',
     patient_report_title: 'হাসপাতাল পরিদর্শন রিপোর্ট',
     first_author: 'মূল লেখক',

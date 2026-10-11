@@ -371,6 +371,8 @@ export const ne: AppTranslation = {
     err_patient: 'कृपया आप्रवासी छान्नुस्।',
     err_save: 'प्रतिवेदन सुरक्षित गर्न असफल भयो।',
     err_update: 'प्रतिवेदन अद्यावधिक गर्न असफल भयो।',
+    translation_pending: 'कोरियालीमा अनुवाद गर्दै…',
+    translation_failed: 'अनुवाद असफल भयो; मूल पाठ देखाइँदैछ',
     detail_title: 'प्रतिवेदन',
     patient_report_title: 'अस्पताल भ्रमण प्रतिवेदन',
     first_author: 'लेखक',

@@ -371,6 +371,8 @@ export const si: AppTranslation = {
     err_patient: 'කරුණාකර සංක්‍රමණිකයෙකු තෝරන්න.',
     err_save: 'වාර්තාව සුරැකීම අසාර්ථක විය.',
     err_update: 'වාර්තාව සංස්කරණය කිරීම අසාර්ථක විය.',
+    translation_pending: 'කොරියානු භාෂාවට පරිවර්තනය වෙමින්…',
+    translation_failed: 'පරිවර්තනය අසාර්ථකයි; මුල් පෙළ පෙන්වයි',
     detail_title: 'වාර්තාව',
     patient_report_title: 'රෝහල් පැමිණීමේ වාර්තාව',
     first_author: 'මුල් කතුවරයා',

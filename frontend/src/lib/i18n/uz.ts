@@ -371,6 +371,8 @@ export const uz: AppTranslation = {
     err_patient: 'Migrantni tanlang.',
     err_save: "Hisobotni saqlash muvaffaqiyatsiz tugadi.",
     err_update: "Hisobotni tahrirlash muvaffaqiyatsiz tugadi.",
+    translation_pending: 'Koreys tiliga tarjima qilinmoqda…',
+    translation_failed: 'Tarjima amalga oshmadi; asl matn ko‘rsatilmoqda',
     detail_title: 'Hisobot',
     patient_report_title: 'Shifoxonaga tashrif hisoboti',
     first_author: 'Birinchi muallif',

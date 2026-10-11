@@ -158,6 +158,8 @@ export interface Consultation {
   translatedTreatmentResult?: string
   translatedMedicationInstruction?: string
   translatedDiagnosisNameCode?: string
+  /** 번역은 저장 뒤 백그라운드에서 끝난다: NONE | PENDING | DONE | FAILED */
+  translationStatus?: string
   doctorConfirmationSignature?: string
   durationHours?: number
   fee?: number

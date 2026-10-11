@@ -371,6 +371,8 @@ export const id: AppTranslation = {
     err_patient: 'Pilih migran.',
     err_save: 'Gagal menyimpan laporan.',
     err_update: 'Gagal memperbarui laporan.',
+    translation_pending: 'Menerjemahkan ke bahasa Korea…',
+    translation_failed: 'Terjemahan gagal; menampilkan teks asli',
     detail_title: 'Laporan',
     patient_report_title: 'Laporan kunjungan rumah sakit',
     first_author: 'Penulis',

@@ -371,6 +371,8 @@ export const zh: AppTranslation = {
     err_patient: '请选择移民。',
     err_save: '保存报告失败。',
     err_update: '修改报告失败。',
+    translation_pending: '正在翻译成韩语…',
+    translation_failed: '翻译失败，显示原文',
     detail_title: '报告',
     patient_report_title: '就诊报告',
     first_author: '创建人',

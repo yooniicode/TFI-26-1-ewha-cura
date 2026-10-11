@@ -371,6 +371,8 @@ export const mn: AppTranslation = {
     err_patient: 'Цагаачаа сонгоно уу.',
     err_save: 'Тайлан хадгалахад алдаа гарлаа.',
     err_update: 'Тайлан засахад алдаа гарлаа.',
+    translation_pending: 'Солонгос хэл рүү орчуулж байна…',
+    translation_failed: 'Орчуулга амжилтгүй боллоо; эх бичвэрийг харуулж байна',
     detail_title: 'Тайлан',
     patient_report_title: 'Эмнэлгийн үзлэгийн тайлан',
     first_author: 'Эхний зохиогч',

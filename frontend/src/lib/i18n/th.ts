@@ -371,6 +371,8 @@ export const th: AppTranslation = {
     err_patient: 'กรุณาเลือกผู้อพยพ',
     err_save: 'บันทึกรายงานไม่สำเร็จ',
     err_update: 'อัปเดตรายงานไม่สำเร็จ',
+    translation_pending: 'กำลังแปลเป็นภาษาเกาหลี…',
+    translation_failed: 'แปลไม่สำเร็จ แสดงข้อความต้นฉบับ',
     detail_title: 'รายงาน',
     patient_report_title: 'รายงานการเยี่ยมโรงพยาบาล',
     first_author: 'ผู้เขียน',
