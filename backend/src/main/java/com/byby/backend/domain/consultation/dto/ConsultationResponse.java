@@ -1,5 +1,6 @@
 package com.byby.backend.domain.consultation.dto;
 
+import com.byby.backend.common.enums.TranslationStatus;
 import com.byby.backend.common.enums.ConsultationMethod;
 import com.byby.backend.common.enums.Gender;
 import com.byby.backend.common.enums.IssueType;
@@ -98,7 +99,8 @@ public class ConsultationResponse {
             String translatedDiagnosisContent,
             String translatedTreatmentResult,
             String translatedMedicationInstruction,
-            String translatedDiagnosisNameCode
+            String translatedDiagnosisNameCode,
+            TranslationStatus translationStatus
     ) {
         public static Detail from(Consultation c) {
             return from(c, null);
@@ -135,7 +137,8 @@ public class ConsultationResponse {
                     c.getTranslatedDiagnosisContent(),
                     c.getTranslatedTreatmentResult(),
                     c.getTranslatedMedicationInstruction(),
-                    c.getTranslatedDiagnosisNameCode());
+                    c.getTranslatedDiagnosisNameCode(),
+                    c.getTranslationStatus());
         }
     }
 

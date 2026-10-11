@@ -25,7 +25,11 @@ import com.byby.backend.domain.matching.repository.PatientMatchRepository;
 import com.byby.backend.domain.patient.entity.Patient;
 import com.byby.backend.domain.patient.repository.PatientCenterRepository;
 import com.byby.backend.domain.patient.repository.PatientRepository;
+import com.byby.backend.domain.consultation.translation.TranslationJob;
+import com.byby.backend.domain.consultation.translation.TranslationJobDispatcher;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +59,7 @@ public class ConsultationService {
     private final UserCredentialRepository userCredentialRepository;
     private final CenterRepository centerRepository;
     private final TranslationService translationService;
+    private final TranslationJobDispatcher translationJobDispatcher;
     private final AuditService auditService;
     private final GoogleSheetsExportService googleSheetsExportService;
     private final com.byby.backend.domain.center.service.CenterService centerService;
@@ -256,9 +261,10 @@ public class ConsultationService {
                 req.counselorName(), req.workDescription(), req.doctorConfirmationSignature(),
                 req.durationHours(), req.fee(), req.memoCompleted(), req.reportCompleted());
 
-        applyTranslationIfNeeded(c);
+        TranslationJob job = requestTranslationIfNeeded(c, principal);
 
         Consultation updated = consultationRepository.save(c);
+        dispatchAfterCommit(job);
         return ConsultationResponse.Detail.from(updated, resolvePatientAvatarUrl(updated.getPatient()));
     }
 
@@ -451,45 +457,46 @@ public class ConsultationService {
                 .anyMatch(pc -> pc.getCenter().getId().equals(center.getId()));
     }
 
-    private void applyTranslationIfNeeded(Consultation c) {
-        if (c.getPatient() == null || c.getPatient().getNationality() == null) return;
+    /**
+     * 번역이 필요하면 PENDING 으로 표시만 하고 작업을 돌려준다. 실제 번역은 커밋 뒤 워커가 한다.
+     *
+     * <p>예전에는 여기서 OpenAI 를 동기 호출했다. 그러면 {@code update()} 의 트랜잭션이 응답을 기다리는
+     * 수 초 동안 DB 커넥션을 쥐고 있고, 감사기록(REQUIRES_NEW)이 두 번째 커넥션을 요구해 풀 크기(5)만큼의
+     * 동시 저장만으로 풀 전체가 교착됐다.
+     */
+    private TranslationJob requestTranslationIfNeeded(Consultation c, UserPrincipal principal) {
+        if (!translationService.isAvailable()) return null;
+        if (c.getPatient() == null || c.getPatient().getNationality() == null) return null;
 
         String langCode = c.getPatient().getNationality().getLanguageCode();
-        if ("ko".equals(langCode)) return;
+        if ("ko".equals(langCode)) return null;
 
         boolean hasContent = StringUtils.hasText(c.getDiagnosisContent())
                 || StringUtils.hasText(c.getTreatmentResult())
                 || StringUtils.hasText(c.getMedicationInstruction())
                 || StringUtils.hasText(c.getPatientComment())
                 || StringUtils.hasText(c.getDiagnosisNameCode());
-        if (!hasContent) return;
+        if (!hasContent) return null;
 
-        // 자유입력란에 섞여 들어온 실명은 외부 전송 전에 가명처리한다
-        String[] namesToMask = {
-                c.getPatient().getName(),
-                c.getInterpreter() != null ? c.getInterpreter().getName() : null,
-                c.getDoctorName(),
-                c.getCounselorName()
-        };
+        long version = c.markTranslationPending();
+        return new TranslationJob(c.getId(), version,
+                principal != null ? principal.getAuthUserId() : null,
+                principal != null ? principal.getRole() : null);
+    }
 
-        try {
-            TranslationService.MedicalTranslation t = translationService.translateToKorean(
-                    c.getPatientComment(), c.getDiagnosisContent(),
-                    c.getTreatmentResult(), c.getMedicationInstruction(),
-                    c.getDiagnosisNameCode(), langCode, namesToMask);
-            if (t != null) {
-                // translationLang = "ko": translated* 필드에 한국어 번역본 저장
-                c.applyTranslation("ko", t.patientComment(), t.diagnosisContent(),
-                        t.treatmentResult(), t.medicationInstruction(), t.diagnosisNameCode());
-                // 진료 내용이 국외(OpenAI)로 이전된 사실을 기록한다
-                auditService.recordThirdPartyTransfer(
-                        currentAuthUserId(), currentRole(), "OpenAI API (국외)",
-                        "CONSULTATION", c.getId(), c.getPatient().getId(),
-                        "목적=진료내용 한국어 번역 / 가명처리 적용 / 원어=" + langCode);
-            }
-        } catch (Exception e) {
-            log.warn("[translation] 번역 실패 — 원본 모국어 유지: {}", e.getMessage());
+    /** 커밋이 끝난 뒤에 넘긴다. 커밋 전에 넘기면 워커가 옛 원문을 읽거나 아직 없는 행을 찾는다. */
+    private void dispatchAfterCommit(TranslationJob job) {
+        if (job == null) return;
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            translationJobDispatcher.dispatch(job);
+            return;
         }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                translationJobDispatcher.dispatch(job);
+            }
+        });
     }
 
     private UUID currentAuthUserId() {

@@ -98,11 +98,23 @@ byby:
 
   openai:
     api-key: ${OPENAI_API_KEY:}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
     model: gpt-4o-mini
     translation:
       # 진료 내용의 국외 이전(OpenAI). 민감정보 국외이전 동의를 받지 못했다면 false 로 둔다.
       # 전송 전 실명·연락처·등록번호는 가명처리된다.
       enabled: ${OPENAI_TRANSLATION_ENABLED:true}
+
+  translation:
+    # async: 같은 JVM 의 전용 스레드 풀(기본)  /  sqs: SQS 발행 → Lambda(lambda/translation) 가 처리
+    dispatcher: ${TRANSLATION_DISPATCHER:async}
+    worker:
+      # 동시 번역 수 = OpenAI 동시 호출 상한 = 번역이 잠깐씩 쓰는 DB 커넥션 상한 (prod 풀 5개보다 작게)
+      concurrency: ${TRANSLATION_WORKER_CONCURRENCY:2}
+      queue-capacity: 1000
+    sqs:
+      queue-url: ${TRANSLATION_QUEUE_URL:}
+      region: ${AWS_REGION:ap-northeast-2}
 
   export:
     monthly:

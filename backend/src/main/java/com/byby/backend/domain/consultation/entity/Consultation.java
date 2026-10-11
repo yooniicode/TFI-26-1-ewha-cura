@@ -7,6 +7,7 @@ import com.byby.backend.common.enums.MatchingDisplayStatus;
 import com.byby.backend.common.enums.MatchingStatus;
 import com.byby.backend.common.enums.ProcessingType;
 import com.byby.backend.common.enums.ReportStatus;
+import com.byby.backend.common.enums.TranslationStatus;
 import com.byby.backend.domain.interpreter.entity.Interpreter;
 import com.byby.backend.domain.hospital.entity.Hospital;
 import com.byby.backend.domain.patient.entity.Patient;
@@ -112,6 +113,18 @@ public class Consultation extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String translatedDiagnosisNameCode;
+
+    /** 번역 진행 상태. 요청 시 PENDING 으로 바뀌고 워커가 DONE/FAILED 로 끝낸다. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private TranslationStatus translationStatus = TranslationStatus.NONE;
+
+    /**
+     * 번역 요청마다 1씩 오른다. 워커는 자기가 받은 버전과 현재 버전이 같을 때만 결과를 쓴다.
+     * 같은 메시지가 두 번 오거나(SQS 최소 1회 전달), 처리 중에 사용자가 다시 저장해 원문이 바뀐 경우를 걸러낸다.
+     */
+    @Column(nullable = false)
+    private long translationVersion = 0L;
 
     @Column(columnDefinition = "TEXT")
     private String doctorConfirmationSignature;
@@ -352,6 +365,26 @@ public class Consultation extends BaseEntity {
         }
     }
 
+    /** 번역 작업을 요청했다고 표시하고, 워커에 넘길 버전 번호를 돌려준다. */
+    public long markTranslationPending() {
+        this.translationStatus = TranslationStatus.PENDING;
+        this.translationVersion++;
+        return this.translationVersion;
+    }
+
+    /**
+     * 워커가 받은 버전이 현재 버전과 같을 때만 번역본을 쓴다(멱등).
+     * @return 실제로 반영됐으면 true, 버전이 달라(그 사이 다시 저장됨/중복 메시지) 버렸으면 false
+     */
+    public boolean applyTranslation(long version, String langCode, String patientComment, String diagnosisContent,
+                                    String treatmentResult, String medicationInstruction,
+                                    String diagnosisNameCode) {
+        if (version != this.translationVersion) return false;
+        applyTranslation(langCode, patientComment, diagnosisContent, treatmentResult,
+                medicationInstruction, diagnosisNameCode);
+        return true;
+    }
+
     public void applyTranslation(String langCode, String patientComment, String diagnosisContent,
                                   String treatmentResult, String medicationInstruction,
                                   String diagnosisNameCode) {
@@ -361,6 +394,14 @@ public class Consultation extends BaseEntity {
         this.translatedTreatmentResult = treatmentResult;
         this.translatedMedicationInstruction = medicationInstruction;
         this.translatedDiagnosisNameCode = diagnosisNameCode;
+        this.translationStatus = TranslationStatus.DONE;
+    }
+
+    /** 같은 버전의 작업이 실패했을 때만 FAILED 로 둔다. 새 요청이 이미 들어갔다면 건드리지 않는다. */
+    public void markTranslationFailed(long version) {
+        if (version == this.translationVersion && this.translationStatus == TranslationStatus.PENDING) {
+            this.translationStatus = TranslationStatus.FAILED;
+        }
     }
 
     public boolean isConfirmed() {

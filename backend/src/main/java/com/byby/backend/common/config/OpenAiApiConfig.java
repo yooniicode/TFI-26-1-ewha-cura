@@ -8,15 +8,17 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class OpenAiApiConfig {
 
-    private static final String OPENAI_BASE_URL = "https://api.openai.com/v1";
-
     @Value("${byby.openai.api-key:}")
     private String apiKey;
+
+    /** 로컬 측정·테스트에서 OpenAI 대역(mock) 서버로 돌리기 위해 바꿀 수 있다. */
+    @Value("${byby.openai.base-url:https://api.openai.com/v1}")
+    private String baseUrl;
 
     @Bean
     public RestClient openAiRestClient() {
         return RestClient.builder()
-                .baseUrl(OPENAI_BASE_URL)
+                .baseUrl(baseUrl)
                 .defaultHeader("Content-Type", "application/json")
                 .build();
     }
